@@ -6,7 +6,18 @@ import type { AccessGrant, PermissionLevel } from '@/lib/api/types'
 const state: AccessGrant[] = fixtures.accessGrants.map((g) => ({ ...g }))
 
 export const listGrants = mockQuery<AccessGrant[]>(
-  () => state.map((g) => AccessGrantSchema.parse(g)),
+  (ctx) => {
+    if (!ctx.user) throw new MockApiError('Unauthenticated', 401)
+    // Real backend will enforce this at the DB layer; here we mirror the
+    // intended scope so the access matrix only ever shows grants the
+    // originator should be able to see.
+    const myDatasetIds = new Set(
+      fixtures.datasets
+        .filter((d) => d.originatorOrgId === ctx.user!.orgId)
+        .map((d) => d.id)
+    )
+    return state.filter((g) => myDatasetIds.has(g.datasetId)).map((g) => AccessGrantSchema.parse(g))
+  },
   { latencyMs: 140 }
 )
 

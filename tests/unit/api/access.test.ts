@@ -8,6 +8,13 @@ describe('access endpoints', () => {
     const g = await listGrants(ctx)
     expect(g.length).toBeGreaterThan(0)
   })
+  it('listGrants returns only grants for the calling org\'s datasets', async () => {
+    // org_tradefin owns ds_mfone (per fixtures); fixtures include grants for ds_mfone (gauntlet, infinifi) AND ds_creditbridge (bitwise) — only the first two should be visible.
+    const grants = await listGrants(ctx)
+    expect(grants.every((g) => g.datasetId === 'ds_mfone' || g.datasetId === 'ds_flowcredit_apac')).toBe(true)
+    // Specifically, the bitwise/ds_creditbridge grant should be excluded.
+    expect(grants.find((g) => g.counterpartyOrgId === 'org_bitwise')).toBeUndefined()
+  })
   it('grantAccess + revokeAccess', async () => {
     const g = await grantAccess(ctx, {
       counterpartyOrgId: 'org_bitwise',
