@@ -29,4 +29,7 @@ export type {
   ApprovalRequest,
   PermissionLevel,
   AccessGrant,
+  AuditAction,
+  AuditResourceType,
+  AuditEntry,
 } from './schemas'

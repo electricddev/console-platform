@@ -384,3 +384,45 @@ export const AccessGrantSchema = z.object({
   grantedBy: z.string(),
 })
 export type AccessGrant = z.infer<typeof AccessGrantSchema>
+
+// ---------- Audit ----------
+
+export const AuditActionSchema = z.enum([
+  'approved-template',
+  'denied-template',
+  'requested-changes',
+  'submitted-template',
+  'executed-query',
+  'published-result',
+  'disputed-run',
+  'published-schema',
+  'updated-schema',
+  'granted-access',
+  'revoked-access',
+  'connected-source',
+  'paused-source',
+  'resumed-source',
+])
+export type AuditAction = z.infer<typeof AuditActionSchema>
+
+export const AuditResourceTypeSchema = z.enum([
+  'dataset', 'template', 'run', 'schema', 'source', 'access-grant', 'approval',
+])
+export type AuditResourceType = z.infer<typeof AuditResourceTypeSchema>
+
+export const AuditEntrySchema = z.object({
+  id: z.string(),
+  timestamp: z.string().datetime(),
+  actorId: z.string(),
+  actorOrgId: z.string(),
+  signingKey: z.string(),
+  action: AuditActionSchema,
+  resourceType: AuditResourceTypeSchema,
+  resourceId: z.string(),
+  hash: z.string(),                          // entry-level hash
+  merkleProof: z.array(z.string()).optional(),
+  anchorTxHash: z.string().optional(),
+  anchorBlockNumber: z.number().int().nonnegative().optional(),
+  context: z.record(z.unknown()).optional(),
+})
+export type AuditEntry = z.infer<typeof AuditEntrySchema>
