@@ -69,3 +69,10 @@ describe('templates/runs/insights round-trip', () => {
     })
   })
 })
+
+import { SourceSchema, ApprovalRequestSchema, AccessGrantSchema } from '@/lib/api/schemas'
+describe('originator fixtures round-trip', () => {
+  it('sources', () => fixtures.sources.forEach((s) => SourceSchema.parse(s)))
+  it('approvals', () => fixtures.approvals.forEach((a) => ApprovalRequestSchema.parse(a)))
+  it('access grants', () => fixtures.accessGrants.forEach((g) => AccessGrantSchema.parse(g)))
+})

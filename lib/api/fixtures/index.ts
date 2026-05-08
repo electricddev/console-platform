@@ -7,6 +7,10 @@ import { schemaFixtures } from './schemas-fx'
 import { templateFixtures } from './templates'
 import { runFixtures } from './runs'
 import { insightFixtures } from './insights'
+import { sourceFixtures } from './sources'
+import { ingestionFixtures } from './ingestion'
+import { approvalFixtures } from './approvals'
+import { accessFixtures } from './access'
 
 export const fixtures = {
   orgs: orgFixtures,
@@ -18,6 +22,10 @@ export const fixtures = {
   templates: templateFixtures,
   runs: runFixtures,
   insights: insightFixtures,
+  sources: sourceFixtures,
+  ingestionEvents: ingestionFixtures,
+  approvals: approvalFixtures,
+  accessGrants: accessFixtures,
 } as const
 
 export { DEMO_PERSONA_IDS }
