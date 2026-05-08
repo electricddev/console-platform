@@ -6,6 +6,15 @@ afterEach(() => {
   cleanup()
 })
 
+// jsdom lacks ResizeObserver which Radix UI popovers/tooltips require
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}
+
 if (typeof globalThis.crypto?.randomUUID !== 'function') {
   // jsdom in some environments lacks randomUUID; provide a stub for tests
   Object.defineProperty(globalThis.crypto, 'randomUUID', {
