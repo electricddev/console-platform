@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPaletteProvider } from './command-palette'
+import { RoleSwitcher } from './role-switcher'
 import type { User, Org, NetworkHealth, Notification } from '@/lib/api/types'
 
 type Props = {
@@ -39,6 +40,7 @@ export function AppShell({
           <main className="flex-1 overflow-auto bg-background">{children}</main>
         </div>
       </div>
+      <RoleSwitcher current={user.role} />
     </CommandPaletteProvider>
   )
 }
