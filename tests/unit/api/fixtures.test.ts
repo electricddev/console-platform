@@ -51,9 +51,7 @@ describe('feature fixtures round-trip', () => {
   it('every dataset has a referenced schema', () => {
     const ids = new Set(fixtures.schemas.map((s) => s.id))
     fixtures.datasets.forEach((d) => {
-      if (d.schemaId === 'sch_mfone_v3' || d.schemaId === 'sch_creditbridge_v2') {
-        expect(ids.has(d.schemaId)).toBe(true)
-      }
+      expect(ids.has(d.schemaId)).toBe(true)
     })
   })
 })
