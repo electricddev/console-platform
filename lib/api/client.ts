@@ -18,16 +18,20 @@ export type MockOptions = {
   jitter?: number
 }
 
-const DEFAULT_LATENCY = Number(process.env.MOCK_LATENCY_MS ?? '250')
+const DEFAULT_LATENCY = Number(process.env.MOCK_LATENCY_MS) || 250
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   if (ms <= 0) return Promise.resolve()
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms)
-    signal?.addEventListener('abort', () => {
+    const onAbort = () => {
       clearTimeout(timer)
-      reject(new DOMException('Aborted', 'AbortError'))
-    })
+      reject(signal!.reason ?? new DOMException('Aborted', 'AbortError'))
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
   })
 }
 

@@ -8,12 +8,11 @@ describe('mockEndpoint', () => {
     expect(result).toEqual({ value: 42 })
   })
 
-  it('respects the abort signal', async () => {
-    const endpoint = mockEndpoint(async (_ctx, signal) => {
-      await new Promise((r) => setTimeout(r, 200))
-      signal?.throwIfAborted()
-      return 'never'
-    }, { latencyMs: 0 })
+  it('rejects when the abort signal fires during sleep', async () => {
+    const endpoint = mockEndpoint(
+      async () => 'never',
+      { latencyMs: 500, jitter: 0 }
+    )
     const ac = new AbortController()
     setTimeout(() => ac.abort(), 50)
     await expect(
