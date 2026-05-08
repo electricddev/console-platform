@@ -14,8 +14,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import type { User } from '@/lib/api/types'
 import { signOut } from '@/app/(auth)/login/actions'
+import { DensityToggle } from './density-toggle'
+import type { Density } from '@/lib/auth/types'
 
-type Props = { user: User; orgName: string }
+type Props = { user: User; orgName: string; density: Density }
 
 function initials(name: string) {
   return name
@@ -27,7 +29,7 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-export function UserMenu({ user, orgName }: Props) {
+export function UserMenu({ user, orgName, density }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -54,6 +56,10 @@ export function UserMenu({ user, orgName }: Props) {
           <Link href="/settings/wallets">
             <UserIcon className="size-3.5" /> My identity
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <DensityToggle current={density} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <form action={signOut}>

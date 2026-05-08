@@ -21,21 +21,24 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (!org) throw new Error(`Fixture org missing for ${user.orgId}`)
 
   return (
-    <AppShell
-      user={user}
-      org={org}
-      notifications={notifications}
-      networkHealth={fixtures.networkHealth}
-      onMarkRead={async (id) => {
-        'use server'
-        await markNotificationRead({ user: sessionUser }, id)
-      }}
-      onMarkAllRead={async () => {
-        'use server'
-        await markAllNotificationsRead({ user: sessionUser })
-      }}
-    >
-      {children}
-    </AppShell>
+    <div className={sessionUser.density === 'comfortable' ? 'density-comfortable' : ''}>
+      <AppShell
+        user={user}
+        org={org}
+        density={sessionUser.density}
+        notifications={notifications}
+        networkHealth={fixtures.networkHealth}
+        onMarkRead={async (id) => {
+          'use server'
+          await markNotificationRead({ user: sessionUser }, id)
+        }}
+        onMarkAllRead={async () => {
+          'use server'
+          await markAllNotificationsRead({ user: sessionUser })
+        }}
+      >
+        {children}
+      </AppShell>
+    </div>
   )
 }

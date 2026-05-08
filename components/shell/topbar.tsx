@@ -9,10 +9,12 @@ import { NotificationsBell } from './notifications-bell'
 import { UserMenu } from './user-menu'
 import { useCommandPalette } from './command-palette'
 import type { User, NetworkHealth, Notification } from '@/lib/api/types'
+import type { Density } from '@/lib/auth/types'
 
 type Props = {
   user: User
   orgName: string
+  density?: Density
   networkHealth: NetworkHealth
   notifications: Notification[]
   onMarkRead: (id: string) => Promise<void>
@@ -69,7 +71,7 @@ export function Topbar(props: Props) {
           onMarkRead={props.onMarkRead}
           onMarkAllRead={props.onMarkAllRead}
         />
-        <UserMenu user={props.user} orgName={props.orgName} />
+        <UserMenu user={props.user} orgName={props.orgName} density={props.density ?? 'compact'} />
       </div>
     </div>
   )

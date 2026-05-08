@@ -4,10 +4,12 @@ import { Topbar } from './topbar'
 import { CommandPaletteProvider } from './command-palette'
 import { RoleSwitcher } from './role-switcher'
 import type { User, Org, NetworkHealth, Notification } from '@/lib/api/types'
+import type { Density } from '@/lib/auth/types'
 
 type Props = {
   user: User
   org: Org
+  density?: Density
   notifications: Notification[]
   networkHealth: NetworkHealth
   onMarkRead: (id: string) => Promise<void>
@@ -18,6 +20,7 @@ type Props = {
 export function AppShell({
   user,
   org,
+  density,
   notifications,
   networkHealth,
   onMarkRead,
@@ -32,6 +35,7 @@ export function AppShell({
           <Topbar
             user={user}
             orgName={org.name}
+            density={density}
             networkHealth={networkHealth}
             notifications={notifications}
             onMarkRead={onMarkRead}
