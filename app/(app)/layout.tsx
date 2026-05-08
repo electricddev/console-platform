@@ -6,6 +6,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from '@/lib/api/endpoints/notifications'
+import { getStatus } from '@/lib/api/endpoints/status'
 import { fixtures } from '@/lib/api/fixtures'
 import { AppShell } from '@/components/shell/app-shell'
 
@@ -13,9 +14,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const sessionUser = await requireUser()
   const ctx = { user: sessionUser }
 
-  const [user, notifications] = await Promise.all([
+  const [user, notifications, status] = await Promise.all([
     getCurrentUser(ctx),
     listMyNotifications(ctx),
+    getStatus(ctx),
   ])
   const org = fixtures.orgs.find((o) => o.id === user.orgId)
   if (!org) throw new Error(`Fixture org missing for ${user.orgId}`)
@@ -28,6 +30,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         density={sessionUser.density}
         notifications={notifications}
         networkHealth={fixtures.networkHealth}
+        status={status}
         onMarkRead={async (id) => {
           'use server'
           await markNotificationRead({ user: sessionUser }, id)

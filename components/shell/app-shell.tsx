@@ -3,7 +3,8 @@ import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { CommandPaletteProvider } from './command-palette'
 import { RoleSwitcher } from './role-switcher'
-import type { User, Org, NetworkHealth, Notification } from '@/lib/api/types'
+import { StatusBanner } from './status-banner'
+import type { User, Org, NetworkHealth, Notification, StatusReport } from '@/lib/api/types'
 import type { Density } from '@/lib/auth/types'
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   density?: Density
   notifications: Notification[]
   networkHealth: NetworkHealth
+  status: StatusReport
   onMarkRead: (id: string) => Promise<void>
   onMarkAllRead: () => Promise<void>
   children: ReactNode
@@ -23,6 +25,7 @@ export function AppShell({
   density,
   notifications,
   networkHealth,
+  status,
   onMarkRead,
   onMarkAllRead,
   children,
@@ -32,6 +35,7 @@ export function AppShell({
       <div className="flex min-h-screen">
         <Sidebar role={user.role} />
         <div className="flex min-w-0 flex-1 flex-col">
+          <StatusBanner status={status} />
           <Topbar
             user={user}
             orgName={org.name}
