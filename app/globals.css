@@ -40,6 +40,12 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
@@ -81,6 +87,31 @@
   --border: oklch(0 0 0 / 10%);
   --input: oklch(0 0 0 / 12%);
   --ring: oklch(0.78 0.07 256);
+
+  /* ---------- Status colors ---------- */
+  --success: oklch(0.62 0.13 145);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.78 0.14 80);
+  --warning-foreground: oklch(0.18 0.02 80);
+  --info: oklch(0.65 0.10 240);
+  --info-foreground: oklch(0.99 0 0);
+
+  /* ---------- Shell metrics ---------- */
+  --sidebar-width: 14rem;
+  --sidebar-width-collapsed: 3.25rem;
+  --topbar-height: 3rem;
+
+  /* ---------- Density ---------- */
+  --density-row-height: 2.25rem;       /* compact default */
+  --density-cell-padding-x: 0.625rem;
+  --density-cell-padding-y: 0.375rem;
+  --density-font-size: 0.875rem;       /* 14px */
+
+  /* ---------- Motion ---------- */
+  --motion-fast: 120ms;
+  --motion-medium: 200ms;
+  --motion-slow: 320ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   --chart-1: oklch(0.78 0.07 256);
   --chart-2: oklch(0.65 0.05 256);
@@ -124,6 +155,13 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.82 0.07 256);
+
+  --success: oklch(0.70 0.13 145);
+  --success-foreground: oklch(0.122 0 0);
+  --warning: oklch(0.83 0.14 80);
+  --warning-foreground: oklch(0.18 0.02 80);
+  --info: oklch(0.75 0.10 240);
+  --info-foreground: oklch(0.122 0 0);
 
   --chart-1: oklch(0.82 0.07 256);
   --chart-2: oklch(0.70 0.06 256);
@@ -189,4 +227,11 @@
     background-size: 24px 24px;
     color: oklch(0 0 0 / 8%);
   }
+}
+
+.density-comfortable {
+  --density-row-height: 2.75rem;
+  --density-cell-padding-x: 0.875rem;
+  --density-cell-padding-y: 0.625rem;
+  --density-font-size: 0.9375rem;
 }
