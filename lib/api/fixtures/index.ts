@@ -11,6 +11,7 @@ import { sourceFixtures } from './sources'
 import { ingestionFixtures } from './ingestion'
 import { approvalFixtures } from './approvals'
 import { accessFixtures } from './access'
+import { auditFixtures } from './audit'
 
 export const fixtures = {
   orgs: orgFixtures,
@@ -26,6 +27,7 @@ export const fixtures = {
   ingestionEvents: ingestionFixtures,
   approvals: approvalFixtures,
   accessGrants: accessFixtures,
+  audit: auditFixtures,
 } as const
 
 export { DEMO_PERSONA_IDS }
