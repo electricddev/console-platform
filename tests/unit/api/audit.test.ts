@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { listAudit, getAuditEntry, exportAuditBundle } from '@/lib/api/endpoints/audit'
+import { listAudit, exportAuditBundle } from '@/lib/api/endpoints/audit'
 
 const ctx = { user: { id: 'usr_tom', orgId: 'org_tradefin', role: 'originator' as const } }
 

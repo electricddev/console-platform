@@ -13,11 +13,11 @@ export function MerkleProofPopover({ proof, hash }: { proof: string[] | undefine
       </PopoverTrigger>
       <PopoverContent className="w-96">
         <div className="grid gap-2 text-xs">
-          <p className="font-tag text-foreground/55">// entry hash</p>
+          <p className="font-tag text-foreground/55">{'// entry hash'}</p>
           <CopyableHash value={hash} short={false} />
           {proof && proof.length > 0 && (
             <>
-              <p className="font-tag text-foreground/55 pt-2">// merkle siblings</p>
+              <p className="font-tag text-foreground/55 pt-2">{'// merkle siblings'}</p>
               <div className="grid gap-1">
                 {proof.map((p, i) => <CopyableHash key={i} value={p} short={false} />)}
               </div>
