@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import type { ReactNode } from 'react'
 import { requireUser } from '@/lib/auth/server'
 import { getDataset } from '@/lib/api/endpoints/datasets'
 import { fixtures } from '@/lib/api/fixtures'
@@ -9,11 +8,6 @@ import { Button } from '@/components/ui/button'
 import { AttestationBadge } from '@/components/common/attestation-badge'
 import { FreshnessIndicator } from '@/components/common/freshness-indicator'
 
-type Props = {
-  children: ReactNode
-  params: Promise<{ datasetId: string }>
-}
-
 const TABS = [
   { href: '', label: 'Overview' },
   { href: '/schema', label: 'Schema' },
@@ -22,7 +16,7 @@ const TABS = [
   { href: '/lineage', label: 'Lineage' },
 ] as const
 
-export default async function DatasetLayout({ children, params }: Props) {
+export default async function DatasetLayout({ children, params }: LayoutProps<'/datasets/[datasetId]'>) {
   const { datasetId } = await params
   const session = await requireUser()
   const ds = await getDataset({ user: session }, datasetId)

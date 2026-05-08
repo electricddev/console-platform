@@ -30,7 +30,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
 
       {ds.alerts.length > 0 && (
         <section className="grid gap-2">
-          <h2 className="font-tag text-foreground/60">// active alerts</h2>
+          <h2 className="font-tag text-foreground/60">{'// active alerts'}</h2>
           {ds.alerts.map((a) => (
             <Card key={a.id} className="border-l-2 border-warning/60 bg-warning/5">
               <CardContent className="py-3">
@@ -43,7 +43,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
       )}
 
       <section className="grid gap-3">
-        <h2 className="font-tag text-foreground/60">// ask the dataset</h2>
+        <h2 className="font-tag text-foreground/60">{'// ask the dataset'}</h2>
         <AskAnythingInput
           datasetId={datasetId}
           suggestions={suggestions}
@@ -55,7 +55,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
       </section>
 
       <section className="grid gap-3">
-        <h2 className="font-tag text-foreground/60">// anomalies</h2>
+        <h2 className="font-tag text-foreground/60">{'// anomalies'}</h2>
         {anomalies.length === 0 ? (
           <p className="text-sm text-muted-foreground">No anomalies detected.</p>
         ) : (
@@ -65,7 +65,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
 
       {ds.description && (
         <section className="grid gap-2">
-          <h2 className="font-tag text-foreground/60">// description</h2>
+          <h2 className="font-tag text-foreground/60">{'// description'}</h2>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">{ds.description}</p>
         </section>
       )}
