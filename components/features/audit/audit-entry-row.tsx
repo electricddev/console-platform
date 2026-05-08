@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { fmtRelativeTime, fmtDate } from '@/lib/format'
 import { CopyableHash } from '@/components/common/copyable-hash'
 import { MerkleProofPopover } from './merkle-proof-popover'
+import { RESOURCE_HREF } from './resource-href'
 import type { AuditEntry } from '@/lib/api/types'
 import { fixtures } from '@/lib/api/fixtures'
 
@@ -21,16 +22,6 @@ const ACTION_TONE: Record<AuditEntry['action'], string> = {
   'connected-source': 'bg-success/15 text-success border-success/30',
   'paused-source': 'bg-warning/15 text-warning border-warning/30',
   'resumed-source': 'bg-success/15 text-success border-success/30',
-}
-
-const RESOURCE_HREF: Record<AuditEntry['resourceType'], (id: string) => string> = {
-  dataset: (id) => `/datasets/${id}`,
-  template: (id) => `/templates/${id}`,
-  run: (id) => `/runs/${id}`,
-  schema: (id) => `/schemas/${id}`,
-  source: (id) => `/sources/${id}`,
-  'access-grant': () => '/access',
-  approval: (id) => `/approvals/${id}`,
 }
 
 export function AuditEntryRow({ entry }: { entry: AuditEntry }) {

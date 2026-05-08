@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { fmtDate } from '@/lib/format'
 import { CopyableHash } from '@/components/common/copyable-hash'
 import { MerkleProofPopover } from './merkle-proof-popover'
+import { RESOURCE_HREF } from './resource-href'
 import type { AuditEntry } from '@/lib/api/types'
 import { fixtures } from '@/lib/api/fixtures'
 
@@ -15,7 +16,7 @@ export function AuditEntryCard({ entry }: { entry: AuditEntry }) {
       <div className="grid gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-tag text-[0.65rem]">{entry.action}</Badge>
-          <Link href={`/${entry.resourceType}/${entry.resourceId}`} className="font-mono text-xs hover:underline">{entry.resourceType}/{entry.resourceId}</Link>
+          <Link href={RESOURCE_HREF[entry.resourceType](entry.resourceId)} className="font-mono text-xs hover:underline">{entry.resourceType}/{entry.resourceId}</Link>
         </div>
         <p className="text-sm">
           <span className="font-medium">{actorOrg?.name ?? entry.actorOrgId}</span>
