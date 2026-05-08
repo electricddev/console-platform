@@ -43,3 +43,9 @@ next-env.d.ts
 
 #ai
 .playwright-mcp
+
+# tests
+coverage/
+playwright-report/
+test-results/
+.playwright/
