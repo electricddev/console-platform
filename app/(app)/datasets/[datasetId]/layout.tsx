@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireUser } from '@/lib/auth/server'
+import { TabLink } from './_components/tab-link'
 import { getDataset } from '@/lib/api/endpoints/datasets'
 import { fixtures } from '@/lib/api/fixtures'
 import { PageHeader } from '@/components/common/page-header'
@@ -49,13 +50,9 @@ export default async function DatasetLayout({ children, params }: LayoutProps<'/
 
       <nav className="mt-6 flex gap-1 border-b border-border" aria-label="Dataset sections">
         {TABS.map((t) => (
-          <Link
-            key={t.label}
-            href={`/datasets/${datasetId}${t.href}`}
-            className="border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground hover:text-foreground aria-[current=page]:border-foreground aria-[current=page]:text-foreground"
-          >
+          <TabLink key={t.label} href={`/datasets/${datasetId}${t.href}`}>
             {t.label}
-          </Link>
+          </TabLink>
         ))}
       </nav>
 
