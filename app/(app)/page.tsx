@@ -2,6 +2,8 @@ import { requireUser } from '@/lib/auth/server'
 import { getCurrentUser } from '@/lib/api/endpoints/me'
 import { listDatasets } from '@/lib/api/endpoints/datasets'
 import { listRuns } from '@/lib/api/endpoints/runs'
+import { listSources } from '@/lib/api/endpoints/sources'
+import { listApprovals } from '@/lib/api/endpoints/approvals'
 import { getCounterpartyInsights } from '@/lib/api/endpoints/insights'
 import { fixtures } from '@/lib/api/fixtures'
 import { PageHeader } from '@/components/common/page-header'
@@ -11,39 +13,32 @@ import { OriginatorHome } from '@/components/features/home/originator-home'
 export default async function HomePage() {
   const session = await requireUser()
   const ctx = { user: session }
-  const [me, allDatasets, recentRuns, insights] = await Promise.all([
-    getCurrentUser(ctx),
-    listDatasets(ctx, {}),
-    listRuns(ctx, {}),
-    getCounterpartyInsights(ctx),
-  ])
-  const watched = allDatasets.filter((d) => d.watching)
+  const me = await getCurrentUser(ctx)
   const org = fixtures.orgs.find((o) => o.id === me.orgId)!
 
   if (me.role === 'originator') {
     const [sources, pendingApprovals, recentRuns] = await Promise.all([
-      (await import('@/lib/api/endpoints/sources')).listSources(ctx),
-      (await import('@/lib/api/endpoints/approvals')).listApprovals(ctx, { state: 'pending' }),
-      (await import('@/lib/api/endpoints/runs')).listRuns(ctx, {}),
+      listSources(ctx),
+      listApprovals(ctx, { state: 'pending' }),
+      listRuns(ctx, {}),
     ])
     return (
       <div className="px-6 py-6 max-w-7xl mx-auto">
-        <PageHeader
-          eyebrow="// home · originator"
-          title={`Welcome, ${me.name.split(' ')[0]}`}
-          description={`${org.name} — control plane for your data`}
-        />
+        <PageHeader eyebrow={`// home · originator`} title={`Welcome, ${me.name.split(' ')[0]}`} description={`${org.name} — control plane for your data`} />
         <div className="mt-6">
-          <OriginatorHome
-            sources={sources}
-            pendingApprovals={pendingApprovals}
-            recentRuns={recentRuns}
-          />
+          <OriginatorHome sources={sources} pendingApprovals={pendingApprovals} recentRuns={recentRuns} />
         </div>
       </div>
     )
   }
 
+  // Counterparty / admin path
+  const [allDatasets, recentRuns, insights] = await Promise.all([
+    listDatasets(ctx, {}),
+    listRuns(ctx, {}),
+    getCounterpartyInsights(ctx),
+  ])
+  const watched = allDatasets.filter((d) => d.watching)
   const pending = [
     { id: 't1', title: 'Run #4823 awaiting your review', href: '/runs/run_4823', kind: 'run' },
     { id: 't2', title: 'Template "Default rate by vintage" needs changes', href: '/templates/tpl_default_rate_by_vintage', kind: 'template' },
@@ -52,9 +47,9 @@ export default async function HomePage() {
   return (
     <div className="px-6 py-6 max-w-7xl mx-auto">
       <PageHeader
-        eyebrow="// home"
+        eyebrow={`// home`}
         title={`Welcome, ${me.name.split(' ')[0]}`}
-        description={`Since you last signed in: ${recentRuns.length} runs, ${insights.filter((i) => !i.id.startsWith('ins_dismissed_')).length} new insights.`}
+        description={`Since you last signed in: ${recentRuns.length} runs, ${insights.filter(i => !i.id.startsWith('ins_dismissed_')).length} new insights.`}
       />
       <div className="mt-6">
         <CounterpartyHome
