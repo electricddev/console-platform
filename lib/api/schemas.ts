@@ -311,3 +311,76 @@ export const RunSchema = z.object({
   disputeReason: z.string().optional(),
 })
 export type Run = z.infer<typeof RunSchema>
+
+// ---------- Sources ----------
+
+export const SourceTypeSchema = z.enum(['postgres', 'mysql', 'snowflake', 'bigquery', 's3', 'rest-api', 'custom'])
+export type SourceType = z.infer<typeof SourceTypeSchema>
+
+export const SourceStatusSchema = z.enum(['healthy', 'lagging', 'paused', 'down'])
+export type SourceStatus = z.infer<typeof SourceStatusSchema>
+
+export const SourceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: SourceTypeSchema,
+  ownerOrgId: z.string(),
+  recordsProcessed: z.number().int().nonnegative(),
+  lastCommitAt: z.string().datetime(),
+  lagSeconds: z.number().nonnegative(),
+  completenessPct: z.number().min(0).max(1),
+  status: SourceStatusSchema,
+  agentVersion: z.string(),
+  agentInstalledAt: z.string().datetime(),
+})
+export type Source = z.infer<typeof SourceSchema>
+
+export const IngestionEventSchema = z.object({
+  id: z.string(),
+  sourceId: z.string(),
+  timestamp: z.string().datetime(),
+  recordCount: z.number().int().nonnegative(),
+  commitHash: z.string(),
+  outcome: z.enum(['committed', 'partial', 'failed']),
+  error: z.string().optional(),
+})
+export type IngestionEvent = z.infer<typeof IngestionEventSchema>
+
+// ---------- Approvals ----------
+
+export const ApprovalRequestStateSchema = z.enum(['pending', 'approved', 'denied', 'changes-requested'])
+
+export const ApprovalRequestSchema = z.object({
+  id: z.string(),
+  templateId: z.string(),
+  templateVersionId: z.string(),
+  datasetId: z.string(),
+  requesterId: z.string(),
+  requesterOrgId: z.string(),
+  requestedAt: z.string().datetime(),
+  state: ApprovalRequestStateSchema,
+  decidedAt: z.string().datetime().optional(),
+  decidedBy: z.string().optional(),
+  signature: z.string().optional(),
+  rationale: z.string().optional(),
+  urgency: z.enum(['low', 'normal', 'high']).default('normal'),
+})
+export type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>
+
+// ---------- Access ----------
+
+export const PermissionLevelSchema = z.enum(['none', 'read', 'execute'])
+export type PermissionLevel = z.infer<typeof PermissionLevelSchema>
+
+export const AccessGrantSchema = z.object({
+  id: z.string(),
+  counterpartyOrgId: z.string(),
+  datasetId: z.string(),
+  level: PermissionLevelSchema,
+  rateLimitPerDay: z.number().int().nonnegative(),
+  allowedTemplateIds: z.array(z.string()).default([]),
+  expiresAt: z.string().datetime().optional(),
+  grantedAt: z.string().datetime(),
+  grantedBy: z.string(),
+})
+export type AccessGrant = z.infer<typeof AccessGrantSchema>

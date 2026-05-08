@@ -22,4 +22,11 @@ export type {
   RunStatus,
   RunResult,
   Run,
+  SourceType,
+  SourceStatus,
+  Source,
+  IngestionEvent,
+  ApprovalRequest,
+  PermissionLevel,
+  AccessGrant,
 } from './schemas'
