@@ -4,7 +4,12 @@ import { signInAs } from './actions'
 
 export const metadata = { title: 'Sign in · Hyve' }
 
-export default function LoginPage() {
+type Search = { next?: string }
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<Search> }) {
+  const sp = await searchParams
+  const next = sp.next
+
   return (
     <Card>
       <CardHeader>
@@ -16,17 +21,17 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2">
-        <form action={async () => { 'use server'; await signInAs('counterparty') }}>
+        <form action={async () => { 'use server'; await signInAs('counterparty', next) }}>
           <Button type="submit" size="lg" className="w-full justify-start">
             Demo Counterparty &middot; <span className="text-muted-foreground ml-2">Maya at Gauntlet</span>
           </Button>
         </form>
-        <form action={async () => { 'use server'; await signInAs('originator') }}>
+        <form action={async () => { 'use server'; await signInAs('originator', next) }}>
           <Button type="submit" size="lg" variant="outline" className="w-full justify-start">
             Demo Originator &middot; <span className="text-muted-foreground ml-2">Tom at Maple Trade Finance</span>
           </Button>
         </form>
-        <form action={async () => { 'use server'; await signInAs('admin') }}>
+        <form action={async () => { 'use server'; await signInAs('admin', next) }}>
           <Button type="submit" size="lg" variant="ghost" className="w-full justify-start">
             Demo Admin &middot; <span className="text-muted-foreground ml-2">Dual-role observer</span>
           </Button>
