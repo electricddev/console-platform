@@ -32,7 +32,7 @@ export function AppShell({
 }: Props) {
   return (
     <CommandPaletteProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-screen">
         <Sidebar role={user.role} />
         <div className="flex min-w-0 flex-1 flex-col">
           <StatusBanner status={status} />

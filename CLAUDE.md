@@ -1,18 +1,23 @@
 @AGENTS.md
 
-# Next.js Production Frontend
+# Hyve Data Clean Room — Frontend
 
-[Replace with: 1-3 sentence description of your project]
+A Next.js dashboard for verifiable, confidential data collaboration on tokenized RWAs. AI-powered data engineering and analytics platform for risk curators, data engineers, and allocators.
 
 ## Stack
 
-- **Framework:** Next.js 16 with App Router
-- **Language:** TypeScript (strict mode)
-- **Styling:** Tailwind CSS + shadcn/ui
-- **State:** React state + Context (no Redux)
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript (strict)
+- **UI Library:** shadcn/ui (owned in src/components/ui/, New York style)
+- **Styling:** Tailwind CSS + CSS variables (OKLCH palette)
+- **Fonts:** Instrument Serif (display) + Geist Sans (UI) + Geist Mono (data/code)
+- **Primary accent:** Forest green `oklch(0.40 0.10 160)`
 - **Forms:** React Hook Form + Zod
-- **Backend:** Rust API (out of scope for frontend agents)
+- **State:** React (useState/useReducer; Context for feature subtrees)
+- **Data fetching:** SWR (client) + native fetch (server)
+- **Backend:** Rust API at `process.env.RUST_API_URL` (out of scope for this repo)
 - **Testing:** Vitest (unit) + Playwright (E2E)
+- **Browser automation:** Playwright MCP (for agent visual feedback)
 - **Deployment:** Vercel
 
 ## Project Structure
@@ -28,126 +33,106 @@
 - `tests/e2e/` — Playwright E2E tests
 - `docs/architecture/` — ADRs and architecture docs
 
-See `docs/architecture/overview.md` for detailed structure.
-
 ## Universal Rules
 
-### Code
-
-- TypeScript strict mode - never use `any`, prefer `unknown`
-- Server Components by default - add `"use client"` only when needed
+- TypeScript strict mode — never use `any`, prefer `unknown`
+- Server Components by default — add `"use client"` only when needed
 - Named exports only (except pages/layouts)
-- File naming: `PascalCase.tsx` for components, `camelCase.ts` for utilities
-
-### React/Next.js
-
+- shadcn components live in src/components/ui/, customized via CSS variables
+- No hardcoded colors — always use design tokens
 - App Router only (no Pages Router)
-- Async Server Components for data fetching
-- Server Actions for mutations
-- Suspense + loading.tsx for streaming
-- Error boundaries on every major route
-
-### Styling
-
-- Tailwind CSS via design tokens
-- No hardcoded colors (use CSS variables)
-- shadcn/ui components in `src/components/ui/` (owned, not npm)
-- Class composition via `cn()` utility
-
-### Quality Gates (before push)
-
-- `npm run typecheck` passes
-- `npm run lint` passes (zero warnings)
-- `npm run test` passes
-- `npm run build` succeeds
-
-### Git
-
-- Conventional Commits format
-- Feature branches → main
-- PR required (no direct pushes to main)
+- Conventional Commits
 
 ## Common Commands
 
 ```bash
-npm run dev          # Start dev server (port 3000)
-npm run build        # Production build
-npm run start        # Run production build locally
-npm run test         # Unit tests (Vitest)
-npm run test:e2e     # E2E tests (Playwright)
-npm run lint         # ESLint
-npm run typecheck    # TypeScript check
-npm run format       # Prettier format
+pnpm dev          # Start dev server (port 3000)
+pnpm build        # Production build
+pnpm test         # Vitest unit tests
+pnpm test:e2e     # Playwright E2E tests
+pnpm lint         # ESLint
+pnpm typecheck    # TypeScript check
 ```
+
+## ⚠️ How to Fix UI Bugs (READ THIS BEFORE TOUCHING UI)
+
+When the user reports a visual problem (spacing, padding, shadow, layout, broken chart, alignment, "looks weird", etc.) — or pastes a screenshot of broken UI — you MUST follow the iterative visual loop.
+
+**Do NOT one-shot UI fixes.** They never work.
+
+The loop:
+
+1. **Screenshot the broken state** (Playwright MCP, route the user is on)
+2. **Identify the bug visually** (compare screenshot to user's report and design intent)
+3. **Plan the fix** (root cause, not symptoms)
+4. **Implement** (`ui-component-dev` agent)
+5. **Verify** (`ui-design-reviewer` agent takes fresh screenshot, judges fix)
+6. **Loop until VERIFIED** — repeat steps 2–5 with the new screenshot as the new "broken state"
+
+This is enforced by:
+
+- The `visual-fix` skill in `.claude/skills/visual-fix/`
+- The `Stop` hook in `.claude/settings.json` which blocks completion until visual verification
+
+**You cannot claim "done" on a UI fix without a Playwright screenshot proving the rendered output is correct.** The Stop hook will force you to keep working if you try.
+
+When following the loop, briefly state which iteration you're on so the user can see progress: "Iteration 2: shadow is gone but padding still off, continuing..."
 
 ## Backend Integration
 
-**API Base:** `process.env.RUST_API_URL`
-
-**Pattern:**
-
+- API base: `process.env.RUST_API_URL`
 - All API calls through `src/lib/api/client.ts`
 - Zod schemas validate ALL responses (`src/lib/api/schemas.ts`)
-- Server Components fetch directly
-- Client Components use SWR for cached fetching
+- Server Components fetch directly; Client Components use SWR
 - Mutations use Server Actions
-
-**Type safety:**
-
-- API contract types in `src/lib/api/types.ts`
-- Match Rust backend's serde structs
-- Runtime validation prevents type lies
 
 ## Agent Workflow
 
-This project uses Claude Code agents in `.claude/agents/`. They auto-trigger based on context:
+The `.claude/agents/` directory contains specialized agents that auto-trigger by description. You don't need to call them by name. The relevant ones for UI work:
 
-| Agent                   | When It Triggers                     |
-| ----------------------- | ------------------------------------ |
-| `ui-component-dev`      | Creating/modifying components        |
-| `state-management`      | State logic, hooks, context          |
-| `api-integration`       | Backend integration                  |
-| `routing-nav`           | Routes, layouts, navigation          |
-| `code-reviewer`         | After code changes                   |
-| `security-reviewer`     | Auth, input handling, sensitive code |
-| `performance-optimizer` | Performance concerns                 |
-| `accessibility-auditor` | Interactive components, forms        |
-| `design-system`         | Tokens, theme, base components       |
-| `ui-design-reviewer`    | After UI changes                     |
-| `unit-tester`           | Writing unit tests                   |
-| `e2e-tester`            | Writing E2E tests                    |
-| `repo-architect`        | Structure changes                    |
-| `build-deploy`          | Build/deploy configuration           |
-| `docs-writer`           | Documentation                        |
+- `ui-component-dev` — builds and modifies components, has Playwright access
+- `ui-design-reviewer` — visual review with mandatory Playwright screenshot
+- `accessibility-auditor` — keyboard nav and a11y verification (Playwright)
+- `performance-optimizer` — real-browser profiling (Playwright)
+- `e2e-tester` — Playwright E2E tests
+- `repo-architect` — structure enforcement
+- `code-reviewer`, `security-reviewer` — read-only review (no Playwright)
+- `state-management`, `api-integration`, `routing-nav`, `design-system`, `unit-tester`, `build-deploy`, `docs-writer` — domain specialists
 
-You don't need to call them explicitly - they activate based on what you're doing.
+The Superpowers plugin handles orchestration: planning, parallel dispatching, code review workflow, TDD, debugging methodology.
 
 ## Skills in Use
 
-This project uses these Claude Code skills:
+**Workflow (Superpowers):** brainstorming, writing-plans, executing-plans, subagent-driven-development, dispatching-parallel-agents, requesting/receiving-code-review, systematic-debugging, test-driven-development, verification-before-completion, using-git-worktrees, finishing-a-development-branch, writing-skills
 
-- `frontend-design` (Anthropic) - Distinctive UI
-- `vercel-react-best-practices` - Performance patterns
-- `vercel-composition-patterns` - Component architecture
-- `next-best-practices` - Next.js patterns
-- `web-design-guidelines` - Accessibility/UX
-- `typescript-advanced-types` - Type system
-- `webapp-testing` - Testing patterns
-- `superpowers:*` - Workflow orchestration
+**Frontend craft:**
+
+- `frontend-design` (Anthropic official)
+- `vercel-react-best-practices` (62 rules)
+- `vercel-composition-patterns`
+- `web-design-guidelines` (100+ a11y/UX rules)
+- `next-best-practices`
+- `typescript-advanced-types`
+- `webapp-testing`
+
+**Project skills:**
+
+- `visual-fix` — the screenshot-fix-screenshot loop for UI bugs
 
 ## Non-Negotiable Rules
 
-1. **Never expose secrets to client code** - audit `NEXT_PUBLIC_` vars
-2. **Validate API responses** - use Zod, don't trust the network
-3. **Server-side authorization** - never trust client-side checks
-4. **Accessibility is required** - WCAG 2.2 AA minimum
-5. **Performance budget** - LCP <2.5s, INP <200ms, CLS <0.1
-6. **No `any` types** - use `unknown` and narrow
+1. **Visual loop for UI bugs** — see "How to Fix UI Bugs" above
+2. **Never expose secrets to client code** — audit NEXT*PUBLIC* vars
+3. **Validate API responses** — use Zod, don't trust the network
+4. **Server-side authorization** — never trust client-side checks
+5. **Accessibility required** — WCAG 2.2 AA minimum
+6. **Performance budget** — LCP <2.5s, INP <200ms, CLS <0.1
+7. **No `any` types** — use `unknown` and narrow
 
 ## Architecture Principles
 
-1. **Feature-based organization** - code that changes together stays together
-2. **Public API boundaries** - features expose via index.ts
-3. **Dependency direction flows down** - app → components → lib → types
-4. **Server Components by default** - client only when interactive
-5. **Composition over configuration** - compound components, not boolean props
+1. Feature-based organization — code that changes together stays together
+2. Public API boundaries — features expose via index.ts
+3. Dependency direction flows down — app → components → lib → types
+4. Server Components by default — client only when interactive
+5. Composition over configuration — compound components, not boolean props

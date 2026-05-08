@@ -45,21 +45,15 @@ export default async function HomePage() {
   ]
 
   return (
-    <div className="px-6 py-6 max-w-7xl mx-auto">
-      <PageHeader
-        eyebrow={`// home`}
-        title={`Welcome, ${me.name.split(' ')[0]}`}
-        description={`Since you last signed in: ${recentRuns.length} runs, ${insights.filter(i => !i.id.startsWith('ins_dismissed_')).length} new insights.`}
+    <div className="mx-auto max-w-[1400px]">
+      <CounterpartyHome
+        userName={me.name}
+        orgName={org.name}
+        watched={watched}
+        recentRuns={recentRuns}
+        insights={insights}
+        pending={pending}
       />
-      <div className="mt-6">
-        <CounterpartyHome
-          userName={me.name}
-          watched={watched}
-          recentRuns={recentRuns}
-          insights={insights}
-          pending={pending}
-        />
-      </div>
     </div>
   )
 }

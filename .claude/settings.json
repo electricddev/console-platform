@@ -30,5 +30,17 @@
   "thinking": {
     "enabled": true,
     "effort": "high"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a verification gate. Review the most recent assistant turn in this conversation.\n\nIF the assistant made any UI/CSS/component code changes (modified .tsx, .css, .scss, tailwind.config, design tokens, or anything that affects visual rendering), apply this check:\n\n1. Was a Playwright MCP screenshot taken AFTER the change to verify the rendered output?\n2. Did the assistant explicitly compare the screenshot to what the user reported as wrong?\n3. Did the assistant confirm the rendered output now matches the design intent?\n\nIf ALL THREE are yes -> respond exactly: {\"ok\": true}\n\nIf ANY are no -> respond exactly: {\"ok\": false, \"reason\": \"You changed UI code but did not visually verify with a Playwright MCP screenshot. Take a screenshot of the affected route now, compare it to the original issue the user reported, and confirm the visual problem is actually fixed in the rendered output. If the screenshot still shows the bug, iterate. Do not stop until the screenshot proves the issue is resolved.\"}\n\nIF the assistant made no UI/CSS/visual code changes (e.g. it was answering a question, refactoring backend logic, writing docs), respond exactly: {\"ok\": true}\n\nReturn ONLY the JSON object, nothing else."
+          }
+        ]
+      }
+    ]
   }
 }
