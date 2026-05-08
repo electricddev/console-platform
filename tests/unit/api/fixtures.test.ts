@@ -7,6 +7,9 @@ import {
   NetworkHealthSchema,
   DatasetSchema,
   SchemaSchema,
+  TemplateSchema,
+  RunSchema,
+  AIInsightSchema,
 } from '@/lib/api/schemas'
 
 describe('fixtures', () => {
@@ -51,6 +54,20 @@ describe('feature fixtures round-trip', () => {
       if (d.schemaId === 'sch_mfone_v3' || d.schemaId === 'sch_creditbridge_v2') {
         expect(ids.has(d.schemaId)).toBe(true)
       }
+    })
+  })
+})
+
+describe('templates/runs/insights round-trip', () => {
+  it('templates', () => fixtures.templates.forEach((t) => TemplateSchema.parse(t)))
+  it('runs', () => fixtures.runs.forEach((r) => RunSchema.parse(r)))
+  it('insights', () => fixtures.insights.forEach((i) => AIInsightSchema.parse(i)))
+  it('every run references an existing template + dataset', () => {
+    const tIds = new Set(fixtures.templates.map((t) => t.id))
+    const dIds = new Set(fixtures.datasets.map((d) => d.id))
+    fixtures.runs.forEach((r) => {
+      expect(tIds.has(r.templateId)).toBe(true)
+      expect(dIds.has(r.datasetId)).toBe(true)
     })
   })
 })
