@@ -503,3 +503,65 @@ export const ActiveSessionSchema = z.object({
   current: z.boolean(),
 })
 export type ActiveSession = z.infer<typeof ActiveSessionSchema>
+
+// ---------- Notebooks ----------
+
+export const NotebookCellSchema = z.discriminatedUnion('kind', [
+  z.object({ id: z.string(), kind: z.literal('markdown'), markdown: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('query'), templateId: z.string().optional(), dsl: z.string(), parameters: z.record(z.unknown()).default({}), runId: z.string().optional() }),
+  z.object({ id: z.string(), kind: z.literal('visualization'), runId: z.string(), shape: z.enum(['bar', 'line', 'distribution']) }),
+  z.object({ id: z.string(), kind: z.literal('attestation'), runIds: z.array(z.string()).min(1) }),
+])
+export type NotebookCell = z.infer<typeof NotebookCellSchema>
+
+export const NotebookSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  authorId: z.string(),
+  authorOrgId: z.string(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  cells: z.array(NotebookCellSchema),
+  shareToken: z.string().optional(),
+})
+export type Notebook = z.infer<typeof NotebookSchema>
+
+// ---------- Copilot ----------
+
+export const CopilotMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant', 'system']),
+  text: z.string(),
+  createdAt: z.string().datetime(),
+  evidenceRunIds: z.array(z.string()).default([]),
+  confidence: z.number().min(0).max(1).optional(),
+  toolCalls: z.array(z.object({
+    kind: z.enum(['execute-template', 'list-datasets', 'compile-template']),
+    input: z.unknown(),
+    output: z.unknown().optional(),
+  })).default([]),
+})
+export type CopilotMessage = z.infer<typeof CopilotMessageSchema>
+
+export const CopilotThreadSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  messages: z.array(CopilotMessageSchema),
+})
+export type CopilotThread = z.infer<typeof CopilotThreadSchema>
+
+// ---------- Status ----------
+
+export const StatusReportSchema = z.object({
+  overall: z.enum(['operational', 'degraded', 'outage']),
+  components: z.array(z.object({
+    name: z.string(),
+    status: z.enum(['operational', 'degraded', 'outage']),
+    message: z.string().optional(),
+  })),
+  updatedAt: z.string().datetime(),
+})
+export type StatusReport = z.infer<typeof StatusReportSchema>

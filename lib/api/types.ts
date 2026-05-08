@@ -39,4 +39,9 @@ export type {
   NotificationPref,
   Invoice,
   ActiveSession,
+  NotebookCell,
+  Notebook,
+  CopilotMessage,
+  CopilotThread,
+  StatusReport,
 } from './schemas'
