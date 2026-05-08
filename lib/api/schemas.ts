@@ -117,3 +117,197 @@ export const WorkspaceSchema = z.object({
   role: RoleSchema,
 })
 export type Workspace = z.infer<typeof WorkspaceSchema>
+
+// ---------- Datasets ----------
+
+export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
+
+export const FieldExposureSchema = z.enum(['queryable', 'aggregated-only', 'private'])
+
+export const FieldTypeSchema = z.enum(['string', 'number', 'date', 'currency', 'enum', 'bool'])
+
+export const SchemaFieldSchema = z.object({
+  name: z.string(),
+  type: FieldTypeSchema,
+  exposure: FieldExposureSchema,
+  description: z.string().optional(),
+  isPii: z.boolean().default(false),
+  minBucketSize: z.number().int().nonnegative().optional(),
+  allowedOperators: z.array(z.enum(['sum', 'avg', 'count', 'min', 'max'])).optional(),
+  sample: z.string().optional(),
+})
+export type SchemaField = z.infer<typeof SchemaFieldSchema>
+
+export const SchemaSchema = z.object({
+  id: z.string(),
+  datasetId: z.string(),
+  version: z.number().int().nonnegative(),
+  publishedAt: z.string().datetime(),
+  fields: z.array(SchemaFieldSchema),
+  policy: z.object({
+    kAnonymity: z.number().int().nonnegative(),
+    maxQueriesPerCounterpartyPerDay: z.number().int().nonnegative(),
+    allowedTimeRanges: z.array(z.string()).optional(),
+  }),
+  signedBy: z.string(),
+  signedAt: z.string().datetime(),
+  changeSummary: z.string().optional(),
+})
+export type Schema = z.infer<typeof SchemaSchema>
+
+export const DatasetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  originatorOrgId: z.string(),
+  assetClass: AssetClassSchema,
+  geography: z.string().optional(),
+  schemaId: z.string(),
+  schemaVersion: z.number().int().nonnegative(),
+  recordCount: z.number().int().nonnegative(),
+  lastAttestedAt: z.string().datetime(),
+  completenessPct: z.number().min(0).max(1),
+  status: DatasetStatusSchema,
+  templateCount: z.number().int().nonnegative(),
+  lifetimeRunCount: z.number().int().nonnegative(),
+  attestation: AttestationSchema,
+  watching: z.boolean().default(false),
+  alerts: z.array(z.object({
+    id: z.string(),
+    severity: SeveritySchema,
+    title: z.string(),
+    body: z.string(),
+    createdAt: z.string().datetime(),
+  })).default([]),
+})
+export type Dataset = z.infer<typeof DatasetSchema>
+
+// ---------- Templates ----------
+
+export const TemplateApprovalStateSchema = z.enum([
+  'unsubmitted',
+  'pending',
+  'approved',
+  'denied',
+  'changes-requested',
+])
+
+export const ParamTypeSchema = z.enum(['number', 'string', 'date', 'enum', 'bool', 'duration'])
+
+export const TemplateParameterSchema = z.object({
+  name: z.string(),
+  type: ParamTypeSchema,
+  description: z.string().optional(),
+  required: z.boolean().default(true),
+  defaultValue: z.unknown().optional(),
+  enumValues: z.array(z.string()).optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+})
+export type TemplateParameter = z.infer<typeof TemplateParameterSchema>
+
+export const OutputSchemaSchema = z.object({
+  shape: z.enum(['scalar', 'tabular', 'time-series', 'distribution']),
+  columns: z.array(z.object({
+    name: z.string(),
+    type: FieldTypeSchema,
+  })).optional(),
+})
+export type OutputSchema = z.infer<typeof OutputSchemaSchema>
+
+export const TemplateApprovalSchema = z.object({
+  datasetId: z.string(),
+  state: TemplateApprovalStateSchema,
+  approvedAt: z.string().datetime().optional(),
+  approverId: z.string().optional(),
+  signature: z.string().optional(),
+  constraints: z.array(z.object({
+    paramName: z.string(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    minBucketSize: z.number().int().optional(),
+  })).optional(),
+  rationale: z.string().optional(),
+})
+export type TemplateApproval = z.infer<typeof TemplateApprovalSchema>
+
+export const TemplateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  authorId: z.string(),
+  authorOrgId: z.string(),
+  versionId: z.string(),
+  versionNumber: z.number().int().nonnegative(),
+  lastModifiedAt: z.string().datetime(),
+  parameters: z.array(TemplateParameterSchema),
+  outputSchema: OutputSchemaSchema,
+  dsl: z.string(),
+  approvals: z.array(TemplateApprovalSchema),
+  tags: z.array(z.string()).default([]),
+  compatibleAssetClasses: z.array(AssetClassSchema).default([]),
+  archived: z.boolean().default(false),
+  averageRuntimeMs: z.number().int().nonnegative().optional(),
+  forkOfTemplateId: z.string().optional(),
+})
+export type Template = z.infer<typeof TemplateSchema>
+
+// ---------- Runs ----------
+
+export const RunStatusSchema = z.enum([
+  'queued',
+  'running',
+  'attesting',
+  'anchoring',
+  'completed',
+  'failed',
+  'disputed',
+])
+export type RunStatus = z.infer<typeof RunStatusSchema>
+
+export const RunResultSchema = z.discriminatedUnion('shape', [
+  z.object({
+    shape: z.literal('scalar'),
+    value: z.union([z.number(), z.string(), z.boolean()]),
+    unit: z.string().optional(),
+  }),
+  z.object({
+    shape: z.literal('tabular'),
+    columns: z.array(z.string()),
+    rows: z.array(z.array(z.union([z.number(), z.string(), z.null()]))),
+  }),
+  z.object({
+    shape: z.literal('time-series'),
+    metric: z.string(),
+    series: z.array(z.object({
+      name: z.string(),
+      points: z.array(z.object({ t: z.string().datetime(), v: z.number() })),
+    })),
+  }),
+  z.object({
+    shape: z.literal('distribution'),
+    bins: z.array(z.object({ label: z.string(), value: z.number() })),
+  }),
+])
+export type RunResult = z.infer<typeof RunResultSchema>
+
+export const RunSchema = z.object({
+  id: z.string(),
+  templateId: z.string(),
+  templateVersionId: z.string(),
+  datasetId: z.string(),
+  schemaVersionAtRun: z.number().int().nonnegative(),
+  runnerId: z.string(),
+  runnerOrgId: z.string(),
+  parameters: z.record(z.unknown()),
+  status: RunStatusSchema,
+  queuedAt: z.string().datetime(),
+  startedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+  durationMs: z.number().int().nonnegative().optional(),
+  result: RunResultSchema.optional(),
+  attestation: AttestationSchema.optional(),
+  error: z.string().optional(),
+  disputeReason: z.string().optional(),
+})
+export type Run = z.infer<typeof RunSchema>
