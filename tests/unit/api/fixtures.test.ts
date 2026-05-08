@@ -5,6 +5,8 @@ import {
   UserSchema,
   NotificationSchema,
   NetworkHealthSchema,
+  DatasetSchema,
+  SchemaSchema,
 } from '@/lib/api/schemas'
 
 describe('fixtures', () => {
@@ -32,5 +34,23 @@ describe('fixtures', () => {
 
   it('network health round-trips', () => {
     NetworkHealthSchema.parse(fixtures.networkHealth)
+  })
+})
+
+describe('feature fixtures round-trip', () => {
+  it('datasets', () => {
+    fixtures.datasets.forEach((d) => DatasetSchema.parse(d))
+    expect(fixtures.datasets.length).toBeGreaterThan(0)
+  })
+  it('schemas', () => {
+    fixtures.schemas.forEach((s) => SchemaSchema.parse(s))
+  })
+  it('every dataset has a referenced schema', () => {
+    const ids = new Set(fixtures.schemas.map((s) => s.id))
+    fixtures.datasets.forEach((d) => {
+      if (d.schemaId === 'sch_mfone_v3' || d.schemaId === 'sch_creditbridge_v2') {
+        expect(ids.has(d.schemaId)).toBe(true)
+      }
+    })
   })
 })
