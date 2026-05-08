@@ -26,8 +26,10 @@ export function Topbar(props: Props) {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform)
-      const meta = isMac ? e.metaKey : e.ctrlKey
+      // Accept both Cmd (Mac) and Ctrl (Win/Linux) so the shortcut works
+      // cross-platform and in headless test runners (where navigator.platform
+      // may report "Win32" even on macOS).
+      const meta = e.metaKey || e.ctrlKey
       if (meta && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         palette.toggle()
