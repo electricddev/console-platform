@@ -12,6 +12,12 @@ import { ingestionFixtures } from './ingestion'
 import { approvalFixtures } from './approvals'
 import { accessFixtures } from './access'
 import { auditFixtures } from './audit'
+import { memberFixtures } from './members'
+import { walletFixtures } from './wallets'
+import { apiKeyFixtures } from './api-keys'
+import { webhookFixtures } from './webhooks'
+import { invoiceFixtures } from './invoices'
+import { sessionFixtures } from './sessions'
 
 export const fixtures = {
   orgs: orgFixtures,
@@ -28,6 +34,12 @@ export const fixtures = {
   approvals: approvalFixtures,
   accessGrants: accessFixtures,
   audit: auditFixtures,
+  members: memberFixtures,
+  wallets: walletFixtures,
+  apiKeys: apiKeyFixtures,
+  webhooks: webhookFixtures,
+  invoices: invoiceFixtures,
+  sessions: sessionFixtures,
 } as const
 
 export { DEMO_PERSONA_IDS }

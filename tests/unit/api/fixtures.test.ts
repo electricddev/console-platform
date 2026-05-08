@@ -81,3 +81,13 @@ import { AuditEntrySchema } from '@/lib/api/schemas'
 describe('audit fixtures round-trip', () => {
   it('audit', () => fixtures.audit.forEach((e) => AuditEntrySchema.parse(e)))
 })
+
+import { MemberSchema, WalletSchema, ApiKeySchema, WebhookSchema, InvoiceSchema, ActiveSessionSchema } from '@/lib/api/schemas'
+describe('settings fixtures round-trip', () => {
+  it('members', () => fixtures.members.forEach((m) => MemberSchema.parse(m)))
+  it('wallets', () => fixtures.wallets.forEach((w) => WalletSchema.parse(w)))
+  it('api keys', () => fixtures.apiKeys.forEach((k) => ApiKeySchema.parse(k)))
+  it('webhooks', () => fixtures.webhooks.forEach((w) => WebhookSchema.parse(w)))
+  it('invoices', () => fixtures.invoices.forEach((i) => InvoiceSchema.parse(i)))
+  it('sessions', () => fixtures.sessions.forEach((s) => ActiveSessionSchema.parse(s)))
+})
