@@ -32,4 +32,11 @@ export type {
   AuditAction,
   AuditResourceType,
   AuditEntry,
+  Member,
+  Wallet,
+  ApiKey,
+  Webhook,
+  NotificationPref,
+  Invoice,
+  ActiveSession,
 } from './schemas'

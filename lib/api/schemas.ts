@@ -426,3 +426,80 @@ export const AuditEntrySchema = z.object({
   context: z.record(z.unknown()).optional(),
 })
 export type AuditEntry = z.infer<typeof AuditEntrySchema>
+
+// ---------- Settings ----------
+
+export const MemberRoleSchema = z.enum(['admin', 'editor', 'analyst', 'viewer', 'approver'])
+
+export const MemberSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  role: MemberRoleSchema,
+  invitedAt: z.string().datetime(),
+  acceptedAt: z.string().datetime().optional(),
+})
+export type Member = z.infer<typeof MemberSchema>
+
+export const WalletSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  address: z.string(),                       // 0x...
+  kind: z.enum(['hot', 'hardware', 'multisig']),
+  isPrimary: z.boolean(),
+  addedAt: z.string().datetime(),
+})
+export type Wallet = z.infer<typeof WalletSchema>
+
+export const ApiKeyScopeSchema = z.enum(['read', 'execute', 'admin'])
+
+export const ApiKeySchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  prefix: z.string(),                        // visible prefix; secret is never returned
+  scopes: z.array(ApiKeyScopeSchema),
+  createdAt: z.string().datetime(),
+  lastUsedAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
+})
+export type ApiKey = z.infer<typeof ApiKeySchema>
+
+export const WebhookSchema = z.object({
+  id: z.string(),
+  url: z.string().url(),
+  events: z.array(z.enum(['run.completed', 'attestation.published', 'schema.changed', 'access.granted', 'access.revoked'])),
+  active: z.boolean(),
+  createdAt: z.string().datetime(),
+  failureCount: z.number().int().nonnegative(),
+})
+export type Webhook = z.infer<typeof WebhookSchema>
+
+export const NotificationChannelSchema = z.enum(['email', 'in-app', 'webhook'])
+export const NotificationPrefSchema = z.object({
+  kind: z.string(),                          // notification kind
+  channels: z.array(NotificationChannelSchema),
+})
+export type NotificationPref = z.infer<typeof NotificationPrefSchema>
+
+export const InvoiceSchema = z.object({
+  id: z.string(),
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  amountUsd: z.number(),
+  status: z.enum(['paid', 'open', 'void']),
+  url: z.string().url().optional(),
+})
+export type Invoice = z.infer<typeof InvoiceSchema>
+
+export const ActiveSessionSchema = z.object({
+  id: z.string(),
+  device: z.string(),
+  ip: z.string(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  createdAt: z.string().datetime(),
+  lastSeenAt: z.string().datetime(),
+  current: z.boolean(),
+})
+export type ActiveSession = z.infer<typeof ActiveSessionSchema>
