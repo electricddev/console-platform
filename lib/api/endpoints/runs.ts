@@ -55,46 +55,48 @@ const att = (seed: string) => ({
   anchoredAt: new Date().toISOString(),
 })
 
+async function executeTemplateInner(ctx: RequestContext, input: ExecuteInput): Promise<Run> {
+  if (!ctx.user) throw new MockApiError('Unauthenticated', 401)
+  const id = 'run_' + Math.random().toString(36).slice(2, 8)
+  const now = new Date().toISOString()
+  const run: Run = {
+    id,
+    templateId: input.templateId,
+    templateVersionId: input.templateId + '_v_latest',
+    datasetId: input.datasetId,
+    schemaVersionAtRun: 3,
+    runnerId: ctx.user.id,
+    runnerOrgId: ctx.user.orgId,
+    parameters: input.parameters,
+    status: 'queued',
+    queuedAt: now,
+  }
+  state.unshift(run)
+  publish(Topics.RUNS_PROGRESS, run)
+
+  // Simulate progression: queued → running → attesting → anchoring → completed.
+  const progression: RunStatus[] = ['running', 'attesting', 'anchoring', 'completed']
+  progression.forEach((s, i) =>
+    setTimeout(() => {
+      const r = state.find((x) => x.id === id)
+      if (!r || r.status === 'completed' || r.status === 'failed') return
+      r.status = s
+      if (s === 'running') r.startedAt = new Date().toISOString()
+      if (s === 'completed') {
+        r.completedAt = new Date().toISOString()
+        r.durationMs = (i + 1) * 600
+        r.result = { shape: 'scalar', value: 0.823, unit: 'rate' }
+        r.attestation = att(id)
+      }
+      publish(Topics.RUNS_PROGRESS, { ...r })
+    }, (i + 1) * 600)
+  )
+
+  return RunSchema.parse(run)
+}
+
 export const executeTemplate = mockEndpoint(
-  async (ctx: RequestContext, _signal, input: ExecuteInput): Promise<Run> => {
-    if (!ctx.user) throw new MockApiError('Unauthenticated', 401)
-    const id = 'run_' + Math.random().toString(36).slice(2, 8)
-    const now = new Date().toISOString()
-    const run: Run = {
-      id,
-      templateId: input.templateId,
-      templateVersionId: input.templateId + '_v_latest',
-      datasetId: input.datasetId,
-      schemaVersionAtRun: 3,
-      runnerId: ctx.user.id,
-      runnerOrgId: ctx.user.orgId,
-      parameters: input.parameters,
-      status: 'queued',
-      queuedAt: now,
-    }
-    state.unshift(run)
-    publish(Topics.RUNS_PROGRESS, run)
-
-    // Simulate progression: queued → running → attesting → anchoring → completed.
-    const progression: RunStatus[] = ['running', 'attesting', 'anchoring', 'completed']
-    progression.forEach((s, i) =>
-      setTimeout(() => {
-        const r = state.find((x) => x.id === id)
-        if (!r || r.status === 'completed' || r.status === 'failed') return
-        r.status = s
-        if (s === 'running') r.startedAt = new Date().toISOString()
-        if (s === 'completed') {
-          r.completedAt = new Date().toISOString()
-          r.durationMs = (i + 1) * 600
-          r.result = { shape: 'scalar', value: 0.823, unit: 'rate' }
-          r.attestation = att(id)
-        }
-        publish(Topics.RUNS_PROGRESS, { ...r })
-      }, (i + 1) * 600)
-    )
-
-    return RunSchema.parse(run)
-  },
+  async (ctx: RequestContext, _signal, input: ExecuteInput) => executeTemplateInner(ctx, input),
   { latencyMs: 220 }
 )
 
@@ -102,7 +104,7 @@ export const retryRun = mockEndpoint(
   async (ctx: RequestContext, _signal, runId: string): Promise<Run> => {
     const src = state.find((x) => x.id === runId)
     if (!src) throw new MockApiError('Run not found', 404)
-    return executeTemplate(ctx, {
+    return executeTemplateInner(ctx, {
       templateId: src.templateId,
       datasetId: src.datasetId,
       parameters: src.parameters as Record<string, unknown>,
