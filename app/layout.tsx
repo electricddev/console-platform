@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
-import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google';
+import type { Metadata } from 'next'
+import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 
-import "./globals.css";
-
-
+import './globals.css'
 
 const instrumentSerif = Instrument_Serif({
   weight: '400',
@@ -11,39 +10,38 @@ const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
   variable: '--font-serif',
   display: 'swap',
-});
+})
 
 const geistSans = Geist({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
-});
+})
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
-});
+})
 
 export const metadata: Metadata = {
-  title: "Hyve — Verifiable Data for Onchain Markets",
+  title: 'Hyve Data Clean Room',
   description:
-    "Hyve ships storage, confidential compute, and on-chain attestation in a single substrate.",
-};
+    'Verifiable, confidential data collaboration on tokenized RWAs.',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       className={`${instrumentSerif.variable} ${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-full flex flex-col font-sans antialiased bg-background text-foreground">
+      <body className="min-h-screen flex flex-col font-sans antialiased bg-background text-foreground">
         {children}
+        <Toaster richColors closeButton position="bottom-right" />
       </body>
     </html>
-  );
+  )
 }
