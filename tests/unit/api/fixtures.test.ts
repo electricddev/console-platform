@@ -76,3 +76,8 @@ describe('originator fixtures round-trip', () => {
   it('approvals', () => fixtures.approvals.forEach((a) => ApprovalRequestSchema.parse(a)))
   it('access grants', () => fixtures.accessGrants.forEach((g) => AccessGrantSchema.parse(g)))
 })
+
+import { AuditEntrySchema } from '@/lib/api/schemas'
+describe('audit fixtures round-trip', () => {
+  it('audit', () => fixtures.audit.forEach((e) => AuditEntrySchema.parse(e)))
+})
