@@ -91,3 +91,10 @@ describe('settings fixtures round-trip', () => {
   it('invoices', () => fixtures.invoices.forEach((i) => InvoiceSchema.parse(i)))
   it('sessions', () => fixtures.sessions.forEach((s) => ActiveSessionSchema.parse(s)))
 })
+
+import { NotebookSchema, CopilotThreadSchema, StatusReportSchema } from '@/lib/api/schemas'
+describe('v2 fixtures round-trip', () => {
+  it('notebooks', () => fixtures.notebooks.forEach((n) => NotebookSchema.parse(n)))
+  it('copilot threads', () => fixtures.copilotThreads.forEach((t) => CopilotThreadSchema.parse(t)))
+  it('status', () => StatusReportSchema.parse(fixtures.status))
+})

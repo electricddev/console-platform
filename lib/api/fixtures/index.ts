@@ -18,6 +18,9 @@ import { apiKeyFixtures } from './api-keys'
 import { webhookFixtures } from './webhooks'
 import { invoiceFixtures } from './invoices'
 import { sessionFixtures } from './sessions'
+import { notebookFixtures } from './notebooks'
+import { copilotFixtures } from './copilot'
+import { statusFixture } from './status'
 
 export const fixtures = {
   orgs: orgFixtures,
@@ -40,6 +43,9 @@ export const fixtures = {
   webhooks: webhookFixtures,
   invoices: invoiceFixtures,
   sessions: sessionFixtures,
+  notebooks: notebookFixtures,
+  copilotThreads: copilotFixtures,
+  status: statusFixture,
 } as const
 
 export { DEMO_PERSONA_IDS }
