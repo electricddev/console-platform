@@ -6,6 +6,7 @@ import { getCounterpartyInsights } from '@/lib/api/endpoints/insights'
 import { fixtures } from '@/lib/api/fixtures'
 import { PageHeader } from '@/components/common/page-header'
 import { CounterpartyHome } from '@/components/features/home/counterparty-home'
+import { OriginatorHome } from '@/components/features/home/originator-home'
 
 export default async function HomePage() {
   const session = await requireUser()
@@ -20,13 +21,25 @@ export default async function HomePage() {
   const org = fixtures.orgs.find((o) => o.id === me.orgId)!
 
   if (me.role === 'originator') {
+    const [sources, pendingApprovals, recentRuns] = await Promise.all([
+      (await import('@/lib/api/endpoints/sources')).listSources(ctx),
+      (await import('@/lib/api/endpoints/approvals')).listApprovals(ctx, { state: 'pending' }),
+      (await import('@/lib/api/endpoints/runs')).listRuns(ctx, {}),
+    ])
     return (
-      <div className="px-6 py-6 max-w-6xl mx-auto">
+      <div className="px-6 py-6 max-w-7xl mx-auto">
         <PageHeader
-          eyebrow="// hyve · originator"
+          eyebrow="// home · originator"
           title={`Welcome, ${me.name.split(' ')[0]}`}
-          description={`${org.name} — Plan 03 fills this with originator home.`}
+          description={`${org.name} — control plane for your data`}
         />
+        <div className="mt-6">
+          <OriginatorHome
+            sources={sources}
+            pendingApprovals={pendingApprovals}
+            recentRuns={recentRuns}
+          />
+        </div>
       </div>
     )
   }

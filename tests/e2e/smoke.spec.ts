@@ -22,8 +22,9 @@ test.describe('Foundation smoke', () => {
   test('signed-in originator sees originator-only nav', async ({ page }) => {
     await page.goto('/login')
     await page.getByRole('button', { name: /demo originator/i }).click()
-    await expect(page.getByRole('link', { name: /sources/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /approvals/i })).toBeVisible()
+    const sidebar = page.getByRole('complementary', { name: /primary navigation/i })
+    await expect(sidebar.getByRole('link', { name: 'Sources', exact: true })).toBeVisible()
+    await expect(sidebar.getByRole('link', { name: 'Approvals', exact: true })).toBeVisible()
   })
 
   test('signing out returns to /login', async ({ page }) => {
