@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,13 +17,14 @@ export function AskAnythingInput({
   suggestions: Suggestion[]
   onAsk: (q: string) => Promise<{ href: string }>
 }) {
+  const router = useRouter()
   const [q, setQ] = useState('')
   const [isPending, start] = useTransition()
 
   function ask(text: string) {
     start(async () => {
       const r = await onAsk(text)
-      window.location.assign(r.href)
+      router.push(r.href)
     })
   }
 

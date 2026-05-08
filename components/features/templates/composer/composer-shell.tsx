@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,6 +25,7 @@ type Props = {
 }
 
 export function ComposerShell(props: Props) {
+  const router = useRouter()
   const [name, setName] = useState(props.initialName ?? '')
   const [description, setDescription] = useState('')
   const [dsl, setDsl] = useState(props.initialDsl ?? '')
@@ -34,7 +36,7 @@ export function ComposerShell(props: Props) {
     setSaving(true)
     try {
       const result = await props.onSaveDraft({ name, description, dsl })
-      window.location.assign(`/templates/${result.id}`)
+      router.push(`/templates/${result.id}`)
     } finally {
       setSaving(false)
     }
