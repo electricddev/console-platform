@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { fmtNumber } from '@/lib/format'
 import { FilterPopover } from './filter-popover'
 import { EmptyState } from './empty-state'
+import { ErrorState } from './error-state'
 import { LoadingState } from './loading-state'
 
 const PAGE_SIZE = 50
@@ -89,14 +90,14 @@ export function DataGrid({
 
   if (!schema.ready) {
     if (schema.error) {
-      return <EmptyState message={`Failed to load schema: ${schema.error.message}`} />
+      return <ErrorState message={`Failed to load schema: ${schema.error.message}`} />
     }
     return <LoadingState label="Loading schema…" />
   }
 
   if (!query.ready) {
     if (query.error) {
-      return <EmptyState message={`Query failed: ${query.error.message}`} />
+      return <ErrorState message={`Query failed: ${query.error.message}`} />
     }
     return <LoadingState label="Running query…" />
   }

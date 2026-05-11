@@ -4,6 +4,7 @@ import { useMemo, useReducer } from 'react'
 import type { ColumnFilter, ResolvedColumn, SortState, TableDescriptor } from '@/lib/data/types'
 import { useDuckDB } from '@/lib/data/use-duckdb'
 import { LoadingState } from './loading-state'
+import { ErrorState } from './error-state'
 import { TablePicker } from './table-picker'
 import { DataGrid } from './data-grid'
 import { ExploreToolbar } from './explore-toolbar'
@@ -73,9 +74,10 @@ export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
-        Failed to start the query engine: {error.message}
-      </div>
+      <ErrorState
+        message={`Failed to start the query engine: ${error.message}`}
+        onRetry={() => window.location.reload()}
+      />
     )
   }
 
