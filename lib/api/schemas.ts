@@ -509,7 +509,16 @@ export type ActiveSession = z.infer<typeof ActiveSessionSchema>
 
 export const NotebookCellSchema = z.discriminatedUnion('kind', [
   z.object({ id: z.string(), kind: z.literal('markdown'), markdown: z.string() }),
-  z.object({ id: z.string(), kind: z.literal('query'), templateId: z.string().optional(), dsl: z.string(), parameters: z.record(z.unknown()).default({}), runId: z.string().optional() }),
+  z.object({
+    id: z.string(),
+    kind: z.literal('query'),
+    templateId: z.string().optional(),
+    dsl: z.string(),
+    parameters: z.record(z.unknown()).default({}),
+    runId: z.string().optional(),
+    methodologyId: z.string().optional(),
+    renderShape: z.enum(['metric', 'comparison', 'time-series', 'breakdown', 'table']).optional(),
+  }),
   z.object({ id: z.string(), kind: z.literal('visualization'), runId: z.string(), shape: z.enum(['bar', 'line', 'distribution']) }),
   z.object({ id: z.string(), kind: z.literal('attestation'), runIds: z.array(z.string()).min(1) }),
 ])
