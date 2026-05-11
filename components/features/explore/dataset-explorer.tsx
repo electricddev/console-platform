@@ -1,12 +1,13 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useMemo, useReducer } from 'react'
 import type { ColumnFilter, ResolvedColumn, SortState, TableDescriptor } from '@/lib/data/types'
 import { useDuckDB } from '@/lib/data/use-duckdb'
 import { LoadingState } from './loading-state'
 import { TablePicker } from './table-picker'
 import { DataGrid } from './data-grid'
 import { ExploreToolbar } from './explore-toolbar'
+import { ColumnProfilePanel } from './column-profile-panel'
 
 type ExplorerState = {
   activeTableId: string
@@ -14,6 +15,7 @@ type ExplorerState = {
   sort: SortState
   totalCount: number | null
   columns: ResolvedColumn[]
+  focusedColumn: ResolvedColumn | null
 }
 
 type ExplorerAction =
@@ -23,23 +25,34 @@ type ExplorerAction =
   | { type: 'remove-filter'; column: string }
   | { type: 'clear-filters' }
   | { type: 'set-metrics'; totalCount: number; columns: ResolvedColumn[] }
+  | { type: 'set-focused-column'; column: ResolvedColumn }
 
-function reducer(state: ExplorerState, action: ExplorerAction): ExplorerState {
-  switch (action.type) {
-    case 'set-table':
-      return { activeTableId: action.id, filters: [], sort: null, totalCount: null, columns: [] }
-    case 'set-sort':
-      return { ...state, sort: action.sort }
-    case 'upsert-filter': {
-      const others = state.filters.filter((f) => f.column !== action.filter.column)
-      return { ...state, filters: [...others, action.filter] }
+function makeReducer(tables: TableDescriptor[]) {
+  return function reducer(state: ExplorerState, action: ExplorerAction): ExplorerState {
+    switch (action.type) {
+      case 'set-table':
+        return { activeTableId: action.id, filters: [], sort: null, totalCount: null, columns: [], focusedColumn: null }
+      case 'set-sort':
+        return { ...state, sort: action.sort }
+      case 'upsert-filter': {
+        const others = state.filters.filter((f) => f.column !== action.filter.column)
+        return { ...state, filters: [...others, action.filter] }
+      }
+      case 'remove-filter':
+        return { ...state, filters: state.filters.filter((f) => f.column !== action.column) }
+      case 'clear-filters':
+        return { ...state, filters: [] }
+      case 'set-metrics': {
+        const pk = tables.find((t) => t.id === state.activeTableId)?.primaryKey
+        const pkCol = action.columns.find((c) => c.id === pk) ?? action.columns[0] ?? null
+        const focusedColumn = state.focusedColumn && action.columns.some((c) => c.id === state.focusedColumn!.id)
+          ? state.focusedColumn
+          : pkCol
+        return { ...state, totalCount: action.totalCount, columns: action.columns, focusedColumn }
+      }
+      case 'set-focused-column':
+        return { ...state, focusedColumn: action.column }
     }
-    case 'remove-filter':
-      return { ...state, filters: state.filters.filter((f) => f.column !== action.column) }
-    case 'clear-filters':
-      return { ...state, filters: [] }
-    case 'set-metrics':
-      return { ...state, totalCount: action.totalCount, columns: action.columns }
   }
 }
 
@@ -47,12 +60,15 @@ type Props = { datasetId: string; tables: TableDescriptor[] }
 
 export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
   const { ready, db, error } = useDuckDB()
+
+  const reducer = useMemo(() => makeReducer(tables), [tables])
   const [state, dispatch] = useReducer(reducer, {
     activeTableId: tables[0]?.id ?? '',
     filters: [],
     sort: null,
     totalCount: null,
     columns: [],
+    focusedColumn: null,
   })
 
   if (error) {
@@ -97,14 +113,17 @@ export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
               onUpsertFilter={(f) => dispatch({ type: 'upsert-filter', filter: f })}
               onRemoveFilter={(c) => dispatch({ type: 'remove-filter', column: c })}
               onClearFilters={() => dispatch({ type: 'clear-filters' })}
+              onFocusColumn={(c) => dispatch({ type: 'set-focused-column', column: c })}
               onMetrics={(m) => dispatch({ type: 'set-metrics', totalCount: m.totalCount, columns: m.columns })}
             />
           )}
         </div>
       </main>
-      <aside className="hidden rounded-lg border border-border bg-surface/40 p-3 text-sm md:block">
-        <p className="text-muted-foreground">Profile panel placeholder.</p>
-      </aside>
+      <ColumnProfilePanel
+        tableId={state.activeTableId}
+        column={state.focusedColumn}
+        filters={state.filters}
+      />
     </div>
   )
 }
