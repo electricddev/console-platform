@@ -1,8 +1,12 @@
 'use client'
 
 import * as duckdb from '@duckdb/duckdb-wasm'
-import duckdb_mvp_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
-import duckdb_mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'
+
+// Static public paths — avoids ?url imports which are not supported by Turbopack.
+// Files are copied to public/duckdb/ at build time (see package.json postinstall or
+// the copies committed under public/duckdb/).
+const DUCKDB_WASM_URL = '/duckdb/duckdb-mvp.wasm'
+const DUCKDB_WORKER_URL = '/duckdb/duckdb-browser-mvp.worker.js'
 
 let dbPromise: Promise<duckdb.AsyncDuckDB> | null = null
 
@@ -16,8 +20,8 @@ const PARQUET_FILES = [
 
 async function init(): Promise<duckdb.AsyncDuckDB> {
   const bundle: duckdb.DuckDBBundle = {
-    mainModule: duckdb_mvp_wasm,
-    mainWorker: duckdb_mvp_worker,
+    mainModule: DUCKDB_WASM_URL,
+    mainWorker: DUCKDB_WORKER_URL,
     pthreadWorker: null,
   }
   const worker = new Worker(bundle.mainWorker!)
