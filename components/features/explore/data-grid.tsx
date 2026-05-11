@@ -1,19 +1,20 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
-import type { ResolvedColumn, SortState, TableDescriptor } from '@/lib/data/types'
+import type { ColumnFilter, ResolvedColumn, SortState, TableDescriptor } from '@/lib/data/types'
 import { Cell } from '@/lib/data/format-cell'
 import { useTableSchema } from '@/lib/data/use-table-schema'
 import { useTableQuery } from '@/lib/data/use-table-query'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { fmtNumber } from '@/lib/format'
+import { FilterPopover } from './filter-popover'
 import { EmptyState } from './empty-state'
 import { LoadingState } from './loading-state'
 
@@ -21,17 +22,37 @@ const PAGE_SIZE = 50
 
 type Props = {
   table: TableDescriptor
+  filters: ColumnFilter[]
+  sort: SortState
+  onChangeSort: (sort: SortState) => void
+  onUpsertFilter: (filter: ColumnFilter) => void
+  onRemoveFilter: (column: string) => void
+  onClearFilters: () => void
   onFocusColumn?: (column: ResolvedColumn) => void
 }
 
-export function DataGrid({ table, onFocusColumn }: Props) {
+export function DataGrid({
+  table,
+  filters,
+  sort,
+  onChangeSort,
+  onUpsertFilter,
+  onRemoveFilter,
+  onClearFilters,
+  onFocusColumn,
+}: Props) {
   const schema = useTableSchema(table)
   const [page, setPage] = useState(0)
-  const [sort, setSort] = useState<SortState>(table.defaultSort ?? null)
+
+  // Reset page when filters or sort change
+  useEffect(() => {
+    setPage(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(filters), JSON.stringify(sort)])
 
   const query = useTableQuery({
     table: table.id,
-    filters: [],
+    filters,
     sort,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
@@ -71,17 +92,33 @@ export function DataGrid({ table, onFocusColumn }: Props) {
   }
 
   if (query.rows.length === 0) {
+    if (filters.length > 0) {
+      return (
+        <EmptyState
+          message="No rows match these filters."
+          action={
+            <Button variant="outline" size="sm" onClick={onClearFilters}>
+              Clear filters
+            </Button>
+          }
+        />
+      )
+    }
     return <EmptyState message="No rows in this table." />
   }
 
   const totalPages = Math.max(1, Math.ceil(query.totalCount / PAGE_SIZE))
 
   function toggleSort(columnId: string) {
-    setSort((prev) => {
-      if (!prev || prev.column !== columnId) return { column: columnId, dir: 'asc' }
-      if (prev.dir === 'asc') return { column: columnId, dir: 'desc' }
-      return null
-    })
+    let nextSort: SortState
+    if (!sort || sort.column !== columnId) {
+      nextSort = { column: columnId, dir: 'asc' }
+    } else if (sort.dir === 'asc') {
+      nextSort = { column: columnId, dir: 'desc' }
+    } else {
+      nextSort = null
+    }
+    onChangeSort(nextSort)
     setPage(0)
   }
 
@@ -110,6 +147,28 @@ export function DataGrid({ table, onFocusColumn }: Props) {
                             {sort?.dir === 'desc' && isSorted ? '↓' : '↑'}
                           </span>
                         </button>
+                        {col && (
+                          <FilterPopover
+                            column={col}
+                            tableId={table.id}
+                            current={filters.find((f) => f.column === col.id)}
+                            onApply={(f) => onUpsertFilter(f)}
+                            onClear={() => onRemoveFilter(col.id)}
+                          >
+                            <button
+                              type="button"
+                              className={cn(
+                                'rounded p-1 text-xs hover:bg-accent',
+                                filters.find((f) => f.column === col.id)
+                                  ? 'text-foreground'
+                                  : 'text-muted-foreground'
+                              )}
+                              aria-label={`Filter ${col.label}`}
+                            >
+                              ⌗
+                            </button>
+                          </FilterPopover>
+                        )}
                         {col && onFocusColumn && (
                           <button
                             type="button"
@@ -145,8 +204,22 @@ export function DataGrid({ table, onFocusColumn }: Props) {
           {fmtNumber(query.totalCount)} rows · page {page + 1} of {totalPages}
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>Prev</Button>
-          <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>Next</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Prev
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>
