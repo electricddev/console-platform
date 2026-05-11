@@ -13,7 +13,7 @@ export function RoleSwitcher({ current }: Props) {
     <form
       action="/role-switch"
       method="post"
-      className="fixed bottom-3 right-3 z-50 flex items-center gap-1 rounded-full border border-border bg-surface/90 p-1 text-xs shadow-sm backdrop-blur"
+      className="fixed bottom-10 right-3 z-50 flex items-center gap-1 rounded-full border border-border bg-surface/90 p-1 text-xs shadow-sm backdrop-blur"
     >
       <span className="font-tag px-2 text-foreground/55">{'// dev'}</span>
       {ROLES.map((r) => (

@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { fmtPct } from '@/lib/format'
 import type { PrivacyAnalysis } from '@/lib/api/endpoints/ai'
 
@@ -12,10 +12,16 @@ type Props = {
   fetchAnalysis: (input: { dsl: string; schemaId: string }) => Promise<PrivacyAnalysis>
 }
 
-const severityClass = {
-  info: 'text-muted-foreground',
-  warning: 'text-yellow-500',
+const SEVERITY_TONE = {
+  info: 'text-info',
+  warning: 'text-warning',
   critical: 'text-destructive',
+} as const
+
+const SEVERITY_RAIL = {
+  info: 'bg-info',
+  warning: 'bg-warning',
+  critical: 'bg-destructive',
 } as const
 
 export function PrivacyAnalysisPanel({ dsl, schemaId, fetchAnalysis }: Props) {
@@ -47,74 +53,118 @@ export function PrivacyAnalysisPanel({ dsl, schemaId, fetchAnalysis }: Props) {
     }
   }, [dsl, schemaId, fetchAnalysis])
 
+  const riskScore = analysis?.riskScore
+  const riskTone =
+    riskScore === undefined
+      ? 'text-muted-foreground'
+      : riskScore < 0.3
+        ? 'text-success'
+        : riskScore < 0.6
+          ? 'text-warning'
+          : 'text-destructive'
+
   const RiskIcon =
     loading
       ? Loader2
-      : analysis?.riskScore === undefined
+      : riskScore === undefined
         ? ShieldQuestion
-        : analysis.riskScore < 0.3
+        : riskScore < 0.3
           ? ShieldCheck
           : ShieldAlert
 
-  const iconClass =
-    loading
-      ? 'animate-spin text-muted-foreground'
-      : analysis?.riskScore === undefined
-        ? 'text-muted-foreground'
-        : analysis.riskScore < 0.3
-          ? 'text-green-500'
-          : 'text-yellow-500'
-
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-2 border-b [.border-b]:pb-3">
-        <RiskIcon className={`size-4 ${iconClass}`} />
-        <CardTitle className="text-sm font-medium">Privacy analysis</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-2 pt-3 text-sm">
-        {analysis ? (
-          <>
-            <p className="text-xs">
-              Risk score:{' '}
-              <strong
-                className={
-                  analysis.riskScore < 0.3
-                    ? 'text-green-500'
-                    : analysis.riskScore < 0.6
-                      ? 'text-yellow-500'
-                      : 'text-destructive'
-                }
+    <div className="flex flex-col gap-4">
+      {/* Sub-header */}
+      <div className="flex items-center gap-2">
+        <RiskIcon
+          className={cn('size-4', loading ? 'animate-spin text-muted-foreground' : riskTone)}
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <h3 className="font-display text-xl tracking-tight text-foreground">
+          Privacy
+        </h3>
+        <span className="ml-auto font-tag text-foreground/55">
+          <span aria-hidden>{'// '}</span>
+          {'risk analysis'}
+        </span>
+      </div>
+
+      {/* Risk score — large mono number */}
+      <div className="flex items-baseline gap-3">
+        <span
+          className={cn(
+            'font-mono text-4xl font-medium tabular-nums leading-none tracking-tight',
+            riskTone,
+          )}
+          aria-label={`Risk score ${riskScore !== undefined ? fmtPct(riskScore) : 'unavailable'}`}
+        >
+          {riskScore !== undefined ? fmtPct(riskScore) : '—'}
+        </span>
+        <span className="font-tag text-foreground/45">
+          {loading
+            ? 'analyzing…'
+            : riskScore === undefined
+              ? 'awaiting dsl'
+              : riskScore < 0.3
+                ? '// low risk'
+                : riskScore < 0.6
+                  ? '// moderate'
+                  : '// high risk'}
+        </span>
+      </div>
+
+      {/* Findings list */}
+      {analysis && (
+        <ul className="mt-1 grid gap-2" aria-label="Privacy findings">
+          {analysis.findings.length === 0 ? (
+            <li className="font-mono text-[0.78rem] text-muted-foreground">
+              No leakage paths detected.
+            </li>
+          ) : (
+            analysis.findings.map((f, i) => (
+              <li
+                key={i}
+                className="relative overflow-hidden rounded-md border border-border/70 bg-background/60 px-4 py-3"
               >
-                {fmtPct(analysis.riskScore)}
-              </strong>
-            </p>
-            <ul className="grid gap-1.5">
-              {analysis.findings.map((f, i) => (
-                <li
-                  key={i}
-                  className="rounded-md border border-border/60 bg-card/50 p-2"
-                >
-                  <p className={`text-xs font-medium ${severityClass[f.severity]}`}>
+                {/* Severity rail */}
+                <span
+                  aria-hidden
+                  className={cn('absolute inset-y-0 left-0 w-[3px]', SEVERITY_RAIL[f.severity])}
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn('font-tag', SEVERITY_TONE[f.severity])}>
+                    <span aria-hidden>{'// '}</span>
+                    {f.severity}
+                  </span>
+                  <p className="font-mono text-[0.78rem] text-foreground">
                     {f.message}
                   </p>
-                  {f.remediation && (
-                    <p className="mt-0.5 text-[0.7rem] text-muted-foreground">
-                      → {f.remediation}
-                    </p>
-                  )}
-                </li>
-              ))}
-              {analysis.findings.length === 0 && (
-                <p className="text-xs text-muted-foreground">No leakage paths detected.</p>
-              )}
-            </ul>
-          </>
-        ) : loading ? (
-          <p className="text-xs text-muted-foreground">Analyzing DSL…</p>
-        ) : (
-          <p className="text-xs text-muted-foreground">Type DSL above to analyze.</p>
-        )}
-      </CardContent>
-    </Card>
+                </div>
+
+                {f.remediation && (
+                  <p className="mt-1 font-mono text-[0.7rem] text-muted-foreground">
+                    → {f.remediation}
+                  </p>
+                )}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+
+      {!analysis && !loading && (
+        <p className="font-mono text-[0.78rem] text-muted-foreground">
+          Type DSL above to analyze.
+        </p>
+      )}
+
+      {loading && !analysis && (
+        <p className="font-mono text-[0.78rem] text-muted-foreground">
+          Analyzing DSL…
+        </p>
+      )}
+    </div>
   )
 }
