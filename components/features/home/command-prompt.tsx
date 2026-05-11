@@ -41,8 +41,10 @@ export function CommandPrompt({ suggestions = [], className }: Props) {
       if (text.length > 0) {
         timeout = setTimeout(() => setText(target.slice(0, text.length - 1)), 18)
       } else {
-        setPromptIndex((i) => (i + 1) % ROTATING_PROMPTS.length)
-        setPhase('typing')
+        timeout = setTimeout(() => {
+          setPromptIndex((i) => (i + 1) % ROTATING_PROMPTS.length)
+          setPhase('typing')
+        }, 0)
       }
     }
 

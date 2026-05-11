@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test'
 test('counterparty: sign in → home → dataset → template → run', async ({ page }) => {
   await page.goto('/login')
   await page.getByRole('button', { name: /demo counterparty/i }).click()
-  await expect(page.getByRole('heading', { name: /welcome, maya/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /welcome back, maya/i })).toBeVisible()
 
   // AI insights present
-  await expect(page.getByText(/concentration breach predicted/i)).toBeVisible()
+  await expect(page.getByText(/concentration breach predicted/i).first()).toBeVisible()
 
   // Navigate to a dataset
   await page.getByRole('link', { name: /datasets/i }).first().click()

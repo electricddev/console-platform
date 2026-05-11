@@ -7,7 +7,7 @@ test.describe('Foundation smoke', () => {
 
     await page.getByRole('button', { name: /demo counterparty/i }).click()
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByRole('heading', { name: /welcome, maya/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /welcome back, maya/i })).toBeVisible()
 
     // Sidebar shows counterparty items
     await expect(page.getByRole('link', { name: /datasets/i })).toBeVisible()

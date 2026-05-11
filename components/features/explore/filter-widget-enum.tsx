@@ -40,7 +40,6 @@ export function FilterWidgetEnum({ column, initial, onApply, onClear, tableId }:
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, db, column.id, tableId, initialKeys.length])
 
   function toggle(v: string) {

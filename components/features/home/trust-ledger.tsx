@@ -34,7 +34,7 @@ function shortRunId(id: string): string {
  * Returns a day bucket key (YYYY-MM-DD) based on the provided reference time
  * so grouping is stable across server renders.
  */
-function dayBucket(iso: string, nowMs: number): string {
+function dayBucket(iso: string): string {
   const d = new Date(iso)
   // Align to local calendar day relative to `now`
   return d.toLocaleDateString('en-CA') // "YYYY-MM-DD"
@@ -129,7 +129,7 @@ function LedgerEntry({ run, isFirst, isLast, isNewest }: EntryProps) {
         {/* Title row */}
         <div className="flex min-w-0 items-center gap-2">
           {isNewest && (
-            <span className="flex-shrink-0 font-tag text-[0.6rem] text-accent">// most recent</span>
+            <span className="flex-shrink-0 font-tag text-[0.6rem] text-accent">{'// most recent'}</span>
           )}
           <Link
             href={`/runs/${run.id}`}
@@ -187,7 +187,7 @@ function LedgerEntry({ run, isFirst, isLast, isNewest }: EntryProps) {
         {!attest && run.status === 'failed' && (
           <span className="mt-2 inline-flex items-center gap-1 text-[0.7rem] text-muted-foreground">
             <ShieldOff className="size-3.5" strokeWidth={1.75} />
-            <span className="font-tag">// no attestation</span>
+            <span className="font-tag">{'// no attestation'}</span>
             {run.error && (
               <span className="font-mono text-[0.7rem] text-muted-foreground">· {run.error}</span>
             )}
@@ -215,7 +215,7 @@ export function TrustLedger({ runs, now, className, limit = 8 }: Props): React.R
   type DayGroup = { bucket: string; label: string; entries: Run[] }
   const groups: DayGroup[] = []
   for (const run of visible) {
-    const bucket = dayBucket(run.queuedAt, now)
+    const bucket = dayBucket(run.queuedAt)
     const last = groups[groups.length - 1]
     if (last && last.bucket === bucket) {
       last.entries.push(run)
@@ -272,8 +272,6 @@ export function TrustLedger({ runs, now, className, limit = 8 }: Props): React.R
       {/* ── Day-grouped timeline ── */}
       <ol className="grid gap-0">
         {groups.map((group, gi) => {
-          const isLastGroup = gi === groups.length - 1
-
           return (
             <li key={group.bucket}>
               {/* Day separator between groups (not before first) */}
@@ -327,7 +325,7 @@ export function TrustLedger({ runs, now, className, limit = 8 }: Props): React.R
       {overflow === 0 && runs.length > 0 && (
         <div className="mt-4 flex items-center gap-3">
           <span className="h-px flex-1 bg-border/60" aria-hidden />
-          <span className="font-tag text-foreground/45">// end of ledger</span>
+          <span className="font-tag text-foreground/45">{'// end of ledger'}</span>
           <span className="h-px flex-1 bg-border/60" aria-hidden />
         </div>
       )}
