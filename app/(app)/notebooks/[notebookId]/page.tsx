@@ -31,7 +31,7 @@ export default async function NotebookDetail({ params }: { params: Promise<{ not
         {n.cells.map((c) => {
           if (c.kind === 'markdown') return <CellMarkdown key={c.id} markdown={c.markdown} />
           if (c.kind === 'query') {
-            if (c.methodologyId || c.renderShape) {
+            if (c.methodologyId) {
               return (
                 <ExecutableQueryCell
                   key={c.id}

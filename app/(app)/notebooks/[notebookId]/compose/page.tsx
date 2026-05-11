@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import { requireUser } from '@/lib/auth/server'
 import { getNotebook } from '@/lib/api/endpoints/notebooks'
 import { PageHeader } from '@/components/common/page-header'
@@ -14,9 +13,7 @@ export default async function ComposePage({ params }: { params: Promise<{ notebo
     <div className="px-6 py-6 max-w-[1400px] mx-auto">
       <PageHeader eyebrow="// compose" title={notebook.title} description={notebook.description} />
       <div className="mt-6">
-        <Suspense fallback={null}>
-          <NotebookComposer notebook={notebook} />
-        </Suspense>
+        <NotebookComposer notebook={notebook} />
       </div>
     </div>
   )

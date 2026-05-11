@@ -24,6 +24,9 @@ export function CellQueryEditor({ cell, state, dispatch }: Props) {
   const running = state.running.has(cell.id)
   const shape = cell.renderShape ?? 'table'
 
+  const mountedRef = useRef(true)
+  useEffect(() => () => { mountedRef.current = false }, [])
+
   // Auto-run on first mount if there is a DSL and no result yet.
   const autoRanRef = useRef(false)
   useEffect(() => {
@@ -44,10 +47,14 @@ export function CellQueryEditor({ cell, state, dispatch }: Props) {
       const columns = res.schema.fields.map((f) => f.name)
       const rows = res.toArray().map((r) => r.toJSON() as Record<string, unknown>)
       const runtimeMs = Math.round(performance.now() - t0)
-      dispatch({ type: 'finish-run', id: cell.id, result: { columns, rows, runtimeMs } })
+      if (mountedRef.current) {
+        dispatch({ type: 'finish-run', id: cell.id, result: { columns, rows, runtimeMs } })
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      dispatch({ type: 'fail-run', id: cell.id, error: message })
+      if (mountedRef.current) {
+        dispatch({ type: 'fail-run', id: cell.id, error: message })
+      }
     } finally {
       await conn.close()
     }
