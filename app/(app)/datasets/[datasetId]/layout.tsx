@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireUser } from '@/lib/auth/server'
 import { TabLink } from './_components/tab-link'
 import { getDataset } from '@/lib/api/endpoints/datasets'
+import type { Dataset } from '@/lib/api/schemas'
 import { fixtures } from '@/lib/api/fixtures'
 import { PageHeader } from '@/components/common/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -9,13 +10,19 @@ import { Button } from '@/components/ui/button'
 import { AttestationBadge } from '@/components/common/attestation-badge'
 import { FreshnessIndicator } from '@/components/common/freshness-indicator'
 
-const TABS = [
-  { href: '', label: 'Overview' },
-  { href: '/schema', label: 'Schema' },
-  { href: '/templates', label: 'Templates' },
-  { href: '/runs', label: 'Runs' },
-  { href: '/lineage', label: 'Lineage' },
-] as const
+function tabsFor(ds: Dataset) {
+  const base: Array<{ href: string; label: string }> = [{ href: '', label: 'Overview' }]
+  if (ds.tables && ds.tables.length > 0) {
+    base.push({ href: '/explore', label: 'Explore' })
+  }
+  base.push(
+    { href: '/schema', label: 'Schema' },
+    { href: '/templates', label: 'Templates' },
+    { href: '/runs', label: 'Runs' },
+    { href: '/lineage', label: 'Lineage' },
+  )
+  return base
+}
 
 export default async function DatasetLayout({ children, params }: LayoutProps<'/datasets/[datasetId]'>) {
   const { datasetId } = await params
@@ -49,7 +56,7 @@ export default async function DatasetLayout({ children, params }: LayoutProps<'/
       />
 
       <nav className="mt-6 flex gap-1 border-b border-border" aria-label="Dataset sections">
-        {TABS.map((t) => (
+        {tabsFor(ds).map((t) => (
           <TabLink key={t.label} href={`/datasets/${datasetId}${t.href}`}>
             {t.label}
           </TabLink>
