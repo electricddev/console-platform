@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useReducer } from 'react'
+import { useEffect, useMemo, useReducer } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import type { ColumnFilter, ResolvedColumn, SortState, TableDescriptor } from '@/lib/data/types'
 import { useDuckDB } from '@/lib/data/use-duckdb'
+import { encodeFilterState, decodeFilterState } from '@/lib/data/filters'
 import { LoadingState } from './loading-state'
 import { ErrorState } from './error-state'
 import { TablePicker } from './table-picker'
@@ -61,16 +63,53 @@ type Props = { datasetId: string; tables: TableDescriptor[] }
 
 export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
   const { ready, db, error } = useDuckDB()
+  const search = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const initialState: ExplorerState = (() => {
+    const encoded = search.get('f')
+    if (encoded) {
+      const decoded = decodeFilterState(encoded)
+      if (decoded && tables.some((t) => t.id === decoded.table)) {
+        return {
+          activeTableId: decoded.table,
+          filters: decoded.filters,
+          sort: decoded.sort,
+          totalCount: null,
+          columns: [],
+          focusedColumn: null,
+        }
+      }
+    }
+    return {
+      activeTableId: tables[0]?.id ?? '',
+      filters: [],
+      sort: null,
+      totalCount: null,
+      columns: [],
+      focusedColumn: null,
+    }
+  })()
 
   const reducer = useMemo(() => makeReducer(tables), [tables])
-  const [state, dispatch] = useReducer(reducer, {
-    activeTableId: tables[0]?.id ?? '',
-    filters: [],
-    sort: null,
-    totalCount: null,
-    columns: [],
-    focusedColumn: null,
-  })
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    const encoded = encodeFilterState({
+      table: state.activeTableId,
+      filters: state.filters,
+      sort: state.sort,
+    })
+    const params = new URLSearchParams(search.toString())
+    if (state.filters.length === 0 && !state.sort && state.activeTableId === tables[0]?.id) {
+      params.delete('f')
+    } else {
+      params.set('f', encoded)
+    }
+    const q = params.toString()
+    router.replace(`${pathname}${q ? `?${q}` : ''}`, { scroll: false })
+  }, [state.activeTableId, state.filters, state.sort, pathname, router, search, tables])
 
   if (error) {
     return (
