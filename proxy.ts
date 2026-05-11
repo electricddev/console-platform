@@ -27,5 +27,5 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   // Match all routes except Next internals and static assets.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|parquet)).*)'],
 }
