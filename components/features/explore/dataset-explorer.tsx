@@ -33,8 +33,17 @@ type ExplorerAction =
 function makeReducer(tables: TableDescriptor[]) {
   return function reducer(state: ExplorerState, action: ExplorerAction): ExplorerState {
     switch (action.type) {
-      case 'set-table':
-        return { activeTableId: action.id, filters: [], sort: null, totalCount: null, columns: [], focusedColumn: null }
+      case 'set-table': {
+        const newTable = tables.find((t) => t.id === action.id)
+        return {
+          activeTableId: action.id,
+          filters: [],
+          sort: newTable?.defaultSort ?? null,
+          totalCount: null,
+          columns: [],
+          focusedColumn: null,
+        }
+      }
       case 'set-sort':
         return { ...state, sort: action.sort }
       case 'upsert-filter': {
@@ -82,10 +91,11 @@ export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
         }
       }
     }
+    const firstTable = tables[0]
     return {
-      activeTableId: tables[0]?.id ?? '',
+      activeTableId: firstTable?.id ?? '',
       filters: [],
-      sort: null,
+      sort: firstTable?.defaultSort ?? null,
       totalCount: null,
       columns: [],
       focusedColumn: null,

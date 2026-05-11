@@ -37,22 +37,25 @@ export function ExploreToolbar({
     const conn = await db.connect()
     try {
       const stmt = await conn.prepare(sql)
-      const result = await stmt.query(...params)
-      const colNames = result.schema.fields.map((f) => f.name)
-      const rows = result.toArray().map((r) => r.toJSON() as Record<string, unknown>)
-      const csv = [
-        colNames.map(csvCell).join(','),
-        ...rows.map((row) => colNames.map((c) => csvCell(row[c])).join(',')),
-      ].join('\n')
-      await stmt.close()
+      try {
+        const result = await stmt.query(...params)
+        const colNames = result.schema.fields.map((f) => f.name)
+        const rows = result.toArray().map((r) => r.toJSON() as Record<string, unknown>)
+        const csv = [
+          colNames.map(csvCell).join(','),
+          ...rows.map((row) => colNames.map((c) => csvCell(row[c])).join(',')),
+        ].join('\n')
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${tableId}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${tableId}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+      } finally {
+        await stmt.close()
+      }
     } finally {
       await conn.close()
     }
