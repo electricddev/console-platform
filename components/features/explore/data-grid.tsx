@@ -29,6 +29,7 @@ type Props = {
   onRemoveFilter: (column: string) => void
   onClearFilters: () => void
   onFocusColumn?: (column: ResolvedColumn) => void
+  onMetrics?: (m: { totalCount: number; columns: ResolvedColumn[] }) => void
 }
 
 export function DataGrid({
@@ -40,6 +41,7 @@ export function DataGrid({
   onRemoveFilter,
   onClearFilters,
   onFocusColumn,
+  onMetrics,
 }: Props) {
   const schema = useTableSchema(table)
   const [page, setPage] = useState(0)
@@ -57,6 +59,14 @@ export function DataGrid({
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
   })
+
+  // Emit metrics when both schema and query are ready
+  useEffect(() => {
+    if (schema.ready && query.ready && onMetrics) {
+      onMetrics({ totalCount: query.totalCount, columns: schema.columns })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema.ready, query.ready, query.ready ? query.totalCount : null, JSON.stringify(schema.ready ? schema.columns : null)])
 
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
     if (!schema.ready) return []
