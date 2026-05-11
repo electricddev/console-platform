@@ -195,4 +195,23 @@ export const acredMethodology: Methodology[] = [
           FROM concentration_metrics, latest
           WHERE period_end_date = latest.d`,
   },
+
+  // 13. Top-10 concentration current vs 12mo ago (comparison)
+  {
+    id: 'acred.top10_concentration_now_vs_prior',
+    title: 'Top-10 concentration: current vs 12mo ago',
+    description: 'Compares the top-10 borrower concentration share to one year ago.',
+    axis: 'time',
+    shape: 'comparison',
+    dsl: `WITH ranked AS (
+            SELECT period_end_date, top_10_concentration_pct,
+                   row_number() OVER (ORDER BY period_end_date DESC) AS rn
+            FROM concentration_metrics
+          )
+          SELECT CASE WHEN rn = 1 THEN 'Current' ELSE '12mo ago' END AS label,
+                 top_10_concentration_pct AS value
+          FROM ranked
+          WHERE rn = 1 OR rn = 13
+          ORDER BY rn`,
+  },
 ]
