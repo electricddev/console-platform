@@ -40,11 +40,10 @@ export function useTableQuery(input: QueryInput): QueryState {
           const dataStmt = await conn.prepare(dataSQL)
           const countStmt = await conn.prepare(countSQL)
           try {
-            // params is unknown[] from buildWhereClause; cast to any[] for the
-            // rest-spread into AsyncPreparedStatement.query(...params: any[]).
-            const anyParams = params as unknown[]
-            const dataResult = await dataStmt.query(...anyParams)
-            const countResult = await countStmt.query(...anyParams)
+            // AsyncPreparedStatement.query accepts (...args: any[]),
+            // so spreading unknown[] into it is permitted.
+            const dataResult = await dataStmt.query(...params)
+            const countResult = await countStmt.query(...params)
             const rows = dataResult.toArray().map((r) => r.toJSON() as Record<string, unknown>)
             const total = Number((countResult.toArray()[0] as unknown as { c: bigint | number }).c)
             if (!cancelled) setState({ ready: true, rows, totalCount: total, error: null })
