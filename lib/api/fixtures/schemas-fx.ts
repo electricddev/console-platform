@@ -74,4 +74,21 @@ export const schemaFixtures: Schema[] = [
       { name: 'days_to_payment', type: 'number', exposure: 'aggregated-only', isPii: false, minBucketSize: 15, allowedOperators: ['avg'] },
     ],
   },
+  {
+    id: 'sch_acred_v1',
+    datasetId: 'ds_acred',
+    version: 1,
+    publishedAt: '2026-05-01T00:00:00.000Z',
+    signedBy: 'usr_tom',
+    signedAt: '2026-05-01T00:00:00.000Z',
+    policy: { kAnonymity: 20, maxQueriesPerCounterpartyPerDay: 150 },
+    fields: [
+      { name: 'fund_id', type: 'string', exposure: 'private', isPii: false, description: 'ACRED fund identifier' },
+      { name: 'borrower_id', type: 'string', exposure: 'private', isPii: true, description: 'Borrower identifier' },
+      { name: 'sector', type: 'enum', exposure: 'queryable', isPii: false, description: 'Industry sector', allowedOperators: ['count'] },
+      { name: 'exposure', type: 'currency', exposure: 'aggregated-only', isPii: false, description: 'Fund exposure to borrower', minBucketSize: 20, allowedOperators: ['sum', 'avg'] },
+      { name: 'rating', type: 'enum', exposure: 'aggregated-only', isPii: false, description: 'Credit rating', allowedOperators: ['count', 'avg'] },
+      { name: 'as_of_date', type: 'date', exposure: 'queryable', isPii: false, description: 'Data snapshot date' },
+    ],
+  },
 ]

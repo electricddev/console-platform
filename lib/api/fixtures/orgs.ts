@@ -37,4 +37,11 @@ export const orgFixtures: Org[] = [
     assetClasses: ['private-credit'],
     verified: true,
   },
+  {
+    id: 'org_apollo',
+    name: 'Apollo',
+    description: 'Tokenized diversified private credit fund (ACRED).',
+    assetClasses: ['private-credit'],
+    verified: true,
+  },
 ]

@@ -179,6 +179,7 @@ export const DatasetSchema = z.object({
     body: z.string(),
     createdAt: z.string().datetime(),
   })).default([]),
+  tables: z.array(z.object({ id: z.string() })).optional(),
 })
 export type Dataset = z.infer<typeof DatasetSchema>
 
