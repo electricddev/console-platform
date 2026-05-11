@@ -70,7 +70,7 @@ function makeReducer(tables: TableDescriptor[]) {
 
 type Props = { datasetId: string; tables: TableDescriptor[] }
 
-export function DatasetExplorer({ datasetId: _datasetId, tables }: Props) {
+export function DatasetExplorer({ tables }: Props) {
   const { ready, db, error } = useDuckDB()
   const search = useSearchParams()
   const router = useRouter()
