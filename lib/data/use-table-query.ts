@@ -34,7 +34,21 @@ export function useTableQuery(input: QueryInput): QueryState {
           const orderBy = input.sort
             ? `ORDER BY "${input.sort.column.replace(/"/g, '""')}" ${input.sort.dir.toUpperCase()}`
             : ''
-          const dataSQL = `SELECT * FROM "${input.table}" ${where} ${orderBy} LIMIT ${input.limit} OFFSET ${input.offset}`
+          // DuckDB WASM / Arrow IPC: DATE and TIMESTAMP columns can appear as null
+          // in JS due to Arrow validity bitmap encoding. Cast them to epoch_ms (bigint)
+          // to get reliable numeric values that format.ts converts to Date objects.
+          const colInfoResult = await conn.query(`
+            SELECT column_name, column_type
+            FROM (DESCRIBE "${input.table}")
+            WHERE column_type IN ('DATE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE',
+                                  'TIMESTAMP_S', 'TIMESTAMP_MS', 'TIMESTAMP_NS')
+          `)
+          type ColInfo = { column_name: string; column_type: string }
+          const dateCols = colInfoResult.toArray().map((r) => (r.toJSON() as unknown as ColInfo).column_name)
+          const selectExpr = dateCols.length > 0
+            ? `* REPLACE (${dateCols.map((c) => { const escaped = c.replace(/"/g, '""'); return `epoch_ms("${escaped}") AS "${escaped}"` }).join(', ')})`
+            : '*'
+          const dataSQL = `SELECT ${selectExpr} FROM "${input.table}" ${where} ${orderBy} LIMIT ${input.limit} OFFSET ${input.offset}`
           const countSQL = `SELECT COUNT(*)::BIGINT AS c FROM "${input.table}" ${where}`
 
           const dataStmt = await conn.prepare(dataSQL)
