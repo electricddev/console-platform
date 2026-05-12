@@ -23,10 +23,7 @@ export function AcredBrief({ dataset, issuerName, redFlags, anomalies, peerDispe
   return (
     <div className="grid gap-8">
       <BriefHeader
-        fundName={dataset.name}
         issuerName={issuerName}
-        attestation={dataset.attestation}
-        lastAttestedAt={dataset.lastAttestedAt}
         periodEnd={acredFacts.snapshot.periodEnd}
         discipline={discipline}
       />

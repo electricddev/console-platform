@@ -26,8 +26,8 @@ test('ACRED monitoring brief — portfolio → brief → drill → memo → AMM'
   await acredRow.click()
   await expect(page).toHaveURL('/datasets/ds_acred')
 
-  // Layout and BriefHeader both render ACRED headings — at least one must be visible
-  await expect(page.getByRole('heading', { name: /ACRED/i }).first()).toBeVisible()
+  // Layout PageHeader renders the dataset name as the page heading
+  await expect(page.getByRole('heading', { name: /ACRED/i })).toBeVisible()
 
   // Vital signs section heading confirms the brief is rendered
   await expect(page.getByText('// vital signs · period over period')).toBeVisible()
