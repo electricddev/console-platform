@@ -166,6 +166,57 @@ export const AnomalyEventSchema = z.object({
 })
 export type AnomalyEvent = z.infer<typeof AnomalyEventSchema>
 
+export const PeerMarkSchema = z.object({
+  fund: z.string(),
+  mark: z.number(),
+  lastUpdated: z.string().datetime(),
+  hyveVerified: z.boolean(),
+})
+export type PeerMark = z.infer<typeof PeerMarkSchema>
+
+export const PeerDispersionRowSchema = z.object({
+  borrowerNormalized: z.string(),
+  marks: z.array(PeerMarkSchema),
+  dispersionPoints: z.number(),
+  commentary: z.string().nullable(),
+})
+export type PeerDispersionRow = z.infer<typeof PeerDispersionRowSchema>
+
+export const AttestationDisciplineSchema = z.object({
+  expectedLast30d: z.number().int().nonnegative(),
+  deliveredLast30d: z.number().int().nonnegative(),
+  onTimeLast30d: z.number().int().nonnegative(),
+  lastGapAt: z.string().datetime().nullable(),
+  cadenceBreakdown: z.array(z.object({
+    cadence: z.enum(['daily', 'weekly', 'monthly', 'quarterly']),
+    metric: z.string(),
+    delivered: z.number().int().nonnegative(),
+    expected: z.number().int().nonnegative(),
+    onTime: z.number().int().nonnegative(),
+  })),
+})
+export type AttestationDiscipline = z.infer<typeof AttestationDisciplineSchema>
+
+export const AmmFeedSchema = z.object({
+  navPerToken: z.number(),
+  navCI95: z.number(),
+  freshnessSeconds: z.number().int().nonnegative(),
+  inventoryAsset: z.number(),
+  inventoryQuote: z.number(),
+  activeFeeBps: z.number(),
+  feeBpsBaseline: z.number(),
+  maxSwapSize: z.number(),
+  capacityGate: z.enum(['confidence', 'freshness', 'inventory', 'none']),
+  last24h: z.object({
+    swapCount: z.number().int().nonnegative(),
+    swapVolume: z.number(),
+    revertCount: z.number().int().nonnegative(),
+    sharpe: z.number(),
+  }),
+  anomalyStream: z.array(AnomalyEventSchema),
+})
+export type AmmFeed = z.infer<typeof AmmFeedSchema>
+
 // ---------- Datasets ----------
 
 export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
