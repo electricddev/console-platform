@@ -217,6 +217,57 @@ export const AmmFeedSchema = z.object({
 })
 export type AmmFeed = z.infer<typeof AmmFeedSchema>
 
+// ---------- Decision layer: memos ----------
+
+export const MemoStatusSchema = z.enum(['draft', 'submitted', 'approved'])
+export type MemoStatus = z.infer<typeof MemoStatusSchema>
+
+export const MemoInsertSchema = z.object({
+  id: z.string(),
+  methodologyId: z.string(),
+  insertedAt: z.string().datetime(),
+})
+export type MemoInsert = z.infer<typeof MemoInsertSchema>
+
+export const MemoSectionSchema = z.object({
+  markdown: z.string().default(''),
+  inserts: z.array(MemoInsertSchema).default([]),
+})
+export type MemoSection = z.infer<typeof MemoSectionSchema>
+
+export const FlagDecisionActionSchema = z.enum(['acknowledge', 'dismiss', 'mitigate'])
+export type FlagDecisionAction = z.infer<typeof FlagDecisionActionSchema>
+
+export const FlagDecisionSchema = z.object({
+  flagId: z.string(),
+  action: FlagDecisionActionSchema,
+  note: z.string(),
+  decidedAt: z.string().datetime(),
+  decidedBy: z.string(),
+})
+export type FlagDecision = z.infer<typeof FlagDecisionSchema>
+
+export const MemoSchema = z.object({
+  id: z.string(),
+  datasetId: z.string(),
+  authorId: z.string(),
+  status: MemoStatusSchema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  submittedAt: z.string().datetime().optional(),
+  approvedAt: z.string().datetime().optional(),
+  approvedBy: z.string().optional(),
+  sections: z.object({
+    character:  MemoSectionSchema,
+    capacity:   MemoSectionSchema,
+    capital:    MemoSectionSchema,
+    collateral: MemoSectionSchema,
+    conditions: MemoSectionSchema,
+  }),
+  flagDecisions: z.array(FlagDecisionSchema).default([]),
+})
+export type Memo = z.infer<typeof MemoSchema>
+
 // ---------- Datasets ----------
 
 export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
