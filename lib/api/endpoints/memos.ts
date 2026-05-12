@@ -13,6 +13,17 @@ function findMemo(memoId: string): Memo {
 export const getActiveMemo = mockEndpoint(
   async (ctx: RequestContext, _signal, datasetId: string): Promise<Memo> => {
     const authorId = ctx.user?.id ?? 'anonymous'
+
+    // Admin users: surface the most recently updated non-draft memo (submitted or
+    // approved) so they can review, approve, or see the outcome. Fall through to
+    // own-draft creation only when nothing actionable exists.
+    if (ctx.user?.role === 'admin') {
+      const reviewable = store.getMemos()
+        .filter((m) => m.datasetId === datasetId && m.status !== 'draft')
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      if (reviewable.length > 0) return MemoSchema.parse(reviewable[0])
+    }
+
     const existing = store.getMemos().find((m) =>
       m.datasetId === datasetId && m.authorId === authorId && m.status !== 'approved'
     )
