@@ -537,6 +537,20 @@ export const NotebookSchema = z.object({
 })
 export type Notebook = z.infer<typeof NotebookSchema>
 
+// ---------- Brief primitives (used by the ACRED monitoring brief) ----------
+
+export const DeltaToneSchema = z.enum(['positive', 'negative', 'neutral'])
+export type DeltaTone = z.infer<typeof DeltaToneSchema>
+
+export const DeltaSchema = z.object({
+  value: z.number(),
+  delta: z.number(),
+  // pp = percentage points; pct = fractional change (0.05 = 5%); abs = raw units.
+  deltaKind: z.enum(['pp', 'pct', 'abs']),
+  tone: DeltaToneSchema,
+})
+export type Delta = z.infer<typeof DeltaSchema>
+
 // ---------- Copilot ----------
 
 export const CopilotMessageSchema = z.object({
