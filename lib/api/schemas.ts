@@ -146,6 +146,26 @@ export const BriefSnapshotSchema = z.object({
 })
 export type BriefSnapshot = z.infer<typeof BriefSnapshotSchema>
 
+export const RedFlagSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  severity: z.enum(['low', 'medium', 'high']),
+  reason: z.string(),
+  drillHref: z.string().nullable(),
+})
+export type RedFlag = z.infer<typeof RedFlagSchema>
+
+export const AnomalyEventSchema = z.object({
+  id: z.string(),
+  occurredAt: z.string().datetime(),
+  kind: z.enum(['credit-event', 'filing', 'attestation-gap', 'amm-sla']),
+  severity: z.enum(['info', 'low', 'medium', 'high']),
+  title: z.string(),
+  borrowerNormalized: z.string().nullable(),
+  detailHref: z.string().nullable(),
+})
+export type AnomalyEvent = z.infer<typeof AnomalyEventSchema>
+
 // ---------- Datasets ----------
 
 export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
