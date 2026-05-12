@@ -13,11 +13,11 @@
 **Existing fixtures (do not duplicate):** `ds_mfone` (trade-receivables), `ds_creditbridge` (private-credit), `ds_bowery_tbills` (t-bills), `ds_flowcredit_apac` (flow-credit), `ds_acred` (private-credit). The plan adds `briefSnapshot` to `ds_acred` and `ds_mfone`, and creates 3 new fixtures: `ds_jaaa`, `ds_fasanara`, `ds_ams_credit`.
 
 **Common commands**
-- Unit: `pnpm test -- <pattern>`
-- Lint: `pnpm lint`
-- Typecheck: `pnpm typecheck`
-- E2E: `pnpm test:e2e -- <pattern>`
-- Build: `pnpm build`
+- Unit: `npm test -- <pattern>`
+- Lint: `npm run lint`
+- Typecheck: `npm run typecheck`
+- E2E: `npm run test:e2e -- <pattern>`
+- Build: `npm run build`
 
 ---
 
@@ -53,7 +53,7 @@ describe('DeltaSchema', () => {
 - [ ] **Step 2: Run test, expect FAIL**
 
 ```bash
-pnpm test -- tests/unit/api/delta-schema.test.ts
+npm test -- tests/unit/api/delta-schema.test.ts
 ```
 Expected: import error or "DeltaSchema is not a function".
 
@@ -80,7 +80,7 @@ export type Delta = z.infer<typeof DeltaSchema>
 - [ ] **Step 4: Run test, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/api/delta-schema.test.ts
+npm test -- tests/unit/api/delta-schema.test.ts
 ```
 Expected: 3 passing.
 
@@ -155,7 +155,7 @@ describe('DatasetSchema.briefSnapshot', () => {
 - [ ] **Step 2: Run, expect FAIL**
 
 ```bash
-pnpm test -- tests/unit/api/brief-snapshot-schema.test.ts
+npm test -- tests/unit/api/brief-snapshot-schema.test.ts
 ```
 
 - [ ] **Step 3: Implement**
@@ -188,13 +188,13 @@ briefSnapshot: BriefSnapshotSchema.optional(),
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/api/brief-snapshot-schema.test.ts
+npm test -- tests/unit/api/brief-snapshot-schema.test.ts
 ```
 
 - [ ] **Step 5: Run all schema tests + typecheck**
 
 ```bash
-pnpm test -- tests/unit/api && pnpm typecheck
+npm test -- tests/unit/api && npm run typecheck
 ```
 
 - [ ] **Step 6: Commit**
@@ -241,7 +241,7 @@ describe('AnomalyEventSchema', () => {
 - [ ] **Step 2: Run, expect FAIL**
 
 ```bash
-pnpm test -- tests/unit/api/brief-schemas.test.ts
+npm test -- tests/unit/api/brief-schemas.test.ts
 ```
 
 - [ ] **Step 3: Implement** — append after `BriefSnapshotSchema`:
@@ -271,7 +271,7 @@ export type AnomalyEvent = z.infer<typeof AnomalyEventSchema>
 - [ ] **Step 4: Run, expect PASS** + typecheck
 
 ```bash
-pnpm test -- tests/unit/api/brief-schemas.test.ts && pnpm typecheck
+npm test -- tests/unit/api/brief-schemas.test.ts && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -400,7 +400,7 @@ export type AmmFeed = z.infer<typeof AmmFeedSchema>
 - [ ] **Step 4: Run, expect PASS** + typecheck + all schema tests green
 
 ```bash
-pnpm test -- tests/unit/api && pnpm typecheck
+npm test -- tests/unit/api && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -488,7 +488,7 @@ export const acredFacts: {
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/data/acred-facts.test.ts
+npm test -- tests/unit/data/acred-facts.test.ts
 ```
 
 - [ ] **Step 5: Commit**
@@ -682,7 +682,7 @@ export function evaluateAcredRedFlags(snapshot: BriefSnapshot, facts: Facts): Re
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/data/acred-red-flags.test.ts
+npm test -- tests/unit/data/acred-red-flags.test.ts
 ```
 
 - [ ] **Step 5: Commit**
@@ -774,7 +774,7 @@ export const acredAnomalyFeed: AnomalyEvent[] = [
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/data/acred-anomalies.test.ts
+npm test -- tests/unit/data/acred-anomalies.test.ts
 ```
 
 - [ ] **Step 5: Wire rule 8 into red-flags.ts**
@@ -806,7 +806,7 @@ import { acredAnomalyFeed } from './anomalies'
 - [ ] **Step 6: Re-run red-flag tests; the rule-8 hit may flip pass/fail depending on `occurredAt` recency. Adjust fixture dates if needed; the test allows 0 or more.**
 
 ```bash
-pnpm test -- tests/unit/data/acred-red-flags.test.ts tests/unit/data/acred-anomalies.test.ts
+npm test -- tests/unit/data/acred-red-flags.test.ts tests/unit/data/acred-anomalies.test.ts
 ```
 
 - [ ] **Step 7: Commit**
@@ -948,7 +948,7 @@ export const acredAmmFeed: AmmFeed = {
 - [ ] **Step 4: Run, expect PASS** + typecheck
 
 ```bash
-pnpm test -- tests/unit/data/acred-side-panels.test.ts && pnpm typecheck
+npm test -- tests/unit/data/acred-side-panels.test.ts && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -1139,7 +1139,7 @@ briefSnapshot: {
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/api/dataset-fixtures.test.ts && pnpm typecheck
+npm test -- tests/unit/api/dataset-fixtures.test.ts && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -1261,7 +1261,7 @@ export const getAcredAmmFeed = mockEndpoint(
 - [ ] **Step 4: Run, expect PASS** + typecheck
 
 ```bash
-pnpm test -- tests/unit/api/datasets-endpoints.test.ts && pnpm typecheck
+npm test -- tests/unit/api/datasets-endpoints.test.ts && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -1440,7 +1440,7 @@ export function AttestationCell({ onTimePct, lastAttestedAt }: Props) {
 - [ ] **Step 7: Run tests, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/brief-blocks.test.tsx && pnpm typecheck
+npm test -- tests/unit/components/brief-blocks.test.tsx && npm run typecheck
 ```
 
 - [ ] **Step 8: Commit**
@@ -1550,7 +1550,7 @@ export function VitalSignsPanel({ snapshot }: { snapshot: BriefSnapshot }) {
 - [ ] **Step 4: Run, expect PASS** + typecheck
 
 ```bash
-pnpm test -- tests/unit/components/vital-signs-panel.test.tsx && pnpm typecheck
+npm test -- tests/unit/components/vital-signs-panel.test.tsx && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -1652,7 +1652,7 @@ export function RedFlagScoreboard({ flags, totalRules }: { flags: RedFlag[]; tot
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/red-flag-scoreboard.test.tsx
+npm test -- tests/unit/components/red-flag-scoreboard.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -1759,7 +1759,7 @@ export function AnomalyFeed({ events, title = '// anomaly feed · last 30d' }: {
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/anomaly-feed.test.tsx
+npm test -- tests/unit/components/anomaly-feed.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -1887,7 +1887,7 @@ export function AttestationDisciplineTile({ discipline }: { discipline: Attestat
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/side-panels.test.tsx
+npm test -- tests/unit/components/side-panels.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -1964,7 +1964,7 @@ export function DrillOutActions({ exploreNonAccrualHref, memoHref, filingsHref, 
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/drill-out-actions.test.tsx
+npm test -- tests/unit/components/drill-out-actions.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -2149,7 +2149,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
 - [ ] **Step 3: Verify routes**
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Then in the browser, visit `http://localhost:3000/datasets/ds_acred` (login as the counterparty persona) and confirm the brief renders. Visit `/datasets/ds_mfone` and confirm the legacy overview still renders. Stop the dev server.
@@ -2161,7 +2161,7 @@ Invoke the `visual-fix` skill on the ACRED brief page. Iterate on Playwright scr
 - [ ] **Step 5: Typecheck and commit**
 
 ```bash
-pnpm typecheck && pnpm lint
+npm run typecheck && npm run lint
 git add components/features/brief/acred-brief.tsx app/'(app)'/datasets/'[datasetId]'/page.tsx
 git commit -m "feat(brief): assemble ACRED monitoring brief and branch dataset overview"
 ```
@@ -2284,7 +2284,7 @@ export function PortfolioTable({ datasets }: { datasets: Dataset[] }) {
 - [ ] **Step 5: Run tests, lint, typecheck, dev verify**
 
 ```bash
-pnpm test -- tests/unit/components/portfolio-table.test.tsx && pnpm typecheck && pnpm lint
+npm test -- tests/unit/components/portfolio-table.test.tsx && npm run typecheck && npm run lint
 ```
 
 Visit `/datasets`, confirm the new table; iterate via `visual-fix` if needed.
@@ -2412,7 +2412,7 @@ export function SwapCapacityTile({ maxSwapSize, capacityGate }: { maxSwapSize: n
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/amm-tiles.test.tsx
+npm test -- tests/unit/components/amm-tiles.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -2517,7 +2517,7 @@ export function CounterfactualCalculator({
 - [ ] **Step 4: Run, expect PASS**
 
 ```bash
-pnpm test -- tests/unit/components/counterfactual.test.tsx
+npm test -- tests/unit/components/counterfactual.test.tsx
 ```
 
 - [ ] **Step 5: Commit**
@@ -2626,7 +2626,7 @@ export function AmmOpsPanel({ initial }: { initial: AmmFeed }) {
 - [ ] **Step 4: Run, expect PASS** + typecheck
 
 ```bash
-pnpm test -- tests/unit/components/amm-ops-panel.test.tsx && pnpm typecheck
+npm test -- tests/unit/components/amm-ops-panel.test.tsx && npm run typecheck
 ```
 
 - [ ] **Step 5: Commit**
@@ -2707,7 +2707,7 @@ function tabsFor(ds: Dataset) {
 - [ ] **Step 4: Verify route + visual loop**
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Visit `/datasets/ds_acred/amm`, confirm tile layout and that NAV updates after a few seconds. Visit `/datasets/ds_mfone/amm`, confirm 404. Run `visual-fix` if layout drifts from the ASCII spec.
@@ -2715,7 +2715,7 @@ Visit `/datasets/ds_acred/amm`, confirm tile layout and that NAV updates after a
 - [ ] **Step 5: Typecheck, lint, commit**
 
 ```bash
-pnpm typecheck && pnpm lint
+npm run typecheck && npm run lint
 git add app/'(app)'/datasets/'[datasetId]'/amm/page.tsx app/'(app)'/datasets/'[datasetId]'/amm/loading.tsx app/'(app)'/datasets/'[datasetId]'/layout.tsx
 git commit -m "feat(amm): /datasets/ds_acred/amm route + layout tab"
 ```
@@ -2809,7 +2809,7 @@ test.describe('ACRED monitoring brief', () => {
 - [ ] **Step 2: Run, expect PASS**
 
 ```bash
-pnpm test:e2e -- tests/e2e/acred-monitoring-brief.spec.ts
+npm run test:e2e -- tests/e2e/acred-monitoring-brief.spec.ts
 ```
 
 If a step fails, the most likely cause is a login fixture mismatch — copy the working pattern from `tests/e2e/explore-acred.spec.ts`. Do **not** reduce the spec to make it pass; fix the underlying mismatch.
@@ -2828,39 +2828,39 @@ git commit -m "test(e2e): ACRED monitoring brief — portfolio → brief → dri
 - [ ] **Step 1: All units green**
 
 ```bash
-pnpm test
+npm test
 ```
 Expected: every new unit suite passes alongside existing ones.
 
 - [ ] **Step 2: Typecheck clean**
 
 ```bash
-pnpm typecheck
+npm run typecheck
 ```
 
 - [ ] **Step 3: Lint clean**
 
 ```bash
-pnpm lint
+npm run lint
 ```
 
 - [ ] **Step 4: E2E suite green**
 
 ```bash
-pnpm test:e2e
+npm run test:e2e
 ```
 Expected: the new spec plus all existing specs pass (no regressions).
 
 - [ ] **Step 5: Build succeeds**
 
 ```bash
-pnpm build
+npm run build
 ```
 
 - [ ] **Step 6: Manual smoke (visual)**
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Walk the demo flow as the counterparty persona: `/datasets` → click ACRED → scan vital signs → click a red flag → return → click Draft DD memo → return → click AMM tab → confirm NAV ticks. Stop dev server.
