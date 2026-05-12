@@ -16,6 +16,7 @@ import { acredAnomalyFeed } from '@/lib/data/acred/anomalies'
 import { acredPeerDispersion } from '@/lib/data/acred/peers'
 import { acredAttestationDiscipline } from '@/lib/data/acred/attestation-discipline'
 import { acredAmmFeed } from '@/lib/data/acred/amm'
+import * as decisionsStore from '@/lib/api/fixtures/decisions'
 
 export type DatasetFilters = {
   search?: string
@@ -99,17 +100,25 @@ export const getDatasetLineage = mockEndpoint(
 )
 
 export const getAcredBriefRedFlags = mockEndpoint(
-  async (_ctx: RequestContext, _signal): Promise<RedFlag[]> => {
-    void _ctx; void _signal
-    return z.array(RedFlagSchema).parse(evaluateAcredRedFlags(acredFacts.snapshot, acredFacts))
+  async (_ctx: RequestContext, _signal, opts: { includeAcknowledged?: boolean } = {}): Promise<RedFlag[]> => {
+    const thresholds = decisionsStore.getThresholds().filter((t) => t.datasetId === 'ds_acred')
+    const acked = decisionsStore.getAcknowledgedFlags()
+    const ackedIds = new Set(
+      acked.filter((a) => a.datasetId === 'ds_acred' && (!a.expiresAt || new Date(a.expiresAt).getTime() > Date.now())).map((a) => a.flagId),
+    )
+    const flags = evaluateAcredRedFlags(acredFacts.snapshot, acredFacts, thresholds)
+    const filtered = opts.includeAcknowledged ? flags : flags.filter((f) => !ackedIds.has(f.id))
+    return z.array(RedFlagSchema).parse(filtered)
   },
   { latencyMs: 100 }
 )
 
 export const getAcredAnomalyFeed = mockEndpoint(
-  async (_ctx: RequestContext, _signal): Promise<AnomalyEvent[]> => {
-    void _ctx; void _signal
-    return z.array(AnomalyEventSchema).parse(acredAnomalyFeed)
+  async (_ctx: RequestContext, _signal, opts: { includeDismissed?: boolean } = {}): Promise<AnomalyEvent[]> => {
+    const dismissed = decisionsStore.getDismissedAnomalies()
+    const dismissedIds = new Set(dismissed.map((d) => d.anomalyId))
+    const events = opts.includeDismissed ? acredAnomalyFeed : acredAnomalyFeed.filter((e) => !dismissedIds.has(e.id))
+    return z.array(AnomalyEventSchema).parse(events)
   },
   { latencyMs: 100 }
 )
