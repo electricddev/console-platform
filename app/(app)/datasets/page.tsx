@@ -3,7 +3,7 @@ import { requireUser } from '@/lib/auth/server'
 import { listDatasets } from '@/lib/api/endpoints/datasets'
 import { PageHeader } from '@/components/common/page-header'
 import { DatasetFilters } from './_components/dataset-filters'
-import { DatasetTable } from './_components/dataset-table'
+import { PortfolioTable } from '@/components/features/portfolio/portfolio-table'
 import type { AssetClass } from '@/lib/api/types'
 
 type Search = { q?: string; class?: string; status?: string }
@@ -23,7 +23,7 @@ export default async function DatasetsPage({ searchParams }: { searchParams: Pro
   return (
     <div className="px-6 py-6 max-w-[1400px] mx-auto">
       <PageHeader
-        eyebrow="// catalog"
+        eyebrow="// credit portfolio"
         title="Datasets"
         description="Browse all datasets you have access to. Click any row to drill into schema, templates, runs, and lineage."
       />
@@ -33,7 +33,7 @@ export default async function DatasetsPage({ searchParams }: { searchParams: Pro
             <DatasetFilters />
           </Suspense>
         </div>
-        <DatasetTable datasets={datasets} />
+        <PortfolioTable datasets={datasets} />
       </div>
     </div>
   )
