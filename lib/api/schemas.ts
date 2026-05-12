@@ -760,6 +760,68 @@ export const CopilotThreadSchema = z.object({
 })
 export type CopilotThread = z.infer<typeof CopilotThreadSchema>
 
+// ---------- Decision layer: issuer compliance ----------
+
+export const IssuerRequestKindSchema = z.enum(['attestation-request', 'gap-acceptance', 'sla-renegotiation'])
+export type IssuerRequestKind = z.infer<typeof IssuerRequestKindSchema>
+
+export const IssuerRequestStatusSchema = z.enum(['pending', 'accepted', 'declined'])
+export type IssuerRequestStatus = z.infer<typeof IssuerRequestStatusSchema>
+
+export const IssuerRequestSchema = z.object({
+  id: z.string(),
+  issuerId: z.string(),
+  requestedBy: z.string(),
+  requestedAt: z.string().datetime(),
+  kind: IssuerRequestKindSchema,
+  payload: z.record(z.unknown()),
+  status: IssuerRequestStatusSchema,
+})
+export type IssuerRequest = z.infer<typeof IssuerRequestSchema>
+
+export const SlaCadenceSchema = z.enum(['daily', 'weekly', 'monthly', 'quarterly'])
+export type SlaCadence = z.infer<typeof SlaCadenceSchema>
+
+export const IssuerComplianceSchema = z.object({
+  issuerId: z.string(),
+  assetIds: z.array(z.string()),
+  discipline: AttestationDisciplineSchema,
+  openRequestCount: z.number().int().nonnegative(),
+})
+export type IssuerCompliance = z.infer<typeof IssuerComplianceSchema>
+
+// ---------- Decision layer: alerts ----------
+
+export const AlertChannelSchema = z.object({
+  id: z.string(),
+  kind: NotificationChannelKindSchema,
+  label: z.string(),
+  target: z.string(),
+  createdBy: z.string(),
+  createdAt: z.string().datetime(),
+})
+export type AlertChannel = z.infer<typeof AlertChannelSchema>
+
+export const AlertRuleSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  enabled: z.boolean().default(true),
+  condition: z.object({
+    metric: z.string(),
+    threshold: z.number(),
+    direction: ThresholdDirectionSchema,
+  }),
+  scope: z.object({
+    datasetIds: z.array(z.string()),
+    kinds: z.array(z.string()).default([]),
+    severities: z.array(z.string()).default([]),
+  }),
+  channelIds: z.array(z.string()),
+  createdBy: z.string(),
+  createdAt: z.string().datetime(),
+})
+export type AlertRule = z.infer<typeof AlertRuleSchema>
+
 // ---------- Status ----------
 
 export const StatusReportSchema = z.object({
