@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import {
   Activity,
+  BellRing,
   Bot,
+  Building2,
   ClipboardSignature,
   Database,
   FileSpreadsheet,
@@ -29,6 +31,8 @@ type Props = { role: Role }
 const COUNTERPARTY_ITEMS = [
   { href: '/', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/datasets', label: 'Datasets', icon: Database },
+  { href: '/issuers', label: 'Issuers', icon: Building2 },
+  { href: '/alerts', label: 'Alerts', icon: BellRing },
   { href: '/templates', label: 'Templates', icon: FileSpreadsheet },
   { href: '/runs', label: 'Runs', icon: Activity },
   { href: '/copilot', label: 'Copilot', icon: Bot },
