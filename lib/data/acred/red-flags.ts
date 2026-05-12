@@ -1,5 +1,6 @@
 import type { BriefSnapshot, RedFlag } from '@/lib/api/schemas'
 import { acredFacts } from './facts'
+import { acredAnomalyFeed } from './anomalies'
 
 type Facts = typeof acredFacts
 
@@ -77,9 +78,17 @@ export const acredRedFlagRules: RedFlagRule[] = [
     id: 'acred.recent_high_severity_event',
     label: 'New high-severity 8-K linked to held borrower (30d)',
     severity: 'high',
-    // Linked count is computed from the anomaly fixture — re-derived at evaluator
-    // time to keep the rule pure (no implicit cross-module state).
-    evaluate: () => null,
+    evaluate: () => {
+      const cutoff = Date.now() - 30 * 24 * 3_600_000
+      const hit = acredAnomalyFeed.find((e) =>
+        e.kind === 'credit-event' &&
+        e.severity === 'high' &&
+        new Date(e.occurredAt).getTime() >= cutoff,
+      )
+      return hit
+        ? { reason: `${hit.title} — ${hit.borrowerNormalized}`, drillHref: hit.detailHref }
+        : null
+    },
   },
 ]
 
