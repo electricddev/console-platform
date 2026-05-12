@@ -29,13 +29,13 @@ export function NotebookComposer({ notebook }: Props) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
+    <div className="grid items-start gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
       <MethodologySidebar
         onAddMethodology={(m) => dispatch({ type: 'add-methodology', methodology: m })}
         onAddMarkdown={() => dispatch({ type: 'add-markdown' })}
         onAddBlankQuery={() => dispatch({ type: 'add-blank-query' })}
       />
-      <main className="grid gap-3">
+      <main className="flex flex-col gap-3">
         <SaveBar notebookId={notebook.id} dirty={state.dirty} saving={saving} onSave={handleSave} />
         {saveError && <p className="text-xs text-destructive">Save failed: {saveError}</p>}
         <ComposeCellList state={state} dispatch={dispatch} />
