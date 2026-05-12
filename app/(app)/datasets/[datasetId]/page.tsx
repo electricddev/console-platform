@@ -38,7 +38,7 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
     )
   }
 
-  // Legacy overview for non-ACRED datasets — unchanged.
+  // Legacy overview for non-ACRED datasets.
   const [ds, suggestions, anomalies] = await Promise.all([
     getDataset(ctx, datasetId),
     ai.suggestQueries(ctx, datasetId),

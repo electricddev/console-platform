@@ -29,13 +29,18 @@ export function PortfolioTable({ datasets }: { datasets: Dataset[] }) {
           {datasets.map((d) => {
             const org = fixtures.orgs.find((o) => o.id === d.originatorOrgId)
             const v = d.briefSnapshot?.vitals
-            const onTime = undefined // computed per-dataset if needed
             return (
               <tr key={d.id} className="border-t border-border/60 hover:bg-muted/40">
                 <td className="px-3 py-2">
-                  <Link href={`/datasets/${d.id}`} className="font-medium hover:underline">
-                    {d.name}
-                  </Link>
+                  <span className="inline-flex items-center gap-2">
+                    <Link href={`/datasets/${d.id}`} className="font-medium hover:underline">{d.name}</Link>
+                    {d.alerts.length > 0 && (
+                      <span
+                        className="inline-block size-1.5 rounded-full bg-warning"
+                        aria-label={`${d.alerts.length} alerts`}
+                      />
+                    )}
+                  </span>
                   <p className="text-xs text-muted-foreground">{org?.name ?? d.originatorOrgId}</p>
                 </td>
                 <td className="px-3 py-2">
@@ -53,7 +58,7 @@ export function PortfolioTable({ datasets }: { datasets: Dataset[] }) {
                   <DeltaCell delta={v?.nonAccrualPct} formatValue={formatPp} />
                 </td>
                 <td className="px-3 py-2">
-                  <AttestationCell onTimePct={onTime} lastAttestedAt={d.lastAttestedAt} />
+                  <AttestationCell onTimePct={undefined} lastAttestedAt={d.lastAttestedAt} />
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant="outline">{d.status}</Badge>

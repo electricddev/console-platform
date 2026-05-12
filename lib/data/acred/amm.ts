@@ -14,7 +14,7 @@ export const acredAmmFeed: AmmFeed = {
   anomalyStream: [
     {
       id: 'amm_sla_1',
-      occurredAt: new Date(Date.now() - 2 * 60_000).toISOString(),
+      occurredAt: '2026-05-12T00:00:00.000Z',
       kind: 'amm-sla', severity: 'medium',
       title: 'NAV freshness 62s > 60s SLA — max swap reduced to $400k',
       borrowerNormalized: null, detailHref: null,

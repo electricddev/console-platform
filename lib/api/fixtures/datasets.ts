@@ -1,4 +1,5 @@
 import type { Dataset } from '@/lib/api/types'
+import { acredFacts } from '@/lib/data/acred/facts'
 
 const ts = (offsetMin: number) => new Date(Date.now() - offsetMin * 60_000).toISOString()
 
@@ -130,18 +131,7 @@ export const datasetFixtures: Dataset[] = [
       { id: 'concentration_metrics' },
       { id: 'credit_events' },
     ],
-    briefSnapshot: {
-      periodEnd: '2026-03-31T00:00:00.000Z',
-      priorPeriodEnd: '2025-12-31T00:00:00.000Z',
-      vitals: {
-        nav:                   { value: 1_612_000_000, delta: -0.011, deltaKind: 'pct', tone: 'negative' },
-        leverage:              { value: 0.730,         delta:  0.4,   deltaKind: 'pp',  tone: 'negative' },
-        nonAccrualPct:         { value: 1.42,          delta:  0.21,  deltaKind: 'pp',  tone: 'negative' },
-        top10ConcentrationPct: { value: 32.4,          delta:  1.8,   deltaKind: 'pp',  tone: 'negative' },
-        pikPct:                { value: 8.3,           delta:  1.1,   deltaKind: 'pp',  tone: 'negative' },
-        netFlow:               { value: -23_000_000,   delta: -45_000_000, deltaKind: 'abs', tone: 'negative' },
-      },
-    },
+    briefSnapshot: acredFacts.snapshot,
   },
   {
     id: 'ds_jaaa',

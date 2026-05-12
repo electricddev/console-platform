@@ -99,36 +99,49 @@ export const getDatasetLineage = mockEndpoint(
 )
 
 export const getAcredBriefRedFlags = mockEndpoint(
-  async (_ctx: RequestContext): Promise<RedFlag[]> => {
+  async (_ctx: RequestContext, _signal): Promise<RedFlag[]> => {
+    void _ctx; void _signal
     return z.array(RedFlagSchema).parse(evaluateAcredRedFlags(acredFacts.snapshot, acredFacts))
   },
   { latencyMs: 100 }
 )
 
 export const getAcredAnomalyFeed = mockEndpoint(
-  async (_ctx: RequestContext): Promise<AnomalyEvent[]> => {
+  async (_ctx: RequestContext, _signal): Promise<AnomalyEvent[]> => {
+    void _ctx; void _signal
     return z.array(AnomalyEventSchema).parse(acredAnomalyFeed)
   },
   { latencyMs: 100 }
 )
 
 export const getAcredPeerDispersion = mockEndpoint(
-  async (_ctx: RequestContext): Promise<PeerDispersionRow[]> => {
+  async (_ctx: RequestContext, _signal): Promise<PeerDispersionRow[]> => {
+    void _ctx; void _signal
     return z.array(PeerDispersionRowSchema).parse(acredPeerDispersion)
   },
   { latencyMs: 140 }
 )
 
 export const getAcredAttestationDiscipline = mockEndpoint(
-  async (_ctx: RequestContext): Promise<AttestationDiscipline> => {
+  async (_ctx: RequestContext, _signal): Promise<AttestationDiscipline> => {
+    void _ctx; void _signal
     return AttestationDisciplineSchema.parse(acredAttestationDiscipline)
   },
   { latencyMs: 120 }
 )
 
 export const getAcredAmmFeed = mockEndpoint(
-  async (_ctx: RequestContext): Promise<AmmFeed> => {
-    return AmmFeedSchema.parse(acredAmmFeed)
+  async (_ctx: RequestContext, _signal): Promise<AmmFeed> => {
+    void _ctx; void _signal
+    const refreshed: AmmFeed = {
+      ...acredAmmFeed,
+      anomalyStream: acredAmmFeed.anomalyStream.map((e, i) =>
+        i === 0
+          ? { ...e, occurredAt: new Date(Date.now() - 2 * 60_000).toISOString() }
+          : e,
+      ),
+    }
+    return AmmFeedSchema.parse(refreshed)
   },
   { latencyMs: 100 }
 )
