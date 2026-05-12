@@ -16,7 +16,8 @@ function tabsFor(ds: Dataset) {
     base.push({ href: '/explore', label: 'Explore' })
   }
   if (ds.id === 'ds_acred') {
-    base.push({ href: '/amm', label: 'AMM' })
+    base.push({ href: '/memo', label: 'Memo' })
+    base.push({ href: '/amm',  label: 'AMM' })
   }
   base.push(
     { href: '/schema', label: 'Schema' },

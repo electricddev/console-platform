@@ -18,14 +18,16 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
   const ctx = { user: session }
 
   if (datasetId === 'ds_acred') {
-    const [ds, redFlags, anomalies, peerDispersion, discipline] = await Promise.all([
+    const [ds, redFlags, anomalies, peerDispersion, discipline, watchEntries] = await Promise.all([
       getDataset(ctx, datasetId),
       getAcredBriefRedFlags(ctx),
       getAcredAnomalyFeed(ctx),
       getAcredPeerDispersion(ctx),
       getAcredAttestationDiscipline(ctx),
+      (await import('@/lib/api/endpoints/decisions')).listWatchEntries(ctx, session.id),
     ])
     const org = fixtures.orgs.find((o) => o.id === ds.originatorOrgId)
+    const initial = watchEntries.find((w) => w.datasetId === datasetId)
     return (
       <AcredBrief
         dataset={ds}
@@ -34,6 +36,8 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
         anomalies={anomalies}
         peerDispersion={peerDispersion}
         discipline={discipline}
+        initialWatching={Boolean(initial)}
+        initialWatchChannels={initial?.channels ?? []}
       />
     )
   }

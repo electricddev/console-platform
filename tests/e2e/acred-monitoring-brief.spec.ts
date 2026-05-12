@@ -73,12 +73,12 @@ test('ACRED monitoring brief — portfolio → brief → drill → memo → AMM'
   }
 
   // ── 7. Draft DD memo ───────────────────────────────────────────────────────
-  // DrillOutActions renders a "Draft DD memo" button linking to /notebooks/new?prefill=acred-brief-...
+  // DrillOutActions renders a "Draft DD memo" button linking to /datasets/ds_acred/memo
   const memoButton = page.getByRole('link', { name: /draft dd memo/i })
   await expect(memoButton).toBeVisible()
   await memoButton.click()
-  // URL matches /notebooks/new?prefill=acred-brief-2026-03 (period end 2026-03)
-  await expect(page).toHaveURL(/\/notebooks\/new\?prefill=acred-brief-2026-03/)
+  // URL matches /datasets/ds_acred/memo
+  await expect(page).toHaveURL(/\/datasets\/ds_acred\/memo/)
 
   // ── 8. Return and click the AMM tab ────────────────────────────────────────
   await page.goBack()
