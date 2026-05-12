@@ -44,4 +44,28 @@ export const orgFixtures: Org[] = [
     assetClasses: ['private-credit'],
     verified: true,
   },
+  {
+    id: 'org_janus',
+    name: 'Janus Henderson',
+    description: 'Janus Henderson Investors (mocked demo issuer).',
+    websiteUrl: 'https://www.janushenderson.com',
+    assetClasses: ['private-credit'],
+    verified: false,
+  },
+  {
+    id: 'org_fasanara_mgr',
+    name: 'Fasanara Capital',
+    description: 'Fasanara Capital — invoice-finance manager (mocked demo issuer).',
+    websiteUrl: 'https://www.fasanara.com',
+    assetClasses: ['trade-receivables'],
+    verified: false,
+  },
+  {
+    id: 'org_amsmgr',
+    name: 'Apollo Multi-Strategy Mgr',
+    description: 'Apollo Multi-Strategy Credit fund manager (mocked demo issuer).',
+    websiteUrl: 'https://www.apollo.com',
+    assetClasses: ['private-credit'],
+    verified: false,
+  },
 ]
