@@ -2,8 +2,20 @@ import { mockEndpoint, MockApiError, type RequestContext } from '@/lib/api/clien
 import { fixtures } from '@/lib/api/fixtures'
 import {
   DatasetSchema, SchemaSchema, RunSchema,
+  RedFlagSchema, AnomalyEventSchema, PeerDispersionRowSchema,
+  AttestationDisciplineSchema, AmmFeedSchema,
 } from '@/lib/api/schemas'
 import type { Dataset, Schema, Run, AssetClass } from '@/lib/api/types'
+import type {
+  RedFlag, AnomalyEvent, PeerDispersionRow, AttestationDiscipline, AmmFeed,
+} from '@/lib/api/schemas'
+import { z } from 'zod'
+import { acredFacts } from '@/lib/data/acred/facts'
+import { evaluateAcredRedFlags } from '@/lib/data/acred/red-flags'
+import { acredAnomalyFeed } from '@/lib/data/acred/anomalies'
+import { acredPeerDispersion } from '@/lib/data/acred/peers'
+import { acredAttestationDiscipline } from '@/lib/data/acred/attestation-discipline'
+import { acredAmmFeed } from '@/lib/data/acred/amm'
 
 export type DatasetFilters = {
   search?: string
@@ -84,4 +96,39 @@ export const getDatasetLineage = mockEndpoint(
     }
   },
   { latencyMs: 200 }
+)
+
+export const getAcredBriefRedFlags = mockEndpoint(
+  async (_ctx: RequestContext): Promise<RedFlag[]> => {
+    return z.array(RedFlagSchema).parse(evaluateAcredRedFlags(acredFacts.snapshot, acredFacts))
+  },
+  { latencyMs: 100 }
+)
+
+export const getAcredAnomalyFeed = mockEndpoint(
+  async (_ctx: RequestContext): Promise<AnomalyEvent[]> => {
+    return z.array(AnomalyEventSchema).parse(acredAnomalyFeed)
+  },
+  { latencyMs: 100 }
+)
+
+export const getAcredPeerDispersion = mockEndpoint(
+  async (_ctx: RequestContext): Promise<PeerDispersionRow[]> => {
+    return z.array(PeerDispersionRowSchema).parse(acredPeerDispersion)
+  },
+  { latencyMs: 140 }
+)
+
+export const getAcredAttestationDiscipline = mockEndpoint(
+  async (_ctx: RequestContext): Promise<AttestationDiscipline> => {
+    return AttestationDisciplineSchema.parse(acredAttestationDiscipline)
+  },
+  { latencyMs: 120 }
+)
+
+export const getAcredAmmFeed = mockEndpoint(
+  async (_ctx: RequestContext): Promise<AmmFeed> => {
+    return AmmFeedSchema.parse(acredAmmFeed)
+  },
+  { latencyMs: 100 }
 )
