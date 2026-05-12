@@ -118,6 +118,34 @@ export const WorkspaceSchema = z.object({
 })
 export type Workspace = z.infer<typeof WorkspaceSchema>
 
+// ---------- Brief primitives (used by the ACRED monitoring brief) ----------
+
+export const DeltaToneSchema = z.enum(['positive', 'negative', 'neutral'])
+export type DeltaTone = z.infer<typeof DeltaToneSchema>
+
+export const DeltaSchema = z.object({
+  value: z.number(),
+  delta: z.number(),
+  // pp = percentage points; pct = fractional change (0.05 = 5%); abs = raw units.
+  deltaKind: z.enum(['pp', 'pct', 'abs']),
+  tone: DeltaToneSchema,
+})
+export type Delta = z.infer<typeof DeltaSchema>
+
+export const BriefSnapshotSchema = z.object({
+  periodEnd: z.string().datetime(),
+  priorPeriodEnd: z.string().datetime(),
+  vitals: z.object({
+    nav: DeltaSchema,
+    leverage: DeltaSchema,
+    nonAccrualPct: DeltaSchema,
+    top10ConcentrationPct: DeltaSchema,
+    pikPct: DeltaSchema,
+    netFlow: DeltaSchema,
+  }),
+})
+export type BriefSnapshot = z.infer<typeof BriefSnapshotSchema>
+
 // ---------- Datasets ----------
 
 export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
@@ -180,6 +208,7 @@ export const DatasetSchema = z.object({
     createdAt: z.string().datetime(),
   })).default([]),
   tables: z.array(z.object({ id: z.string() })).optional(),
+  briefSnapshot: BriefSnapshotSchema.optional(),
 })
 export type Dataset = z.infer<typeof DatasetSchema>
 
@@ -536,20 +565,6 @@ export const NotebookSchema = z.object({
   shareToken: z.string().optional(),
 })
 export type Notebook = z.infer<typeof NotebookSchema>
-
-// ---------- Brief primitives (used by the ACRED monitoring brief) ----------
-
-export const DeltaToneSchema = z.enum(['positive', 'negative', 'neutral'])
-export type DeltaTone = z.infer<typeof DeltaToneSchema>
-
-export const DeltaSchema = z.object({
-  value: z.number(),
-  delta: z.number(),
-  // pp = percentage points; pct = fractional change (0.05 = 5%); abs = raw units.
-  deltaKind: z.enum(['pp', 'pct', 'abs']),
-  tone: DeltaToneSchema,
-})
-export type Delta = z.infer<typeof DeltaSchema>
 
 // ---------- Copilot ----------
 
