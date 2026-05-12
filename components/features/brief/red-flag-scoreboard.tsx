@@ -1,14 +1,14 @@
-import Link from 'next/link'
+import type { ReactNode } from 'react'
 import type { RedFlag } from '@/lib/api/schemas'
-import { cn } from '@/lib/utils'
+import { RedFlagCard } from './red-flag-card'
 
-const sevTone: Record<RedFlag['severity'], string> = {
-  low:    'border-foreground/20 bg-foreground/5',
-  medium: 'border-warning/40 bg-warning/5',
-  high:   'border-danger/40 bg-danger/5',
+type Props = {
+  flags: RedFlag[]
+  totalRules: number
+  renderActions?: (flag: RedFlag) => ReactNode
 }
 
-export function RedFlagScoreboard({ flags, totalRules }: { flags: RedFlag[]; totalRules: number }) {
+export function RedFlagScoreboard({ flags, totalRules, renderActions }: Props) {
   return (
     <section aria-labelledby="red-flags">
       <header className="flex items-baseline justify-between">
@@ -21,18 +21,7 @@ export function RedFlagScoreboard({ flags, totalRules }: { flags: RedFlag[]; tot
         </p>
       ) : (
         <ul className="mt-3 grid gap-2">
-          {flags.map((f) => (
-            <li key={f.id} className={cn('rounded-md border-l-2 p-3', sevTone[f.severity])}>
-              <p className="text-sm font-medium">
-                {f.drillHref ? (
-                  <Link href={f.drillHref} className="hover:underline">{f.label}</Link>
-                ) : (
-                  f.label
-                )}
-              </p>
-              <p className="text-xs text-muted-foreground">{f.reason}</p>
-            </li>
-          ))}
+          {flags.map((f) => <RedFlagCard key={f.id} flag={f} actions={renderActions?.(f)} />)}
         </ul>
       )}
     </section>
