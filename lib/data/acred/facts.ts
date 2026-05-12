@@ -21,7 +21,7 @@ export const acredFacts: {
     priorPeriodEnd: '2025-12-31T00:00:00.000Z',
     vitals: {
       nav:                   { value: 1_612_000_000, delta: -0.011, deltaKind: 'pct', tone: 'negative' },
-      leverage:              { value: 0.730,         delta:  0.004, deltaKind: 'pp',  tone: 'negative' },
+      leverage:              { value: 0.730,         delta:  0.4,   deltaKind: 'pp',  tone: 'negative' },
       nonAccrualPct:         { value: 1.42,          delta:  0.21,  deltaKind: 'pp',  tone: 'negative' },
       top10ConcentrationPct: { value: 32.4,          delta:  1.8,   deltaKind: 'pp',  tone: 'negative' },
       pikPct:                { value: 8.3,           delta:  1.1,   deltaKind: 'pp',  tone: 'negative' },

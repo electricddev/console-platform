@@ -38,8 +38,8 @@ export const acredRedFlagRules: RedFlagRule[] = [
     id: 'acred.leverage_drift',
     label: 'Leverage moved > 200bps QoQ',
     severity: 'medium',
-    evaluate: (s) => Math.abs(s.vitals.leverage.delta) > 0.02
-      ? { reason: `${(s.vitals.leverage.delta * 100).toFixed(2)}pp QoQ`, drillHref: `${baseHref}/explore?table=fund_overview` }
+    evaluate: (s) => Math.abs(s.vitals.leverage.delta) > 2.0
+      ? { reason: `${s.vitals.leverage.delta.toFixed(2)}pp QoQ`, drillHref: `${baseHref}/explore?table=fund_overview` }
       : null,
   },
   {

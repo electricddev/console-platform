@@ -6,7 +6,7 @@ export function formatDelta(delta: Delta): { signedText: string; tone: Delta['to
     delta.deltaKind === 'pct'
       ? `${(delta.delta * 100).toFixed(1)}%`
       : delta.deltaKind === 'pp'
-        ? `${(delta.delta * 100).toFixed(2)}pp`
+        ? `${delta.delta.toFixed(2)}pp`
         : `${formatAbs(delta.delta)}`
   return { signedText: `${sign}${magnitude}`, tone: delta.tone }
 }

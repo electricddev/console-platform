@@ -135,7 +135,7 @@ export const datasetFixtures: Dataset[] = [
       priorPeriodEnd: '2025-12-31T00:00:00.000Z',
       vitals: {
         nav:                   { value: 1_612_000_000, delta: -0.011, deltaKind: 'pct', tone: 'negative' },
-        leverage:              { value: 0.730,         delta:  0.004, deltaKind: 'pp',  tone: 'negative' },
+        leverage:              { value: 0.730,         delta:  0.4,   deltaKind: 'pp',  tone: 'negative' },
         nonAccrualPct:         { value: 1.42,          delta:  0.21,  deltaKind: 'pp',  tone: 'negative' },
         top10ConcentrationPct: { value: 32.4,          delta:  1.8,   deltaKind: 'pp',  tone: 'negative' },
         pikPct:                { value: 8.3,           delta:  1.1,   deltaKind: 'pp',  tone: 'negative' },
@@ -166,7 +166,7 @@ export const datasetFixtures: Dataset[] = [
       priorPeriodEnd: '2026-03-31T00:00:00.000Z',
       vitals: {
         nav:                   { value: 984_000_000, delta:  0.001, deltaKind: 'pct', tone: 'neutral'  },
-        leverage:              { value: 0.58,        delta:  0.001, deltaKind: 'pp',  tone: 'neutral'  },
+        leverage:              { value: 0.58,        delta:  0.1,   deltaKind: 'pp',  tone: 'neutral'  },
         nonAccrualPct:         { value: 0.91,        delta:  0,     deltaKind: 'pp',  tone: 'neutral'  },
         top10ConcentrationPct: { value: 12.0,        delta:  0,     deltaKind: 'pp',  tone: 'neutral'  },
         pikPct:                { value: 0,           delta:  0,     deltaKind: 'pp',  tone: 'neutral'  },
@@ -230,7 +230,7 @@ export const datasetFixtures: Dataset[] = [
       priorPeriodEnd: '2026-03-31T00:00:00.000Z',
       vitals: {
         nav:                   { value: 147_000_000, delta: -0.004, deltaKind: 'pct', tone: 'negative' },
-        leverage:              { value: 0.78,        delta:  0.030, deltaKind: 'pp',  tone: 'negative' },
+        leverage:              { value: 0.78,        delta:  3.0,   deltaKind: 'pp',  tone: 'negative' },
         nonAccrualPct:         { value: 2.10,        delta:  0.32,  deltaKind: 'pp',  tone: 'negative' },
         top10ConcentrationPct: { value: 38.0,        delta:  2.1,   deltaKind: 'pp',  tone: 'negative' },
         pikPct:                { value: 5.5,         delta:  0.4,   deltaKind: 'pp',  tone: 'neutral'  },

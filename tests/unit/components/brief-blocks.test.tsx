@@ -9,7 +9,7 @@ describe('DeltaTile', () => {
     render(
       <DeltaTile
         label="Leverage"
-        delta={{ value: 0.73, delta: 0.004, deltaKind: 'pp', tone: 'negative' }}
+        delta={{ value: 0.73, delta: 0.4, deltaKind: 'pp', tone: 'negative' }}
         formatValue={(v) => `${(v * 100).toFixed(1)}%`}
       />
     )
