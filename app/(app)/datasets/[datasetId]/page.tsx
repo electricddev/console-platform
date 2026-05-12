@@ -1,16 +1,44 @@
 import { requireUser } from '@/lib/auth/server'
-import { getDataset } from '@/lib/api/endpoints/datasets'
+import {
+  getDataset, getAcredBriefRedFlags, getAcredAnomalyFeed,
+  getAcredPeerDispersion, getAcredAttestationDiscipline,
+} from '@/lib/api/endpoints/datasets'
 import { ai } from '@/lib/api/endpoints/ai'
+import { fixtures } from '@/lib/api/fixtures'
 import { Card, CardContent } from '@/components/ui/card'
 import { fmtNumber, fmtPct } from '@/lib/format'
 import { MetricCard } from '@/components/features/home/metric-card'
 import { AskAnythingInput } from '@/components/features/datasets/ask-anything-input'
 import { InsightCard } from '@/components/features/home/insight-card'
+import { AcredBrief } from '@/components/features/brief/acred-brief'
 
 export default async function DatasetOverview({ params }: { params: Promise<{ datasetId: string }> }) {
   const { datasetId } = await params
   const session = await requireUser()
   const ctx = { user: session }
+
+  if (datasetId === 'ds_acred') {
+    const [ds, redFlags, anomalies, peerDispersion, discipline] = await Promise.all([
+      getDataset(ctx, datasetId),
+      getAcredBriefRedFlags(ctx),
+      getAcredAnomalyFeed(ctx),
+      getAcredPeerDispersion(ctx),
+      getAcredAttestationDiscipline(ctx),
+    ])
+    const org = fixtures.orgs.find((o) => o.id === ds.originatorOrgId)
+    return (
+      <AcredBrief
+        dataset={ds}
+        issuerName={org?.name ?? ds.originatorOrgId}
+        redFlags={redFlags}
+        anomalies={anomalies}
+        peerDispersion={peerDispersion}
+        discipline={discipline}
+      />
+    )
+  }
+
+  // Legacy overview for non-ACRED datasets — unchanged.
   const [ds, suggestions, anomalies] = await Promise.all([
     getDataset(ctx, datasetId),
     ai.suggestQueries(ctx, datasetId),
@@ -27,7 +55,6 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
         <MetricCard label="Lifetime runs" value={fmtNumber(ds.lifetimeRunCount)} />
         <MetricCard label="Status" value={ds.status} />
       </section>
-
       {ds.alerts.length > 0 && (
         <section className="grid gap-2">
           <h2 className="font-tag text-foreground/60">{'// active alerts'}</h2>
@@ -41,7 +68,6 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
           ))}
         </section>
       )}
-
       <section className="grid gap-3">
         <h2 className="font-tag text-foreground/60">{'// ask the dataset'}</h2>
         <AskAnythingInput
@@ -53,7 +79,6 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
           }}
         />
       </section>
-
       <section className="grid gap-3">
         <h2 className="font-tag text-foreground/60">{'// anomalies'}</h2>
         {anomalies.length === 0 ? (
@@ -62,7 +87,6 @@ export default async function DatasetOverview({ params }: { params: Promise<{ da
           anomalies.map((i) => <InsightCard key={i.id} insight={i} />)
         )}
       </section>
-
       {ds.description && (
         <section className="grid gap-2">
           <h2 className="font-tag text-foreground/60">{'// description'}</h2>
