@@ -268,6 +268,52 @@ export const MemoSchema = z.object({
 })
 export type Memo = z.infer<typeof MemoSchema>
 
+// ---------- Decision layer: per-flag/per-anomaly decisions ----------
+
+export const AcknowledgedFlagSchema = z.object({
+  flagId: z.string(),
+  datasetId: z.string(),
+  acknowledgedBy: z.string(),
+  acknowledgedAt: z.string().datetime(),
+  note: z.string(),
+  expiresAt: z.string().datetime().optional(),
+})
+export type AcknowledgedFlag = z.infer<typeof AcknowledgedFlagSchema>
+
+export const DismissedAnomalySchema = z.object({
+  anomalyId: z.string(),
+  dismissedBy: z.string(),
+  dismissedAt: z.string().datetime(),
+  reason: z.string(),
+})
+export type DismissedAnomaly = z.infer<typeof DismissedAnomalySchema>
+
+export const ThresholdDirectionSchema = z.enum(['above', 'below'])
+export type ThresholdDirection = z.infer<typeof ThresholdDirectionSchema>
+
+export const ThresholdSchema = z.object({
+  id: z.string(),
+  ruleId: z.string(),
+  datasetId: z.string(),
+  metric: z.string(),
+  value: z.number(),
+  direction: ThresholdDirectionSchema,
+  setBy: z.string(),
+  setAt: z.string().datetime(),
+})
+export type Threshold = z.infer<typeof ThresholdSchema>
+
+export const NotificationChannelKindSchema = z.enum(['slack', 'email', 'webhook'])
+export type NotificationChannelKind = z.infer<typeof NotificationChannelKindSchema>
+
+export const WatchEntrySchema = z.object({
+  datasetId: z.string(),
+  userId: z.string(),
+  channels: z.array(NotificationChannelKindSchema).default([]),
+  watchedAt: z.string().datetime(),
+})
+export type WatchEntry = z.infer<typeof WatchEntrySchema>
+
 // ---------- Datasets ----------
 
 export const DatasetStatusSchema = z.enum(['active', 'paused', 'archived'])
