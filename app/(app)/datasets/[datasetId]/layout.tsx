@@ -15,6 +15,9 @@ function tabsFor(ds: Dataset) {
   if (ds.tables && ds.tables.length > 0) {
     base.push({ href: '/explore', label: 'Explore' })
   }
+  if (ds.id === 'ds_acred') {
+    base.push({ href: '/amm', label: 'AMM' })
+  }
   base.push(
     { href: '/schema', label: 'Schema' },
     { href: '/templates', label: 'Templates' },
