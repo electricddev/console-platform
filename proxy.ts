@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login']
+// Paths that bypass auth entirely (no session cookie required).
+const PUBLIC_PATHS = ['/login', '/v2']
+// Subset of public paths that should bounce signed-in users to the app home.
+const AUTH_PATHS = ['/login']
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -15,7 +18,8 @@ export function proxy(req: NextRequest) {
     url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
-  if (isPublic && hasSession) {
+  const isAuthLanding = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  if (isAuthLanding && hasSession) {
     const url = req.nextUrl.clone()
     url.pathname = '/'
     url.searchParams.delete('next')

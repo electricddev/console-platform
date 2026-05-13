@@ -1,0 +1,118 @@
+/* ============================================================
+   Hyve v2 — scoped tokens, utilities, and keyframes.
+   Loaded only by app/v2/layout.tsx so the existing app/(app)
+   shell stays on its own OKLCH token system untouched.
+
+   Tokens live under [data-v2] in both light and .dark scopes.
+   ============================================================ */
+
+[data-v2] {
+  /* Light palette — warm off-white with subtle cream undertone. */
+  --v2-background: #f7f6f3;
+  --v2-foreground: #0a0a0a;
+  --v2-surface: #fbfaf7;
+  --v2-surface-2: #efeeea;
+  --v2-border: #e5e3dd;
+  --v2-muted: #71706c;
+  --v2-accent: #0a0a0a;
+
+  /* Monochrome accent — the foreground IS the accent. The aliases below
+     point to foreground so existing class names keep working, and any
+     "tint" needs are derived via opacity utilities (e.g. /[0.08]). */
+  --v2-brand: var(--v2-foreground);
+  --v2-brand-soft: color-mix(in oklab, var(--v2-foreground) 8%, transparent);
+
+  /* Status hues — kept in sync with the existing app */
+  --v2-success: oklch(0.62 0.13 145);
+  --v2-warning: oklch(0.78 0.14 80);
+  --v2-info: oklch(0.65 0.1 240);
+  --v2-danger: oklch(0.62 0.21 25);
+
+  /* Shell metrics — wider sidebar for premium breathing room */
+  --v2-sidebar-w: 224px;
+  --v2-sidebar-w-collapsed: 64px;
+  --v2-topbar-h: 52px;
+}
+
+[data-v2].dark,
+.dark [data-v2] {
+  /* Dark palette — pure-black-ish with a near-imperceptible warm shift,
+     so charcoals don't feel synthetic against the warm light palette. */
+  --v2-background: #0a0a0a;
+  --v2-foreground: #fafaf7;
+  --v2-surface: #111111;
+  --v2-surface-2: #181818;
+  --v2-border: #1f1f1f;
+  --v2-muted: #8a8985;
+  --v2-accent: #fafaf7;
+
+  --v2-brand: var(--v2-foreground);
+  --v2-brand-soft: color-mix(in oklab, var(--v2-foreground) 10%, transparent);
+}
+
+/* Tailwind `@theme` mappings for these tokens live in app/globals.css, since
+   Tailwind v4 only processes @theme declarations from the entry CSS file. */
+
+/* ---------- Keyframes ---------- */
+@keyframes v2-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes v2-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes v2-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+[data-v2] .anim-fade-in {
+  animation: v2-fade-in 0.3s ease forwards;
+}
+[data-v2] .anim-fade-in-up {
+  animation: v2-fade-in-up 0.4s ease forwards;
+}
+[data-v2] .anim-slide-in {
+  animation: v2-slide-in 0.3s ease forwards;
+}
+
+/* ---------- Scrollbar refinement, scoped ---------- */
+[data-v2] *::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+[data-v2] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-v2] *::-webkit-scrollbar-thumb {
+  background: var(--v2-border);
+  border-radius: 9999px;
+}
+[data-v2] *::-webkit-scrollbar-thumb:hover {
+  background: var(--v2-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-v2] .anim-fade-in,
+  [data-v2] .anim-fade-in-up,
+  [data-v2] .anim-slide-in {
+    animation-duration: 0.01ms !important;
+  }
+}

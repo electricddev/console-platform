@@ -5,6 +5,21 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* --- v2 sneak-peek tokens (defined in app/v2/v2.css, scoped to [data-v2]) --- */
+  --color-v2-background: var(--v2-background);
+  --color-v2-foreground: var(--v2-foreground);
+  --color-v2-surface: var(--v2-surface);
+  --color-v2-surface-2: var(--v2-surface-2);
+  --color-v2-border: var(--v2-border);
+  --color-v2-muted: var(--v2-muted);
+  --color-v2-accent: var(--v2-accent);
+  --color-v2-brand: var(--v2-brand);
+  --color-v2-brand-soft: var(--v2-brand-soft);
+  --color-v2-success: var(--v2-success);
+  --color-v2-warning: var(--v2-warning);
+  --color-v2-info: var(--v2-info);
+  --color-v2-danger: var(--v2-danger);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);

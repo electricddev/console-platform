@@ -36,6 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${instrumentSerif.variable} ${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen flex flex-col font-sans antialiased bg-background text-foreground">
