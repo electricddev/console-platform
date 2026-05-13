@@ -512,7 +512,7 @@ export type Run = z.infer<typeof RunSchema>
 
 // ---------- Sources ----------
 
-export const SourceTypeSchema = z.enum(['postgres', 'mysql', 'snowflake', 'bigquery', 's3', 'rest-api', 'custom'])
+export const SourceTypeSchema = z.enum(['sec', 'postgres', 'mysql', 'snowflake', 'bigquery', 's3', 'rest-api', 'custom'])
 export type SourceType = z.infer<typeof SourceTypeSchema>
 
 export const SourceStatusSchema = z.enum(['healthy', 'lagging', 'paused', 'down'])

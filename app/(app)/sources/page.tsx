@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
 import { requireRole } from '@/lib/auth/server'
 import { listSources } from '@/lib/api/endpoints/sources'
 import { PageHeader } from '@/components/common/page-header'
 import { FreshnessIndicator } from '@/components/common/freshness-indicator'
 import { IngestionSparkline } from '@/components/features/sources/ingestion-sparkline'
+import { AddDataSourceDialog } from '@/components/features/sources/add-data-source-dialog'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { fmtNumber, fmtPct, fmtDuration } from '@/lib/format'
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -32,14 +31,7 @@ export default async function SourcesPage() {
         eyebrow="// sources"
         title="Data Sources"
         description="All connected data sources for your organisation. Click any row to inspect ingestion history."
-        actions={
-          <Button asChild size="sm">
-            <Link href="/sources/new">
-              <Plus className="size-4" />
-              Connect source
-            </Link>
-          </Button>
-        }
+        actions={<AddDataSourceDialog />}
       />
 
       <div className="mt-6 rounded-xl border border-border overflow-hidden">
