@@ -18,6 +18,7 @@ export interface ComputeAttentionResult {
 }
 
 const OUTPUT_NODE_ID = 'pub-attest'
+/** Maximum attention items shown in the rail; the rest surface as a "+N more" overflow row. */
 const CAP = 5
 
 const KIND_RANK: Record<ComputedAttentionItem['kind'], number> = {
@@ -93,9 +94,11 @@ export function computeAttention(fixture: PipelineFixture): ComputeAttentionResu
     const r = KIND_RANK[a.kind] - KIND_RANK[b.kind]
     if (r !== 0) return r
     if (a.kind === 'counterparty_request' || a.kind === 'rule_fire') {
+      // Static items: newest first.
       return new Date(b.at).getTime() - new Date(a.at).getTime()
     }
-    return 0
+    // Pipeline items of the same kind: oldest first, so longer-standing problems surface higher.
+    return new Date(a.at).getTime() - new Date(b.at).getTime()
   })
 
   const total = items.length

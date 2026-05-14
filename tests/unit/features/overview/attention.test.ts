@@ -109,6 +109,22 @@ describe('computeAttention', () => {
     expect(labels).toEqual(['on-path'])
   })
 
+  it('includes all failed nodes regardless of path to pub-attest', () => {
+    const fix = fixture({
+      nodes: [
+        node('off-path-fail', 'failed'),
+        node('on-path-fail',  'failed'),
+        node('pub-attest',    'attested'),
+      ],
+      edges: [
+        { id: 'e1', source: 'on-path-fail', target: 'pub-attest' },
+      ],
+    })
+    const out = computeAttention(fix)
+    expect(out.items).toHaveLength(2)
+    expect(out.items.every((i) => i.kind === 'pipeline_failed')).toBe(true)
+  })
+
   it('sorts counterparty_request and rule_fire newest first within their kind', () => {
     const fix = fixture({
       attention: [
