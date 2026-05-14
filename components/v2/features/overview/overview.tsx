@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ReactFlowProvider } from 'reactflow'
 import { computeAttention } from './attention'
+import { OUTPUT_NODE_ID } from './node-ids'
 import { PipelineGraph } from './pipeline-graph'
 import { Rail } from './rail'
 import { overviewPipeline } from './pipeline-fixture'
@@ -30,7 +31,10 @@ export function Overview({ fundName = 'ACRED' }: OverviewProps) {
   // Esc key returns the rail to idle state (State A).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedId(null)
+      if (e.key === 'Escape') {
+        setDimNodeIds(null)
+        setSelectedId(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -45,6 +49,13 @@ export function Overview({ fundName = 'ACRED' }: OverviewProps) {
   )
 
   const attention = useMemo(() => computeAttention(overviewPipeline), [])
+
+  const chainCount = useMemo(
+    () =>
+      overviewPipeline.nodes.find((n) => n.id === OUTPUT_NODE_ID)
+        ?.data.consumerDeliveries?.length ?? 0,
+    []
+  )
 
   const { attestedCount, pendingCount, failedCount } = useMemo(() => {
     let a = 0,
@@ -103,7 +114,10 @@ export function Overview({ fundName = 'ACRED' }: OverviewProps) {
             <PipelineGraph
               pipeline={overviewPipeline}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={(id) => {
+                setDimNodeIds(null)
+                setSelectedId(id)
+              }}
               dimNodeIds={dimNodeIds}
             />
           </ReactFlowProvider>
@@ -115,8 +129,15 @@ export function Overview({ fundName = 'ACRED' }: OverviewProps) {
           attestedCount={attestedCount}
           pendingCount={pendingCount}
           failedCount={failedCount}
-          onClearSelection={() => setSelectedId(null)}
-          onAttentionRowSelect={(id) => setSelectedId(id)}
+          chainCount={chainCount}
+          onClearSelection={() => {
+            setDimNodeIds(null)
+            setSelectedId(null)
+          }}
+          onAttentionRowSelect={(id) => {
+            setDimNodeIds(null)
+            setSelectedId(id)
+          }}
           onHoverDimSet={setDimNodeIds}
         />
       </div>

@@ -6,6 +6,7 @@ import { RailAttentionQueue } from './rail-attention-queue'
 import { RailNodeDetail } from './rail-node-detail'
 import { RailOutputDetail } from './rail-output-detail'
 import type { ComputedAttentionItem } from './attention'
+import { OUTPUT_NODE_ID } from './node-ids'
 import type { PipelineNode } from './pipeline-types'
 
 interface RailProps {
@@ -15,6 +16,7 @@ interface RailProps {
   attestedCount: number
   pendingCount: number
   failedCount: number
+  chainCount: number
   onClearSelection: () => void
   onAttentionRowSelect: (nodeId: string) => void
   onHoverDimSet: (nodeIds: string[] | null) => void
@@ -27,7 +29,7 @@ export function Rail(props: RailProps) {
   const state: 'A' | 'B' | 'C' =
     selectedNode === null
       ? 'A'
-      : selectedNode.id === 'pub-attest'
+      : selectedNode.id === OUTPUT_NODE_ID
         ? 'C'
         : 'B'
 
@@ -55,6 +57,7 @@ export function Rail(props: RailProps) {
                 attestedCount={props.attestedCount}
                 pendingCount={props.pendingCount}
                 failedCount={props.failedCount}
+                chainCount={props.chainCount}
                 onAttentionRowSelect={props.onAttentionRowSelect}
                 onHoverDimSet={props.onHoverDimSet}
               />

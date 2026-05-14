@@ -11,6 +11,7 @@ interface Props {
   attestedCount: number
   pendingCount: number
   failedCount: number
+  chainCount: number
   onAttentionRowSelect: (nodeId: string) => void
   onHoverDimSet: (nodeIds: string[] | null) => void
 }
@@ -65,6 +66,7 @@ export function RailAttentionQueue({
   attestedCount,
   pendingCount,
   failedCount,
+  chainCount,
   onAttentionRowSelect,
   onHoverDimSet,
 }: Props) {
@@ -81,7 +83,7 @@ export function RailAttentionQueue({
           <Countdown targetIso={nextPublishAt} />
         </div>
         <p className="mt-1.5 text-[11px] leading-none text-v2-muted/70">
-          publishing to 3 chains
+          publishing to {chainCount} chain{chainCount === 1 ? '' : 's'}
         </p>
       </section>
 

@@ -1,8 +1,9 @@
 'use client'
 
-import React, { memo } from 'react'
+import { memo, useEffect, useState, type ReactElement } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
+import { OUTPUT_NODE_ID, OUTPUT_PER_SHARE_NODE_ID } from './node-ids'
 import type { PipelineNodeData, PipelineStatus } from './pipeline-types'
 
 const STATUS_DOT: Record<PipelineStatus, string> = {
@@ -17,8 +18,17 @@ const STATUS_GLOW: Record<PipelineStatus, string> = {
   failed: 'shadow-[0_0_10px_rgba(220,80,60,0.55)]',
 }
 
-/** Relative-time formatter — "12m ago", "3h ago", "just now". */
-function relativeTime(iso: string, now: number = Date.now()): string {
+/** Re-render every second so timestamps and countdowns tick live. */
+function useTick(intervalMs = 1000): number {
+  const [now, setNow] = useState<number>(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), intervalMs)
+    return () => window.clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+function relativeTime(iso: string, now: number): string {
   const diffMs = now - new Date(iso).getTime()
   if (diffMs < 0) return 'in queue'
   const sec = Math.floor(diffMs / 1000)
@@ -31,8 +41,7 @@ function relativeTime(iso: string, now: number = Date.now()): string {
   return `${day}d ago`
 }
 
-/** Live countdown formatter for the pub-attest footer. */
-function countdown(targetIso: string, now: number = Date.now()): string {
+function countdown(targetIso: string, now: number): string {
   const ms = Math.max(0, new Date(targetIso).getTime() - now)
   const total = Math.floor(ms / 1000)
   const mm = Math.floor(total / 60)
@@ -44,8 +53,8 @@ interface FooterProps {
   data: PipelineNodeData
 }
 
-/** Most nodes show cadence (left) + last-run-ago (right). */
 function StandardFooter({ data }: FooterProps) {
+  const now = useTick()
   return (
     <div className="mt-1.5 flex items-center justify-between text-[10px] leading-none">
       <span className="truncate font-mono text-v2-muted">{data.cadence}</span>
@@ -54,14 +63,14 @@ function StandardFooter({ data }: FooterProps) {
         title={new Date(data.lastRunAt).toISOString()}
         suppressHydrationWarning
       >
-        {relativeTime(data.lastRunAt)}
+        {relativeTime(data.lastRunAt, now)}
       </span>
     </div>
   )
 }
 
-/** pub-pershare shows the per-share value (left) + last-run-ago (right). */
 function PerShareFooter({ data }: FooterProps) {
+  const now = useTick()
   return (
     <div className="mt-1.5 flex items-center justify-between text-[10px] leading-none">
       <span className="truncate font-mono tabular-nums text-v2-foreground">
@@ -71,15 +80,14 @@ function PerShareFooter({ data }: FooterProps) {
         className="shrink-0 pl-2 font-mono tabular-nums text-v2-muted/70"
         suppressHydrationWarning
       >
-        {relativeTime(data.lastRunAt)}
+        {relativeTime(data.lastRunAt, now)}
       </span>
     </div>
   )
 }
 
-/** pub-attest shows the total NAV (left) + live countdown (right). */
 function AttestFooter({ data }: FooterProps) {
-  // Reads the total NAV from the `nav` input added in Task 4 Step 2.
+  const now = useTick()
   const totalNavInput = data.inputs.find((i) => i.label === 'nav')
   const displayValue = totalNavInput?.value ?? data.output.value
   return (
@@ -92,7 +100,7 @@ function AttestFooter({ data }: FooterProps) {
         title={new Date(data.nextRunAt).toISOString()}
         suppressHydrationWarning
       >
-        next {countdown(data.nextRunAt)}
+        next {countdown(data.nextRunAt, now)}
       </span>
     </div>
   )
@@ -107,9 +115,9 @@ export const PipelineNodeCard = memo(function PipelineNodeCard({
   const showLeftHandle = phase !== 'source'
   const showRightHandle = phase !== 'publish'
 
-  let Footer: (p: FooterProps) => React.ReactElement = StandardFooter
-  if (id === 'pub-pershare') Footer = PerShareFooter
-  else if (id === 'pub-attest') Footer = AttestFooter
+  let Footer: (p: FooterProps) => ReactElement = StandardFooter
+  if (id === OUTPUT_PER_SHARE_NODE_ID) Footer = PerShareFooter
+  else if (id === OUTPUT_NODE_ID) Footer = AttestFooter
 
   return (
     <div

@@ -1,4 +1,5 @@
 import type { AttentionItem, PipelineFixture } from './pipeline-types'
+import { OUTPUT_NODE_ID } from './node-ids'
 
 /** Pipeline-derived attention rows carry their originating node id so the rail can focus the DAG. */
 export type ComputedAttentionItem =
@@ -17,7 +18,6 @@ export interface ComputeAttentionResult {
   overflow: number
 }
 
-const OUTPUT_NODE_ID = 'pub-attest'
 /** Maximum attention items shown in the rail; the rest surface as a "+N more" overflow row. */
 const CAP = 5
 
