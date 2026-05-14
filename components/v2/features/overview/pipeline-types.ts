@@ -25,6 +25,35 @@ export interface PipelineNodeIO {
   value: string
 }
 
+/** Consumer chain that subscribes to the attested NAV publish payload. */
+export interface ConsumerDelivery {
+  /** Display name, e.g. "Morpho". */
+  name: string
+  /** Network slug, e.g. "mainnet" or "oracle". */
+  network: string
+  /** ISO timestamp of last delivery. */
+  lastDeliveryAt: string
+  /** Truncated tx or content hash, e.g. "0xa412…b8de". */
+  payloadRef: string
+}
+
+/** Heterogeneous items the operator should see that aren't visible in the DAG. */
+export type AttentionItem =
+  | {
+      kind: 'counterparty_request'
+      label: string
+      detail: string
+      at: string // ISO
+      href: string
+    }
+  | {
+      kind: 'rule_fire'
+      label: string
+      detail: string
+      at: string // ISO
+      href: string
+    }
+
 export interface PipelineNodeData {
   /** Display label for the stage. */
   label: string
@@ -46,6 +75,8 @@ export interface PipelineNodeData {
   output: PipelineNodeIO
   /** Provenance chain shown in the detail panel. */
   provenance: PipelineProvenance
+  /** Only set on the output node (`pub-attest`). */
+  consumerDeliveries?: ConsumerDelivery[]
 }
 
 export interface PipelineNode {
@@ -72,4 +103,5 @@ export interface PipelineFixture {
   }
   nodes: PipelineNode[]
   edges: PipelineEdge[]
+  attention: AttentionItem[]
 }

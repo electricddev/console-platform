@@ -330,6 +330,11 @@ export const overviewPipeline: PipelineFixture = {
           proofType: 'merkle-anchor',
           reference: 'awaiting attestation',
         },
+        consumerDeliveries: [
+          { name: 'Morpho', network: 'mainnet', lastDeliveryAt: minutesAgo(3), payloadRef: '0xa412…b8de' },
+          { name: 'Gauntlet', network: 'mainnet', lastDeliveryAt: minutesAgo(3), payloadRef: '0xb73c…f201' },
+          { name: 'RedStone', network: 'oracle', lastDeliveryAt: minutesAgo(3), payloadRef: '0x8e1a…2c97' },
+        ],
       },
     },
   ],
@@ -354,5 +359,22 @@ export const overviewPipeline: PipelineFixture = {
     // publish
     { id: 'e13', source: 'agg-nav', target: 'pub-pershare' },
     { id: 'e14', source: 'pub-pershare', target: 'pub-attest' },
+  ],
+
+  attention: [
+    {
+      kind: 'counterparty_request',
+      label: 'Aave V4 requesting NAV access',
+      detail: 'mainnet · 25k TVL committed',
+      at: minutesAgo(67),
+      href: '/v2/counterparties',
+    },
+    {
+      kind: 'rule_fire',
+      label: 'NAV move > 0.5% intraday',
+      detail: '+0.62% from prior publish',
+      at: minutesAgo(28),
+      href: '/v2/alerts',
+    },
   ],
 }
