@@ -46,20 +46,20 @@ const PALETTE: Record<AuraVariant, {
   dark:  [string, string]
 }> = {
   warm: {
-    light: ['rgba(220,170,140,0.30)', 'rgba(200,150,120,0.12)'],
-    dark:  ['rgba(220,140, 90,0.50)', 'rgba(200,110, 60,0.22)'],
+    light: ['rgba(220,170,140,0.16)', 'rgba(200,150,120,0.06)'],
+    dark:  ['rgba(220,140, 90,0.28)', 'rgba(200,110, 60,0.12)'],
   },
   cool: {
-    light: ['rgba(140,170,220,0.28)', 'rgba(110,150,200,0.11)'],
-    dark:  ['rgba( 80,120,200,0.48)', 'rgba( 60,100,170,0.20)'],
+    light: ['rgba(140,170,220,0.14)', 'rgba(110,150,200,0.05)'],
+    dark:  ['rgba( 80,120,200,0.26)', 'rgba( 60,100,170,0.11)'],
   },
   neutral: {
-    light: ['rgba(220,210,185,0.28)', 'rgba(200,190,165,0.11)'],
-    dark:  ['rgba(190,170,120,0.44)', 'rgba(160,140, 90,0.18)'],
+    light: ['rgba(220,210,185,0.14)', 'rgba(200,190,165,0.05)'],
+    dark:  ['rgba(190,170,120,0.24)', 'rgba(160,140, 90,0.10)'],
   },
   amber: {
-    light: ['rgba(220,185, 80,0.28)', 'rgba(200,165, 60,0.11)'],
-    dark:  ['rgba(200,145, 20,0.52)', 'rgba(170,120,  0,0.22)'],
+    light: ['rgba(220,185, 80,0.14)', 'rgba(200,165, 60,0.05)'],
+    dark:  ['rgba(200,145, 20,0.28)', 'rgba(170,120,  0,0.12)'],
   },
 }
 
@@ -99,7 +99,7 @@ export function CardAura({
 
       {/* Fractal-noise overlay — desaturated, blend shifts per theme */}
       <svg
-        className="absolute inset-0 h-full w-full opacity-[0.16] mix-blend-multiply dark:opacity-[0.20] dark:mix-blend-soft-light"
+        className="absolute inset-0 h-full w-full opacity-[0.08] mix-blend-multiply dark:opacity-[0.12] dark:mix-blend-soft-light"
         aria-hidden
       >
         <filter id={filterId}>
