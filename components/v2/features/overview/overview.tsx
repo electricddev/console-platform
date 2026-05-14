@@ -27,6 +27,15 @@ export function Overview({ fundName = 'ACRED' }: OverviewProps) {
     return () => window.clearInterval(id)
   }, [])
 
+  // Esc key returns the rail to idle state (State A).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedId(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const selectedNode = useMemo(
     () =>
       selectedId

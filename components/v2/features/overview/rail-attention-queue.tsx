@@ -19,6 +19,9 @@ function Countdown({ targetIso }: { targetIso: string }) {
   const [now, setNow] = useState(() => new Date(targetIso).getTime())
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
+    // Synchronous setState on mount is intentional here: setMounted drives
+    // hydration-safe rendering, and setNow prevents a stale initial value.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     setNow(Date.now())
     const id = window.setInterval(() => setNow(Date.now()), 1000)
