@@ -116,3 +116,27 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Pipeline edge-trail animation ---------- */
+@keyframes v2-edge-dash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+[data-v2] .v2-edge-animated path {
+  stroke-dasharray: 4 4;
+  animation: v2-edge-dash 1.2s linear infinite;
+}
+
+/* ---------- Countdown colon pulse (rail State A) ---------- */
+@keyframes v2-colon-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-v2] .v2-edge-animated path {
+    animation: none;
+  }
+}

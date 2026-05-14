@@ -2,8 +2,6 @@
 
 import { useCallback, useMemo } from 'react'
 import ReactFlow, {
-  Background,
-  BackgroundVariant,
   MarkerType,
   type Edge,
   type Node,
@@ -99,12 +97,20 @@ export function PipelineGraph({
 
   const flowEdges: Edge[] = useMemo(
     () =>
-      pipeline.edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-      })),
-    [pipeline.edges]
+      pipeline.edges.map((e) => {
+        const incident =
+          selectedId !== null && (e.source === selectedId || e.target === selectedId)
+        return {
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          className: incident ? 'v2-edge-animated' : undefined,
+          style: incident
+            ? { stroke: 'var(--v2-foreground)', strokeWidth: 1.25, opacity: 0.85 }
+            : undefined,
+        }
+      }),
+    [pipeline.edges, selectedId]
   )
 
   const handleNodeClick: NodeMouseHandler = useCallback(
@@ -137,12 +143,6 @@ export function PipelineGraph({
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1}
-          color="var(--v2-border)"
-        />
       </ReactFlow>
     </div>
   )
