@@ -321,6 +321,7 @@ export const overviewPipeline: PipelineFixture = {
         description:
           'Final attestation, signed bundle anchored on-chain. Held pending reconciliation breaks resolution.',
         inputs: [
+          { label: 'nav',    value: '$1,247,318,402' },
           { label: 'nav/sh', value: '$103.4719' },
           { label: 'breaks', value: '2 open' },
         ],

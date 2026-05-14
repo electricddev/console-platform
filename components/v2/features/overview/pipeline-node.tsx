@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import React, { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
 import type { PipelineNodeData, PipelineStatus } from './pipeline-types'
@@ -11,16 +11,10 @@ const STATUS_DOT: Record<PipelineStatus, string> = {
   failed: 'bg-v2-danger',
 }
 
-const STATUS_RING: Record<PipelineStatus, string> = {
-  attested: 'ring-v2-success/30',
-  pending: 'ring-v2-warning/30',
-  failed: 'ring-v2-danger/40',
-}
-
-const STATUS_LABEL: Record<PipelineStatus, string> = {
-  attested: 'Attested',
-  pending: 'Pending',
-  failed: 'Failed',
+const STATUS_GLOW: Record<PipelineStatus, string> = {
+  attested: 'shadow-[0_0_8px_rgba(64,160,90,0.45)]',
+  pending: 'shadow-[0_0_8px_rgba(210,160,60,0.55)]',
+  failed: 'shadow-[0_0_10px_rgba(220,80,60,0.55)]',
 }
 
 /** Relative-time formatter — "12m ago", "3h ago", "just now". */
@@ -37,58 +31,116 @@ function relativeTime(iso: string, now: number = Date.now()): string {
   return `${day}d ago`
 }
 
+/** Live countdown formatter for the pub-attest footer. */
+function countdown(targetIso: string, now: number = Date.now()): string {
+  const ms = Math.max(0, new Date(targetIso).getTime() - now)
+  const total = Math.floor(ms / 1000)
+  const mm = Math.floor(total / 60)
+  const ss = total % 60
+  return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+}
+
+interface FooterProps {
+  data: PipelineNodeData
+  nodeId: string
+}
+
+/** Most nodes show cadence (left) + last-run-ago (right). */
+function StandardFooter({ data }: FooterProps) {
+  return (
+    <div className="mt-1.5 flex items-center justify-between text-[10px] leading-none">
+      <span className="truncate font-mono text-v2-muted">{data.cadence}</span>
+      <span
+        className="shrink-0 pl-2 font-mono tabular-nums text-v2-muted/70"
+        title={new Date(data.lastRunAt).toISOString()}
+        suppressHydrationWarning
+      >
+        {relativeTime(data.lastRunAt)}
+      </span>
+    </div>
+  )
+}
+
+/** pub-pershare shows the per-share value (left) + last-run-ago (right). */
+function PerShareFooter({ data }: FooterProps) {
+  return (
+    <div className="mt-1.5 flex items-center justify-between text-[10px] leading-none">
+      <span className="truncate font-mono tabular-nums text-v2-foreground">
+        {data.output.value}
+      </span>
+      <span
+        className="shrink-0 pl-2 font-mono tabular-nums text-v2-muted/70"
+        suppressHydrationWarning
+      >
+        {relativeTime(data.lastRunAt)}
+      </span>
+    </div>
+  )
+}
+
+/** pub-attest shows the total NAV (left) + live countdown (right). */
+function AttestFooter({ data }: FooterProps) {
+  // Reads the total NAV from the `nav` input added in Task 4 Step 2.
+  const totalNavInput = data.inputs.find((i) => i.label === 'nav')
+  const displayValue = totalNavInput?.value ?? data.output.value
+  return (
+    <div className="mt-1.5 flex items-center justify-between text-[10px] leading-none">
+      <span className="truncate font-mono tabular-nums text-v2-foreground">
+        {displayValue}
+      </span>
+      <span
+        className="shrink-0 pl-2 font-mono tabular-nums text-v2-muted/70"
+        title={new Date(data.nextRunAt).toISOString()}
+        suppressHydrationWarning
+      >
+        next {countdown(data.nextRunAt)}
+      </span>
+    </div>
+  )
+}
+
 export const PipelineNodeCard = memo(function PipelineNodeCard({
+  id,
   data,
   selected,
 }: NodeProps<PipelineNodeData>) {
-  const { label, status, cadence, lastRunAt, phase } = data
-  // Hide left handle on source-column nodes, right handle on publish column.
+  const { status, phase, label } = data
   const showLeftHandle = phase !== 'source'
   const showRightHandle = phase !== 'publish'
+
+  let Footer: (p: FooterProps) => React.ReactElement = StandardFooter
+  if (id === 'pub-pershare') Footer = PerShareFooter
+  else if (id === 'pub-attest') Footer = AttestFooter
 
   return (
     <div
       className={cn(
-        'group relative w-[180px] rounded-md border bg-v2-surface px-3 py-2.5 text-left transition-all duration-150',
-        'shadow-[0_1px_0_rgba(255,255,255,0.02)_inset] hover:-translate-y-px hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]',
+        'group relative w-[155px] rounded-md border bg-transparent px-3 py-2 text-left',
+        'transition-all duration-150',
+        'hover:-translate-y-px',
         selected
-          ? 'border-v2-foreground/60 ring-1 ring-v2-foreground/20'
-          : 'border-v2-border hover:border-v2-foreground/30'
+          ? 'border-v2-foreground/70 ring-1 ring-v2-foreground/15 shadow-[0_0_24px_-8px_rgba(220,170,140,0.45)]'
+          : status === 'failed'
+            ? 'border-v2-danger/50 shadow-[0_0_24px_-10px_rgba(220,80,60,0.5)]'
+            : 'border-v2-border/60 hover:border-v2-foreground/40'
       )}
     >
-      {/* Status dot + label row */}
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2">
         <span
           className={cn(
-            'mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full ring-2',
+            'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
             STATUS_DOT[status],
-            STATUS_RING[status]
+            STATUS_GLOW[status]
           )}
           aria-hidden="true"
         />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12.5px] font-medium leading-tight text-v2-foreground">
-            {label}
-          </p>
-          <p className="mt-0.5 text-[10px] uppercase leading-none tracking-[0.1em] text-v2-muted/70">
-            {STATUS_LABEL[status]}
-          </p>
-        </div>
+        <p className="truncate text-[12.5px] font-medium leading-tight text-v2-foreground">
+          {label}
+        </p>
       </div>
 
-      {/* Footer: cadence + last run */}
-      <div className="mt-2.5 flex items-center justify-between text-[10px] leading-none">
-        <span className="truncate font-mono text-v2-muted">{cadence}</span>
-        <span
-          className="shrink-0 pl-2 font-mono tabular-nums text-v2-muted/70"
-          title={new Date(lastRunAt).toISOString()}
-          suppressHydrationWarning
-        >
-          {relativeTime(lastRunAt)}
-        </span>
-      </div>
+      <Footer data={data} nodeId={id} />
 
-      {/* React Flow handles — visually muted, only present where edges connect. */}
       {showLeftHandle && (
         <Handle
           type="target"
