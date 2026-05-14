@@ -30,6 +30,7 @@ interface Props {
 export function VaultCard({ vault, index }: Props) {
   const palette = getPaletteEntry(vault.palette)
   const hex = palette?.hex ?? '#888'
+  const hexEnd = palette?.hexEnd ?? hex
 
   return (
     <motion.div
@@ -40,6 +41,7 @@ export function VaultCard({ vault, index }: Props) {
       <AuraCard
         variant="hero"
         accent={hex}
+        accentEnd={hexEnd}
         as={Link}
         href={`/v2/vaults/${vault.id}`}
         interactive

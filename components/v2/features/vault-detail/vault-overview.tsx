@@ -98,6 +98,7 @@ const ACTIVITY_KIND_LABEL: Record<ActivityPreview['kind'], string> = {
 export function VaultOverview({ vault }: Props) {
   const palette = getPaletteEntry(vault.palette)
   const hex = palette?.hex ?? '#888'
+  const hexEnd = palette?.hexEnd ?? hex
 
   const consumers: ConsumerPreview[] = [
     {
@@ -170,10 +171,10 @@ export function VaultOverview({ vault }: Props) {
 
         {/* Stat row — muted AuraCard tiles */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCell label="NAV" value={vault.nav} accent={hex} position="br" />
-          <StatCell label="Sources" value={String(vault.streams)} accent={hex} position="tr" />
-          <StatCell label="Consumers" value={String(vault.consumers)} accent={hex} position="bl" />
-          <StatCell label="Queries approved" value="14" accent={hex} position="tl" />
+          <StatCell label="NAV" value={vault.nav} accent={hex} accentEnd={hexEnd} position="br" />
+          <StatCell label="Sources" value={String(vault.streams)} accent={hex} accentEnd={hexEnd} position="tr" />
+          <StatCell label="Consumers" value={String(vault.consumers)} accent={hex} accentEnd={hexEnd} position="bl" />
+          <StatCell label="Queries approved" value="14" accent={hex} accentEnd={hexEnd} position="tl" />
         </div>
       </motion.header>
 
@@ -185,7 +186,7 @@ export function VaultOverview({ vault }: Props) {
             href={`/v2/vaults/${vault.id}/sources`}
             icon={Plug}
           />
-          <AuraCard variant="muted" accent={hex} position="tr" className="divide-y divide-v2-border/40">
+          <AuraCard variant="muted" accent={hex} accentEnd={hexEnd} position="tr" className="divide-y divide-v2-border/40">
             {SOURCES.map((s) => (
               <Link
                 key={s.name}
@@ -224,7 +225,7 @@ export function VaultOverview({ vault }: Props) {
             href={`/v2/vaults/${vault.id}/activity`}
             icon={History}
           />
-          <AuraCard variant="muted" accent={hex} position="bl" className="divide-y divide-v2-border/40">
+          <AuraCard variant="muted" accent={hex} accentEnd={hexEnd} position="bl" className="divide-y divide-v2-border/40">
             {ACTIVITY.map((a) => (
               <Link
                 key={a.id}
@@ -297,6 +298,7 @@ export function VaultOverview({ vault }: Props) {
         <AuraCard
           variant="muted"
           accent={hex}
+          accentEnd={hexEnd}
           position="tr"
           as={Link}
           href={`/v2/vaults/${vault.id}/queries`}
@@ -331,15 +333,17 @@ function StatCell({
   label,
   value,
   accent,
+  accentEnd,
   position,
 }: {
   label: string
   value: string
   accent: string
+  accentEnd?: string
   position: 'tl' | 'tr' | 'bl' | 'br'
 }) {
   return (
-    <AuraCard variant="muted" accent={accent} position={position} className="flex flex-col gap-2 p-4">
+    <AuraCard variant="muted" accent={accent} accentEnd={accentEnd} position={position} className="flex flex-col gap-2 p-4">
       <p className="relative text-[11px] uppercase tracking-[0.12em] text-v2-muted/80">
         {label}
       </p>

@@ -46,6 +46,8 @@ interface AuraCardOwnProps {
   variant?: AuraCardVariant
   /** Hex color for hero/muted variants. */
   accent?: string
+  /** Optional second hex for a two-tone wash (matches hmm's AgentBlob). */
+  accentEnd?: string
   /** Colors array for multi variant. */
   accents?: string[]
   /** Override the aura corner. */
@@ -66,6 +68,7 @@ function AuraCardImpl<E extends ElementType = 'div'>(
   {
     variant = 'hero',
     accent,
+    accentEnd,
     accents,
     position,
     interactive,
@@ -85,7 +88,14 @@ function AuraCardImpl<E extends ElementType = 'div'>(
     if (accents && accents.length > 0) {
       aura = <Aura colors={accents} />
     } else if (accent) {
-      aura = <Aura color={accent} position={position ?? 'br'} tone="normal" />
+      aura = (
+        <Aura
+          color={accent}
+          colorEnd={accentEnd}
+          position={position ?? 'br'}
+          tone="normal"
+        />
+      )
     }
   } else {
     const v = VARIANT_DEFAULTS[variant]
@@ -94,6 +104,7 @@ function AuraCardImpl<E extends ElementType = 'div'>(
       aura = (
         <Aura
           color={accent}
+          colorEnd={accentEnd}
           position={position ?? v.position}
           tone={v.tone}
           size={v.size}

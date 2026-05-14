@@ -15,6 +15,9 @@
 interface AuraOwnProps {
   /** Convenience for single-color aura. */
   color?: string
+  /** Optional second hex used at the 40% gradient stop — gives a two-tone wash
+   *  (cf. hmm's AgentBlob using color → colorEnd). Falls back to `color`. */
+  colorEnd?: string
   /** Multi-color aura — supply 2-5 palette hexes for a project-style spread. */
   colors?: string[]
   /** Where the primary blob anchors. Default 'br' (bottom-right). */
@@ -51,6 +54,7 @@ function hexA(hex: string, alpha: number): string {
 
 export function Aura({
   color,
+  colorEnd,
   colors,
   position = 'br',
   tone = 'normal',
@@ -83,14 +87,16 @@ export function Aura({
     )
   }
 
-  // Single-color radial: focused blob in a corner.
+  // Single-color radial: focused blob in a corner. If colorEnd is supplied,
+  // the 40% stop uses it for a two-tone wash (à la hmm AgentBlob).
   const c = color ?? '#888888'
+  const cEnd = colorEnd ?? c
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
       <div
         className={`absolute ${POS_CLASSES[position]} ${size} ${blur} rounded-full`}
         style={{
-          background: `radial-gradient(circle, ${hexA(c, 0.4 * opacity)} 0%, ${hexA(c, 0.13 * opacity)} 40%, transparent 70%)`,
+          background: `radial-gradient(circle, ${hexA(c, 0.4 * opacity)} 0%, ${hexA(cEnd, 0.13 * opacity)} 40%, transparent 70%)`,
         }}
       />
     </div>
