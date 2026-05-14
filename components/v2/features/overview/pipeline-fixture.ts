@@ -2,15 +2,21 @@ import type { PipelineFixture } from './pipeline-types'
 
 /**
  * Demo pipeline for Verant Overview — representative of a tokenized
- * private-credit fund (ACRED-style). Times are anchored to a fixed near-now
- * window so the screen reads as a live operation without depending on the
- * actual wall clock at render time.
+ * private-credit fund (ACRED-style). Times anchor to module-load time so the
+ * "ago" and "next" labels read as live during demo without going stale.
  *
- * Edit times here when refreshing the demo cohort.
+ * Hydration note: this file is imported by a `'use client'` page, so the
+ * SSR/client time difference reduces to a few-millisecond delta in computed
+ * ISO strings — not enough to cause a visible mismatch.
  */
-const NOW = new Date('2026-05-14T14:23:00Z').getTime()
+const NOW = Date.now()
 const minutesAgo = (m: number) => new Date(NOW - m * 60_000).toISOString()
 const minutesAhead = (m: number) => new Date(NOW + m * 60_000).toISOString()
+
+function fmtUtcHm(t: number): string {
+  const d = new Date(t)
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}:${String(d.getUTCSeconds()).padStart(2, '0')} UTC`
+}
 
 export const overviewPipeline: PipelineFixture = {
   kpi: {
@@ -18,7 +24,7 @@ export const overviewPipeline: PipelineFixture = {
     navPerShare: '$103.4719',
     sharesOutstanding: '12,055,401',
     nextPublishAt: minutesAhead(37),
-    asOfLabel: 'as of 14:23:00 UTC',
+    asOfLabel: `as of ${fmtUtcHm(NOW)}`,
   },
 
   nodes: [
