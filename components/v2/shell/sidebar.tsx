@@ -2,11 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
+import { findVault } from '@/components/v2/features/origination/origination-fixture'
+import { VaultSidebarNav } from './vault-sidebar-nav'
 import {
   Compass,
+  Vault,
   Plug,
   Database,
   Layers,
@@ -39,7 +42,10 @@ type NavGroup = {
 const navGroups: NavGroup[] = [
   {
     label: '',
-    items: [{ href: '/v2', label: 'Overview', icon: Compass, exact: true }],
+    items: [
+      { href: '/v2', label: 'Overview', icon: Compass, exact: true },
+      { href: '/v2/vaults', label: 'Data Vaults', icon: Vault },
+    ],
   },
   {
     label: 'Pipeline',
@@ -82,6 +88,13 @@ const COLLAPSED_W = 64
 
 export function V2Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
+  // Detect vault detail routes — /v2/vaults/:id and anything beneath it (but
+  // NOT the index /v2/vaults). Inside a vault we swap the entire nav block.
+  const vaultId = useMemo(() => {
+    const m = pathname.match(/^\/v2\/vaults\/([^/]+)/)
+    return m ? m[1] : null
+  }, [pathname])
+  const vault = vaultId ? findVault(vaultId) : null
 
   return (
     <aside
@@ -124,66 +137,103 @@ export function V2Sidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
 
-      {/* Main nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Site navigation">
-        <div>
-          {navGroups.map((group, groupIdx) => {
-            const isFirstGroup = groupIdx === 0
-            return (
-              <div
-                key={group.label || 'overview'}
-                className={cn(!isFirstGroup && (collapsed ? 'mt-2' : 'mt-6'))}
+      {/* Swap-region: root navigation OR vault-scoped navigation. The brand
+          well above and the theme toggle below stay fixed; the middle and
+          settings sections animate together so the surface feels coherent. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <AnimatePresence mode="wait" initial={false}>
+          {vault ? (
+            <motion.div
+              key={`vault-${vault.id}`}
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <VaultSidebarNav
+                vault={vault}
+                pathname={pathname}
+                collapsed={collapsed}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="root"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <nav
+                className={cn(
+                  'flex-1 overflow-y-auto py-4',
+                  collapsed ? 'px-2' : 'px-3'
+                )}
+                aria-label="Site navigation"
               >
-                {/* Group eyebrow — generous tracking, low contrast, hidden when collapsed */}
-                {!isFirstGroup && (
-                  <div
-                    className={cn(
-                      'overflow-hidden transition-all duration-200',
-                      collapsed ? 'mb-0 h-0 opacity-0' : 'mb-2 h-3 opacity-100'
-                    )}
-                    aria-hidden="true"
-                  >
-                    <p className="px-2 text-[10px] font-medium uppercase leading-none tracking-[0.16em] text-v2-muted/65">
-                      {group.label}
-                    </p>
-                  </div>
+                {navGroups.map((group, groupIdx) => {
+                  const isFirstGroup = groupIdx === 0
+                  return (
+                    <div
+                      key={group.label || 'overview'}
+                      className={cn(!isFirstGroup && (collapsed ? 'mt-2' : 'mt-6'))}
+                    >
+                      {!isFirstGroup && (
+                        <div
+                          className={cn(
+                            'overflow-hidden transition-all duration-200',
+                            collapsed ? 'mb-0 h-0 opacity-0' : 'mb-2 h-3 opacity-100'
+                          )}
+                          aria-hidden="true"
+                        >
+                          <p className="px-2 text-[10px] font-medium uppercase leading-none tracking-[0.16em] text-v2-muted/65">
+                            {group.label}
+                          </p>
+                        </div>
+                      )}
+                      {!isFirstGroup && collapsed && (
+                        <div
+                          className="mx-auto mb-2 mt-1 flex w-8 items-center justify-center gap-[5px]"
+                          aria-hidden="true"
+                        >
+                          <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
+                        </div>
+                      )}
+                      <div className="space-y-[2px]">
+                        {group.items.map((item) => (
+                          <NavLink
+                            key={item.href}
+                            item={item}
+                            pathname={pathname}
+                            collapsed={collapsed}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </nav>
+
+              {/* Global Settings — only visible when not inside a vault */}
+              <div
+                className={cn(
+                  'border-t border-v2-border pt-3',
+                  collapsed ? 'px-2' : 'px-3'
                 )}
-                {/* Collapsed group separator — three dots echo the canvas grid */}
-                {!isFirstGroup && collapsed && (
-                  <div
-                    className="mx-auto mb-2 mt-1 flex w-8 items-center justify-center gap-[5px]"
-                    aria-hidden="true"
-                  >
-                    <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
-                    <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
-                    <span className="h-[3px] w-[3px] rounded-full bg-v2-foreground/25" />
-                  </div>
-                )}
-                <div className="space-y-[2px]">
-                  {group.items.map((item) => (
-                    <NavLink
-                      key={item.href}
-                      item={item}
-                      pathname={pathname}
-                      collapsed={collapsed}
-                    />
-                  ))}
-                </div>
+              >
+                <NavLink item={settingsItem} pathname={pathname} collapsed={collapsed} />
               </div>
-            )
-          })}
-        </div>
-      </nav>
-
-      <div className="flex-shrink-0" />
-
-      {/* Settings — anchored bottom */}
-      <div className="border-t border-v2-border px-3 pt-3">
-        <NavLink item={settingsItem} pathname={pathname} collapsed={collapsed} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Theme toggle — visually demoted utility */}
-      <div className="px-3 pb-3 pt-1">
+      {/* Theme toggle — always pinned at the very bottom */}
+      <div className={cn('pb-3 pt-1', collapsed ? 'px-2' : 'px-3')}>
         <ThemeToggle collapsed={collapsed} />
       </div>
     </aside>

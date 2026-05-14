@@ -1,8 +1,8 @@
 @AGENTS.md
 
-# Hyve Data Clean Room — Frontend
+# Hyve — Frontend
 
-A Next.js dashboard for verifiable, confidential data collaboration on tokenized RWAs. AI-powered data engineering and analytics platform for risk curators, data engineers, and allocators.
+A Next.js operator console for verified private data infrastructure on tokenized RWAs. Configuration and monitoring tooling for fund originators (Securitize, Maple, fund admins) who make their private fund data programmable for counterparties whose automated systems — smart contracts, risk engines, compliance systems — act on it.
 
 ## Stack
 
@@ -19,6 +19,29 @@ A Next.js dashboard for verifiable, confidential data collaboration on tokenized
 - **Testing:** Vitest (unit) + Playwright (E2E)
 - **Browser automation:** Playwright MCP (for agent visual feedback)
 - **Deployment:** Vercel
+
+## Product context — what you are building
+
+This is operator tooling. The end users on the counterparty side (Gauntlet, Morpho, NAV lenders) never read this UI — their automated systems consume Hyve's outputs. The UI is what a fund originator uses to configure the pipeline once and govern it as it runs.
+
+**This is NOT:**
+
+- Not an intelligence platform (no 9fin, AlphaSense, Hebbia, Rogo patterns — no news, commentary, AI insights, analyst notes)
+- Not an oracle (oracles deliver signed payloads on-chain; Hyve produces what they deliver — the on-chain publication is one output channel, not the product)
+- Not an analytics dashboard (no historical NAV charts, IRR trend lines, performance graphs, scenario analysis, risk analytics)
+- Not a fund admin tool (Allvue, SS&C Advent are internal ops; Hyve is the cross-org data programming layer)
+- Not a tokenization platform (Securitize tokenizes; Hyve makes the data behind tokenized assets programmable)
+
+**Closest user-perspective analogs to draw from:**
+
+- **Plaid** — institutional version of consumer bank data → lender's underwriting engine. Steal the scoped consent copy, structured output reports, one-click revoke patterns.
+- **Pyth Network** — first-party data publishers sign their own data; smart contracts consume automatically. Same model on-chain, but for private fund data.
+- **Axoni / HYDRA** — multi-party private capital markets data sync between institutional counterparties.
+- **Not DTCC** — clearing service; clearing is redundant in crypto due to atomic settlement.
+
+**The single test for any screen:** would a fund operator (Securitize Fund Services, Maple Trade Finance BD, a CLO admin) use this to configure or monitor their data pipeline? If yes, keep it. If it invites them to read, analyze, or interpret data, remove it.
+
+For the full product spec including navigation structure, the Overview page DAG, source/dataset/schema/rules/consumers/counterparties layout, and the canonical ACRED example, see `docs/product/hyve_originator_context.md`.
 
 ## Project Structure
 
