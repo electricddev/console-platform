@@ -42,7 +42,6 @@ function countdown(targetIso: string, now: number = Date.now()): string {
 
 interface FooterProps {
   data: PipelineNodeData
-  nodeId: string
 }
 
 /** Most nodes show cadence (left) + last-run-ago (right). */
@@ -139,7 +138,7 @@ export const PipelineNodeCard = memo(function PipelineNodeCard({
         </p>
       </div>
 
-      <Footer data={data} nodeId={id} />
+      <Footer data={data} />
 
       {showLeftHandle && (
         <Handle
