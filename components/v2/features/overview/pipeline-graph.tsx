@@ -21,6 +21,7 @@ interface PipelineGraphProps {
   pipeline: PipelineFixture
   selectedId: string | null
   onSelect: (id: string | null) => void
+  dimNodeIds?: string[] | null
 }
 
 // Column x-coordinates per phase. Tuned for 180px-wide cards.
@@ -77,23 +78,27 @@ export function PipelineGraph({
   pipeline,
   selectedId,
   onSelect,
+  dimNodeIds,
 }: PipelineGraphProps) {
   const positions = useMemo(
     () => computePositions(pipeline.nodes),
     [pipeline.nodes]
   )
 
-  const flowNodes: Node<PipelineNodeData>[] = useMemo(
-    () =>
-      pipeline.nodes.map((n) => ({
+  const flowNodes: Node<PipelineNodeData>[] = useMemo(() => {
+    const isDimming = Array.isArray(dimNodeIds) && dimNodeIds.length > 0
+    return pipeline.nodes.map((n) => {
+      const isHighlit = isDimming ? dimNodeIds!.includes(n.id) : true
+      return {
         id: n.id,
         type: 'pipeline',
         data: n.data,
         position: positions.get(n.id) ?? { x: 0, y: 0 },
         selected: n.id === selectedId,
-      })),
-    [pipeline.nodes, positions, selectedId]
-  )
+        style: isHighlit ? undefined : { opacity: 0.25, transition: 'opacity 150ms ease-out' },
+      }
+    })
+  }, [pipeline.nodes, positions, selectedId, dimNodeIds])
 
   const flowEdges: Edge[] = useMemo(
     () =>
