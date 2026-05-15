@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronDown,
   ChevronRight,
+  FileCheck,
+  ListChecks,
   MoreHorizontal,
   Plus,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { StatusPill, type StatusTone } from '@/components/v2/ui/status-pill'
 import { getPaletteFamily } from '@/components/v2/lib/palette'
 import { datasetAccess } from './data-fixture'
 import type {
+  AnalysisRule,
   CounterpartyGrant,
   Dataset,
   DatasetAccess,
@@ -105,13 +107,35 @@ function InputTypeBadge({ type }: { type: string }) {
 
 // ── 1. Privacy posture summary banner ────────────────────────────────────────
 
+const ANALYSIS_RULE_META: Record<AnalysisRule, { Icon: typeof Sigma; label: string; caption: string }> = {
+  aggregation: {
+    Icon: Sigma,
+    label: 'Aggregation',
+    caption: 'Only aggregate queries — no row-level output returned.',
+  },
+  list: {
+    Icon: ListChecks,
+    label: 'List',
+    caption: 'Intersection queries returning entity match lists only.',
+  },
+  custom: {
+    Icon: FileCheck,
+    label: 'Custom templates',
+    caption: 'Only pre-approved query templates may run.',
+  },
+}
+
 function PrivacyPostureBanner({
   access,
+  analysisRule,
   family,
 }: {
   access: DatasetAccess
+  analysisRule: AnalysisRule
   family: [string, string, string]
 }) {
+  const ruleMeta = ANALYSIS_RULE_META[analysisRule]
+  const RuleIcon = ruleMeta.Icon
   return (
     <AuraCard variant="muted" family={family} seed={7} radius="xl" className="p-5">
       <div className="flex flex-col gap-4">
@@ -126,7 +150,19 @@ function PrivacyPostureBanner({
             Edit policy
           </button>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Analysis rule */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-v2-muted/70">
+              Analysis rule
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-mono text-[13px] text-v2-foreground">
+              <RuleIcon className="h-3.5 w-3.5 text-v2-muted/70" strokeWidth={1.75} aria-hidden />
+              {ruleMeta.label}
+            </span>
+            <span className="text-[10.5px] text-v2-muted/70">{ruleMeta.caption}</span>
+          </div>
+
           {/* Aggregation threshold */}
           <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-v2-muted/70">
@@ -172,15 +208,20 @@ function PrivacyPostureBanner({
             )}
           </div>
 
-          {/* Privacy unit */}
+          {/* Privacy unit — now a join-classified field */}
           <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-v2-muted/70">
               Privacy unit
             </span>
             {access.privacyUnit ? (
-              <span className="font-mono text-[13px] text-v2-foreground">
-                {access.privacyUnit}
-              </span>
+              <>
+                <span className="font-mono text-[13px] text-v2-foreground">
+                  {access.privacyUnit}
+                </span>
+                <span className="text-[10.5px] text-v2-muted/70">
+                  Join-classified — match key only, never returned
+                </span>
+              </>
             ) : (
               <>
                 <span className="font-mono text-[14px] text-v2-muted/60">—</span>
@@ -555,21 +596,12 @@ function RowLevelAccessSection({ dataset }: { dataset: Dataset }) {
 // ── 5. Audit stub ─────────────────────────────────────────────────────────────
 
 function AuditStubSection({ vaultId, datasetId }: { vaultId: string; datasetId: string }) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
-  function goToSeals() {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tab', 'seals')
-    router.replace(`?${params.toString()}`, { scroll: false })
-  }
-
   return (
     <section aria-labelledby="access-audit-heading" className="flex flex-col gap-3">
       <SectionHeading
         id="access-audit-heading"
         title="Audit"
-        caption="Every access grant, template run, and privacy threshold change is sealed."
+        caption="Every access grant, template run, and policy change is logged."
       />
       <Surface radius="xl" className="flex items-center gap-3 p-4">
         <ShieldCheck
@@ -580,16 +612,12 @@ function AuditStubSection({ vaultId, datasetId }: { vaultId: string; datasetId: 
         <p className="text-[12px] text-v2-muted">
           See the{' '}
           <Link
-            href={`/v2/vaults/${vaultId}/data/${datasetId}?tab=seals`}
-            onClick={(e) => {
-              e.preventDefault()
-              goToSeals()
-            }}
+            href={`/v2/vaults/${vaultId}/activity?dataset=${datasetId}`}
             className="text-v2-foreground/80 underline underline-offset-2 transition-colors hover:text-v2-foreground"
           >
-            Seals tab
+            activity log
           </Link>{' '}
-          for the cryptographic history.
+          for the immutable audit trail.
         </p>
       </Surface>
     </section>
@@ -620,7 +648,7 @@ export function AccessPanel({ vault, dataset }: AccessPanelProps) {
   return (
     <div className="flex flex-col gap-8">
       {/* 1. Privacy posture banner */}
-      <PrivacyPostureBanner access={access} family={family} />
+      <PrivacyPostureBanner access={access} analysisRule={dataset.analysisRule} family={family} />
 
       {/* 2. Template catalog */}
       <TemplatesCatalog templates={access.templates} />

@@ -1,7 +1,7 @@
 /**
- * Data page fixture — sealed datasets inside ACRED-style vaults.
+ * Data page fixture — synced datasets inside ACRED-style vaults.
  * Each dataset combines: source connection + schema with field-level privacy
- * + ASC 820 fair-value classification + immutable seal history.
+ * + ASC 820 fair-value classification + sync history.
  */
 
 const NOW = Date.now()
@@ -11,15 +11,28 @@ const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString()
 const daysFromNow = (d: number) => new Date(NOW + d * 86_400_000).toISOString()
 
 /**
- * Privacy tier — the heart of the vault. Determines whether a field
- * leaves the vault, and in what shape.
+ * Privacy tier — the heart of the vault clean room. Determines how a field
+ * participates in counterparty queries.
  *
- *   on-chain   → hashes / references published on every block.
- *   queryable  → counterparties can run aggregate computations against it.
- *                Raw values never returned, only computed results.
- *   private    → sealed at ingest. Stays inside, no exception.
+ *   private   → Never accessible. Blocked at ingest, no path out.
+ *   join      → Usable as a match key only. Raw value never returned.
+ *   aggregate → Only usable inside aggregate functions. Raw rows never returned.
+ *   dimension → Usable in GROUP BY; returned as a label (categorical only).
+ *   select    → Raw value returnable. Only for non-sensitive fields.
+ *
+ * The gradient runs from most-protected (private) to most-open (select).
  */
-export type PrivacyLevel = 'on-chain' | 'queryable' | 'private'
+export type PrivacyLevel = 'private' | 'join' | 'aggregate' | 'dimension' | 'select'
+
+/**
+ * Dataset-level analysis rule — constrains what kinds of queries are
+ * permitted against this dataset regardless of field-level classifications.
+ *
+ *   aggregation → only aggregate queries; no row-level output ever returned
+ *   list        → only intersection/overlap queries returning entity match lists
+ *   custom      → only pre-approved query templates may run
+ */
+export type AnalysisRule = 'aggregation' | 'list' | 'custom'
 
 export type FieldType = 'string' | 'number' | 'currency' | 'percent' | 'date' | 'enum' | 'address' | 'bool' | 'hash'
 
@@ -31,18 +44,10 @@ export interface DatasetField {
   description?: string
 }
 
-export type DatasetStatus = 'sealed' | 'pending' | 'failed'
+export type DatasetStatus = 'live' | 'syncing' | 'failed'
 
 /** ASC 820 fair value hierarchy. */
 export type AscClass = 'L1' | 'L2' | 'L3'
-
-export interface SealEvent {
-  id: string
-  at: string
-  by: string
-  records: number
-  hash: string
-}
 
 export interface Dataset {
   id: string
@@ -58,87 +63,87 @@ export interface Dataset {
   /** Sampled schema. Real datasets have hundreds of fields; we show a
    *  representative slice. */
   fields: DatasetField[]
-  lastSealedAt: string
-  /** Last 3-6 seal events. */
-  sealHistory: SealEvent[]
+  /** ISO timestamp of the most recent completed sync. */
+  lastSyncedAt: string
+  /** Dataset-level query constraint — see AnalysisRule. */
+  analysisRule: AnalysisRule
 }
 
 // ── Loanbook (Apollo PMS) ────────────────────────────────────────────────────
 
 const loanbookFields: DatasetField[] = [
-  { name: 'loan_id', type: 'string', privacy: 'on-chain', description: 'Internal loan reference (UUID).' },
-  { name: 'asc_class', type: 'enum', privacy: 'on-chain', description: 'ASC 820 fair-value tier.' },
-  { name: 'sealed_at_block', type: 'number', privacy: 'on-chain', description: 'Block height of the last seal.' },
-  { name: 'borrower_did', type: 'string', privacy: 'private', description: 'Borrower decentralized identifier.' },
-  { name: 'borrower_legal_name', type: 'string', privacy: 'private' },
-  { name: 'industry_sector', type: 'enum', privacy: 'queryable', description: 'GICS sector (aggregatable).' },
-  { name: 'facility_amount', type: 'currency', privacy: 'private' },
-  { name: 'current_balance', type: 'currency', privacy: 'private' },
-  { name: 'coupon_rate', type: 'percent', privacy: 'private' },
-  { name: 'maturity_date', type: 'date', privacy: 'private' },
-  { name: 'weighted_avg_yield', type: 'percent', privacy: 'queryable', description: 'Pre-computed aggregate.' },
-  { name: 'concentration_pct', type: 'percent', privacy: 'queryable' },
-  { name: 'non_accrual_flag', type: 'bool', privacy: 'queryable' },
-  { name: 'last_payment_date', type: 'date', privacy: 'private' },
-  { name: 'recovery_estimate', type: 'percent', privacy: 'private' },
+  { name: 'loan_id', type: 'string', privacy: 'join', description: 'Internal loan reference — used as a match key, never returned.' },
+  { name: 'asc_class', type: 'enum', privacy: 'dimension', description: 'ASC 820 fair-value tier.' },
+  { name: 'borrower_did', type: 'string', privacy: 'join', description: 'Borrower decentralized identifier — the privacy unit for this dataset.' },
+  { name: 'borrower_legal_name', type: 'string', privacy: 'private', description: 'Legal name of the borrowing entity.' },
+  { name: 'industry_sector', type: 'enum', privacy: 'dimension', description: 'GICS sector — usable in GROUP BY.' },
+  { name: 'facility_amount', type: 'currency', privacy: 'aggregate', description: 'Total committed facility size.' },
+  { name: 'current_balance', type: 'currency', privacy: 'aggregate', description: 'Outstanding drawn balance.' },
+  { name: 'coupon_rate', type: 'percent', privacy: 'aggregate', description: 'Applicable interest rate.' },
+  { name: 'maturity_date', type: 'date', privacy: 'private', description: 'Loan maturity date.' },
+  { name: 'weighted_avg_yield', type: 'percent', privacy: 'aggregate', description: 'Computable across the portfolio.' },
+  { name: 'concentration_pct', type: 'percent', privacy: 'aggregate', description: 'Obligor share of total portfolio.' },
+  { name: 'non_accrual_flag', type: 'bool', privacy: 'select', description: 'Binary non-accrual status — non-identifying.' },
+  { name: 'last_payment_date', type: 'date', privacy: 'private', description: 'Most recent payment date.' },
+  { name: 'recovery_estimate', type: 'percent', privacy: 'aggregate', description: 'Estimated recovery in default.' },
+  { name: 'risk_grade', type: 'enum', privacy: 'dimension', description: 'Internal risk band for grouping.' },
+  { name: 'lien_position', type: 'enum', privacy: 'dimension', description: 'First-lien / second-lien / unsecured.' },
 ]
 
 // ── Holdings (BNY Mellon) ────────────────────────────────────────────────────
 
 const holdingsFields: DatasetField[] = [
-  { name: 'position_id', type: 'string', privacy: 'on-chain' },
-  { name: 'as_of_date', type: 'date', privacy: 'on-chain' },
-  { name: 'security_cusip', type: 'string', privacy: 'queryable' },
-  { name: 'security_isin', type: 'string', privacy: 'queryable' },
-  { name: 'asset_class', type: 'enum', privacy: 'queryable' },
-  { name: 'quantity', type: 'number', privacy: 'private' },
-  { name: 'cost_basis', type: 'currency', privacy: 'private' },
-  { name: 'fair_value', type: 'currency', privacy: 'private' },
-  { name: 'fair_value_aggregate', type: 'currency', privacy: 'queryable', description: 'Aggregated across positions.' },
-  { name: 'unrealized_pnl', type: 'currency', privacy: 'private' },
-  { name: 'custodian_account', type: 'string', privacy: 'private' },
-  { name: 'segregation_flag', type: 'bool', privacy: 'private' },
+  { name: 'position_id', type: 'string', privacy: 'join', description: 'Position identifier — match key only.' },
+  { name: 'as_of_date', type: 'date', privacy: 'select', description: 'Snapshot date.' },
+  { name: 'security_cusip', type: 'string', privacy: 'join', description: 'CUSIP — match key for cross-counterparty joins.' },
+  { name: 'security_isin', type: 'string', privacy: 'join', description: 'ISIN — match key for cross-counterparty joins.' },
+  { name: 'asset_class', type: 'enum', privacy: 'dimension', description: 'Asset class label for GROUP BY.' },
+  { name: 'quantity', type: 'number', privacy: 'aggregate', description: 'Share or unit count.' },
+  { name: 'cost_basis', type: 'currency', privacy: 'aggregate', description: 'Original cost basis.' },
+  { name: 'fair_value', type: 'currency', privacy: 'aggregate', description: 'Current fair value — aggregate only.' },
+  { name: 'unrealized_pnl', type: 'currency', privacy: 'aggregate', description: 'Unrealized gain/loss.' },
+  { name: 'custodian_account', type: 'string', privacy: 'private', description: 'Custodian account identifier.' },
+  { name: 'segregation_flag', type: 'bool', privacy: 'select', description: 'Whether position is in a segregated account.' },
 ]
 
 // ── Pricing (Bloomberg BPIPE) ────────────────────────────────────────────────
 
 const pricingFields: DatasetField[] = [
-  { name: 'tick_id', type: 'hash', privacy: 'on-chain' },
-  { name: 'as_of', type: 'date', privacy: 'on-chain' },
-  { name: 'security_cusip', type: 'string', privacy: 'queryable' },
-  { name: 'bid', type: 'currency', privacy: 'private' },
-  { name: 'ask', type: 'currency', privacy: 'private' },
-  { name: 'last', type: 'currency', privacy: 'queryable' },
-  { name: 'mid_aggregate', type: 'currency', privacy: 'queryable', description: 'Volume-weighted mid.' },
-  { name: 'volume', type: 'number', privacy: 'queryable' },
-  { name: 'venue', type: 'enum', privacy: 'queryable' },
+  { name: 'tick_id', type: 'hash', privacy: 'select', description: 'Row identifier — non-sensitive.' },
+  { name: 'as_of', type: 'date', privacy: 'select', description: 'Tick timestamp.' },
+  { name: 'security_cusip', type: 'string', privacy: 'join', description: 'CUSIP — match key.' },
+  { name: 'bid', type: 'currency', privacy: 'aggregate', description: 'Bid price — aggregate only.' },
+  { name: 'ask', type: 'currency', privacy: 'aggregate', description: 'Ask price — aggregate only.' },
+  { name: 'last', type: 'currency', privacy: 'aggregate', description: 'Last traded price.' },
+  { name: 'volume', type: 'number', privacy: 'aggregate', description: 'Trade volume.' },
+  { name: 'venue', type: 'enum', privacy: 'dimension', description: 'Execution venue — GROUP BY label.' },
 ]
 
 // ── NAV report (ALPS API) ────────────────────────────────────────────────────
 
 const navFields: DatasetField[] = [
-  { name: 'nav_total', type: 'currency', privacy: 'on-chain', description: 'Total NAV — published on-chain.' },
-  { name: 'nav_per_share', type: 'currency', privacy: 'on-chain' },
-  { name: 'shares_outstanding', type: 'number', privacy: 'on-chain' },
-  { name: 'reporting_date', type: 'date', privacy: 'on-chain' },
-  { name: 'gross_assets', type: 'currency', privacy: 'queryable' },
-  { name: 'liabilities', type: 'currency', privacy: 'private' },
-  { name: 'fee_accruals', type: 'currency', privacy: 'private' },
-  { name: 'subscriptions', type: 'currency', privacy: 'private' },
+  { name: 'nav_total', type: 'currency', privacy: 'select', description: 'Total NAV — single published number per period.' },
+  { name: 'nav_per_share', type: 'currency', privacy: 'select', description: 'NAV per share.' },
+  { name: 'shares_outstanding', type: 'number', privacy: 'select', description: 'Total shares outstanding.' },
+  { name: 'reporting_date', type: 'date', privacy: 'select', description: 'Report period end date.' },
+  { name: 'gross_assets', type: 'currency', privacy: 'aggregate', description: 'Gross asset value — aggregate only.' },
+  { name: 'liabilities', type: 'currency', privacy: 'private', description: 'Liability detail.' },
+  { name: 'fee_accruals', type: 'currency', privacy: 'private', description: 'Accrued management and performance fees.' },
+  { name: 'subscriptions', type: 'currency', privacy: 'private', description: 'Pending subscription activity.' },
 ]
 
 // ── Borrower performance (manual) ────────────────────────────────────────────
 
 const borrowerFields: DatasetField[] = [
-  { name: 'borrower_did', type: 'string', privacy: 'private' },
-  { name: 'reporting_period', type: 'date', privacy: 'on-chain' },
-  { name: 'revenue', type: 'currency', privacy: 'private' },
-  { name: 'ebitda', type: 'currency', privacy: 'private' },
-  { name: 'leverage_ratio', type: 'number', privacy: 'private' },
-  { name: 'interest_coverage', type: 'number', privacy: 'private' },
-  { name: 'covenant_status', type: 'enum', privacy: 'queryable' },
-  { name: 'covenant_headroom_pct', type: 'percent', privacy: 'queryable' },
-  { name: 'risk_grade', type: 'enum', privacy: 'queryable' },
+  { name: 'borrower_did', type: 'string', privacy: 'join', description: 'Borrower DID — the privacy unit, used as match key only.' },
+  { name: 'reporting_period', type: 'date', privacy: 'dimension', description: 'Quarter end date — GROUP BY label.' },
+  { name: 'revenue', type: 'currency', privacy: 'aggregate', description: 'Gross revenue.' },
+  { name: 'ebitda', type: 'currency', privacy: 'aggregate', description: 'EBITDA.' },
+  { name: 'leverage_ratio', type: 'number', privacy: 'aggregate', description: 'Net debt / EBITDA.' },
+  { name: 'interest_coverage', type: 'number', privacy: 'aggregate', description: 'EBITDA / interest expense.' },
+  { name: 'covenant_status', type: 'enum', privacy: 'dimension', description: 'Pass / Watch / Breach — GROUP BY label.' },
+  { name: 'covenant_headroom_pct', type: 'percent', privacy: 'aggregate', description: 'Headroom to covenant trigger.' },
+  { name: 'risk_grade', type: 'enum', privacy: 'dimension', description: 'Internal risk grade for grouping.' },
 ]
 
 export const datasets: Dataset[] = [
@@ -149,18 +154,13 @@ export const datasets: Dataset[] = [
     sourceId: 'apollo-pms',
     description:
       'Loan-level portfolio. Position management system feed — every facility, balance, and rate in the vault.',
-    status: 'sealed',
+    status: 'live',
     ascClass: 'L3',
     recordCount: 14_209,
     fieldCount: 847,
     fields: loanbookFields,
-    lastSealedAt: minsAgo(11),
-    sealHistory: [
-      { id: 'lb-1', at: minsAgo(11), by: 'mark.t@securitize.io', records: 14_209, hash: '0x4e22…9bbc' },
-      { id: 'lb-2', at: daysAgo(31), by: 'mark.t@securitize.io', records: 13_847, hash: '0x9a11…02fe' },
-      { id: 'lb-3', at: daysAgo(62), by: 'mark.t@securitize.io', records: 13_512, hash: '0x2c08…77aa' },
-      { id: 'lb-4', at: daysAgo(91), by: 'mark.t@securitize.io', records: 13_104, hash: '0x88f4…a103' },
-    ],
+    lastSyncedAt: minsAgo(11),
+    analysisRule: 'aggregation',
   },
   {
     id: 'holdings',
@@ -169,17 +169,13 @@ export const datasets: Dataset[] = [
     sourceId: 'bny-custodian',
     description:
       'Custodian position snapshot. Daily SFTP drop with TLSNotary proof of provenance.',
-    status: 'sealed',
+    status: 'live',
     ascClass: 'L2',
     recordCount: 8_412,
     fieldCount: 412,
     fields: holdingsFields,
-    lastSealedAt: minsAgo(8),
-    sealHistory: [
-      { id: 'h-1', at: minsAgo(8), by: 'bny.bot', records: 8_412, hash: '0x9c3a…f7b1' },
-      { id: 'h-2', at: hoursAgo(24), by: 'bny.bot', records: 8_390, hash: '0xb1aa…cc70' },
-      { id: 'h-3', at: hoursAgo(48), by: 'bny.bot', records: 8_372, hash: '0x7f88…21de' },
-    ],
+    lastSyncedAt: minsAgo(8),
+    analysisRule: 'aggregation',
   },
   {
     id: 'pricing',
@@ -188,17 +184,13 @@ export const datasets: Dataset[] = [
     sourceId: 'bloomberg-bpipe',
     description:
       'Intraday loan pricing marks. Facility-level bid/ask/last from active venues.',
-    status: 'sealed',
+    status: 'live',
     ascClass: 'L1',
     recordCount: 6_117,
     fieldCount: 184,
     fields: pricingFields,
-    lastSealedAt: minsAgo(7),
-    sealHistory: [
-      { id: 'p-1', at: minsAgo(7), by: 'bbg.feed', records: 6_117, hash: '0x8af0…11dd' },
-      { id: 'p-2', at: minsAgo(22), by: 'bbg.feed', records: 6_115, hash: '0x55a2…aa01' },
-      { id: 'p-3', at: minsAgo(37), by: 'bbg.feed', records: 6_109, hash: '0x12cc…dd49' },
-    ],
+    lastSyncedAt: minsAgo(7),
+    analysisRule: 'aggregation',
   },
   {
     id: 'nav-report',
@@ -207,17 +199,13 @@ export const datasets: Dataset[] = [
     sourceId: 'alps-api',
     description:
       'Monthly NAV statement from the fund administrator. Total NAV, NAV per share, share count.',
-    status: 'pending',
+    status: 'syncing',
     ascClass: 'L3',
     recordCount: 1,
     fieldCount: 8,
     fields: navFields,
-    lastSealedAt: hoursAgo(3),
-    sealHistory: [
-      { id: 'n-1', at: hoursAgo(3), by: 'admin@apollo.com', records: 1, hash: '0xb31a…02fe' },
-      { id: 'n-2', at: daysAgo(31), by: 'admin@apollo.com', records: 1, hash: '0x6661…f8b0' },
-      { id: 'n-3', at: daysAgo(62), by: 'admin@apollo.com', records: 1, hash: '0xa040…3210' },
-    ],
+    lastSyncedAt: hoursAgo(3),
+    analysisRule: 'aggregation',
   },
   {
     id: 'borrower-performance',
@@ -226,16 +214,13 @@ export const datasets: Dataset[] = [
     sourceId: 'manual-risk',
     description:
       'Quarterly performance pack. Revenue, EBITDA, leverage, covenants — submitted by Apollo risk team.',
-    status: 'sealed',
+    status: 'live',
     ascClass: 'L3',
     recordCount: 487,
     fieldCount: 24,
     fields: borrowerFields,
-    lastSealedAt: daysAgo(18),
-    sealHistory: [
-      { id: 'bp-1', at: daysAgo(18), by: 'risk@apollo.com', records: 487, hash: '0xff10…77aa' },
-      { id: 'bp-2', at: daysAgo(108), by: 'risk@apollo.com', records: 481, hash: '0xee20…3322' },
-    ],
+    lastSyncedAt: daysAgo(18),
+    analysisRule: 'custom',
   },
 ]
 
@@ -283,7 +268,7 @@ export const datasetConfigs: Record<string, DatasetConfig> = {
     nextSyncAt: new Date(new Date().setHours(new Date().getHours() + 3, 14, 0, 0)).toISOString(),
     syncHistory: ['ok', 'ok', 'ok', 'warn', 'ok', 'ok', 'ok', 'ok'],
     validationRules: [
-      { name: 'Schema match', description: 'Inbound schema must match sealed schema v3', status: 'pass' },
+      { name: 'Schema match', description: 'Inbound schema must match schema v3', status: 'pass' },
       { name: 'Row count drift', description: '≤5% week-over-week', status: 'pass' },
       { name: 'Value range — facility_amount', description: '$0–$50M per facility', status: 'pass' },
       { name: 'PII column required-private', description: 'Borrower fields must be private', status: 'pass' },
@@ -303,7 +288,7 @@ export const datasetConfigs: Record<string, DatasetConfig> = {
     nextSyncAt: new Date(new Date().setHours(new Date().getHours() + 20, 22, 0, 0)).toISOString(),
     syncHistory: ['ok', 'ok', 'warn', 'ok', 'ok', 'ok', 'ok', 'ok'],
     validationRules: [
-      { name: 'Schema match', description: 'Inbound schema must match sealed schema v2', status: 'pass' },
+      { name: 'Schema match', description: 'Inbound schema must match schema v2', status: 'pass' },
       { name: 'Row count drift', description: '≤3% day-over-day', status: 'warn' },
       { name: 'Custodian account required-private', description: 'Account fields must be private', status: 'pass' },
       { name: 'Freshness window', description: 'Last sync ≤ 24 h', status: 'pass' },
@@ -540,7 +525,7 @@ const holdingsAccess: DatasetAccess = {
       inputs: [
         { name: 'as_of_date', type: 'date', required: true },
       ],
-      fields: ['asset_class', 'fair_value_aggregate'],
+      fields: ['asset_class', 'fair_value'],
       resultShape: 'Aggregate, 1 row per asset class',
       privacy: { aggregation: 3, differentialPrivacy: true },
       status: 'live',
@@ -553,7 +538,7 @@ const holdingsAccess: DatasetAccess = {
       inputs: [
         { name: 'as_of_date', type: 'date', required: true },
       ],
-      fields: ['fair_value_aggregate', 'asset_class'],
+      fields: ['fair_value', 'asset_class'],
       resultShape: 'Aggregate, 1 row per custodian (anonymized)',
       privacy: { aggregation: 3, differentialPrivacy: false },
       status: 'live',
@@ -564,7 +549,7 @@ const holdingsAccess: DatasetAccess = {
       name: 'Segregation rate',
       description: 'Percentage of positions held in segregated accounts.',
       inputs: [],
-      fields: ['asset_class', 'fair_value_aggregate'],
+      fields: ['asset_class', 'fair_value'],
       resultShape: 'Scalar, 1 row',
       privacy: { aggregation: null, differentialPrivacy: false },
       status: 'live',
@@ -619,7 +604,7 @@ const pricingAccess: DatasetAccess = {
         { name: 'cusip', type: 'string', required: true },
         { name: 'as_of', type: 'date', required: false },
       ],
-      fields: ['security_cusip', 'mid_aggregate', 'venue'],
+      fields: ['security_cusip', 'last', 'venue'],
       resultShape: 'Aggregate, 1 row per venue',
       privacy: { aggregation: null, differentialPrivacy: true },
       status: 'live',
@@ -646,7 +631,7 @@ const pricingAccess: DatasetAccess = {
       inputs: [
         { name: 'as_of', type: 'date', required: true },
       ],
-      fields: ['mid_aggregate', 'volume', 'venue'],
+      fields: ['last', 'volume', 'venue'],
       resultShape: 'Scalar, 1 row',
       privacy: { aggregation: null, differentialPrivacy: true },
       status: 'live',
@@ -848,20 +833,24 @@ export const datasetAccess: Record<string, DatasetAccess> = {
 /** Roll-up counts across every dataset — used by the vault policy panel. */
 export interface VaultPolicySummary {
   totalFields: number
-  onChain: number
-  queryable: number
-  private: number
+  counts: Record<PrivacyLevel, number>
   examples: Record<PrivacyLevel, string[]>
 }
 
 export function computeVaultPolicy(): VaultPolicySummary {
-  let onChain = 0
-  let queryable = 0
-  let priv = 0
+  const counts: Record<PrivacyLevel, number> = {
+    private: 0,
+    join: 0,
+    aggregate: 0,
+    dimension: 0,
+    select: 0,
+  }
   const examples: Record<PrivacyLevel, string[]> = {
-    'on-chain': [],
-    queryable: [],
     private: [],
+    join: [],
+    aggregate: [],
+    dimension: [],
+    select: [],
   }
   // Use the real total of each dataset (not just sampled fields) by
   // extrapolating from the sampled mix.
@@ -870,15 +859,17 @@ export function computeVaultPolicy(): VaultPolicySummary {
     totalFields += ds.fieldCount
     const sampled = ds.fields
     const sampleSize = sampled.length || 1
-    const byTier = { 'on-chain': 0, queryable: 0, private: 0 } as Record<PrivacyLevel, number>
+    const byTier: Record<PrivacyLevel, number> = {
+      private: 0, join: 0, aggregate: 0, dimension: 0, select: 0,
+    }
     for (const f of sampled) byTier[f.privacy]++
     const scale = ds.fieldCount / sampleSize
-    onChain += Math.round(byTier['on-chain'] * scale)
-    queryable += Math.round(byTier.queryable * scale)
-    priv += Math.round(byTier.private * scale)
+    for (const tier of Object.keys(byTier) as PrivacyLevel[]) {
+      counts[tier] += Math.round(byTier[tier] * scale)
+    }
     for (const f of sampled) {
       if (examples[f.privacy].length < 6) examples[f.privacy].push(f.name)
     }
   }
-  return { totalFields, onChain, queryable, private: priv, examples }
+  return { totalFields, counts, examples }
 }

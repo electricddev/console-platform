@@ -31,7 +31,7 @@ const STATUS_TONE: Record<VaultStatus, StatusTone> = {
 interface SourcePreview {
   name: string
   detail: string
-  status: 'sealed' | 'syncing' | 'review' | 'paused'
+  status: 'live' | 'syncing' | 'review' | 'paused'
   lastAt: string
 }
 
@@ -60,29 +60,29 @@ const minsAgo = (m: number) => new Date(NOW - m * 60_000).toISOString()
 const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString()
 
 const SOURCES: SourcePreview[] = [
-  { name: 'Apollo PMS', detail: 'Position management · daily', status: 'sealed', lastAt: minsAgo(83) },
-  { name: 'BNY Mellon SWIFT', detail: 'Custodian holdings · 13:00 UTC', status: 'sealed', lastAt: minsAgo(11) },
+  { name: 'Apollo PMS', detail: 'Position management · daily', status: 'live', lastAt: minsAgo(83) },
+  { name: 'BNY Mellon SWIFT', detail: 'Custodian holdings · 13:00 UTC', status: 'live', lastAt: minsAgo(11) },
   { name: 'Bloomberg BPIPE', detail: 'Loan pricing · 15-min', status: 'syncing', lastAt: minsAgo(7) },
   { name: 'ALPS API', detail: 'Fund admin NAV', status: 'review', lastAt: hoursAgo(3) },
 ]
 
 const ACTIVITY: ActivityPreview[] = [
   { id: 'a1', actor: 'Gauntlet', action: 'ran concentration check', at: '12s ago', kind: 'query' },
-  { id: 'a2', actor: 'BNY Mellon', action: 'sealed holdings snapshot', at: '8 min ago', kind: 'data' },
+  { id: 'a2', actor: 'BNY Mellon', action: 'completed holdings ingestion', at: '8 min ago', kind: 'data' },
   { id: 'a3', actor: 'Morpho', action: 'pulled NAV feed view', at: '34 min ago', kind: 'query' },
   { id: 'a4', actor: 'Aave V4', action: 'requested data vault access', at: '2 h ago', kind: 'access' },
-  { id: 'a5', actor: 'mark.t@securitize.io', action: 'sealed April loan tape', at: '24 h ago', kind: 'data' },
+  { id: 'a5', actor: 'mark.t@securitize.io', action: 'completed April loan tape ingestion', at: '24 h ago', kind: 'data' },
 ]
 
 const SOURCE_STATUS_TONE: Record<SourcePreview['status'], StatusTone> = {
-  sealed: 'success',
+  live: 'success',
   syncing: 'info',
   review: 'warning',
   paused: 'neutral',
 }
 
 const SOURCE_STATUS_LABEL: Record<SourcePreview['status'], string> = {
-  sealed: 'Sealed',
+  live: 'Live',
   syncing: 'Syncing',
   review: 'Review',
   paused: 'Paused',
@@ -143,7 +143,7 @@ export function VaultOverview({ vault }: Props) {
               {STATUS_LABEL[vault.status]}
             </StatusPill>
             <span className="text-[12px] text-v2-muted/80" suppressHydrationWarning>
-              sealed {fmtRelative(vault.lastSealAt)}
+              synced {fmtRelative(vault.lastSealAt)}
             </span>
           </div>
         </div>

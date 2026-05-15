@@ -15,7 +15,6 @@ import {
   Download,
   Globe,
   Plus,
-  RefreshCw,
   Shield,
   ShieldCheck,
   Trash2,
@@ -36,6 +35,7 @@ import { LineagePanel } from './lineage-panel'
 import type { Vault } from '@/components/v2/features/origination/origination-fixture'
 import type {
   AscClass,
+  AnalysisRule,
   CounterpartyGrant,
   Dataset,
   DatasetField,
@@ -51,13 +51,13 @@ import { datasetAccess, datasetConfigs } from './data-fixture'
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const STATUS_TONE: Record<DatasetStatus, StatusTone> = {
-  sealed: 'success',
-  pending: 'warning',
+  live: 'success',
+  syncing: 'warning',
   failed: 'danger',
 }
 const STATUS_LABEL: Record<DatasetStatus, string> = {
-  sealed: 'Sealed',
-  pending: 'Pending seal',
+  live: 'Live',
+  syncing: 'Syncing',
   failed: 'Failed',
 }
 const TYPE_LABEL: Record<FieldType, string> = {
@@ -76,11 +76,17 @@ const ASC_DESCRIPTION: Record<AscClass, string> = {
   L2: 'Observable inputs',
   L3: 'Unobservable, internal models',
 }
-const PRIVACY_ORDER: PrivacyLevel[] = ['on-chain', 'queryable', 'private']
+const PRIVACY_ORDER: PrivacyLevel[] = ['private', 'join', 'aggregate', 'dimension', 'select']
+
+const ANALYSIS_RULE_LABEL: Record<AnalysisRule, string> = {
+  aggregation: 'Aggregation rule — only aggregate queries permitted on this dataset.',
+  list: 'List rule — only intersection queries returning entity match lists.',
+  custom: 'Custom rule — only pre-approved query templates may run.',
+}
 
 // ── Tab routing ─────────────────────────────────────────────────────────────
 
-const TAB_KEYS = ['overview', 'schema', 'config', 'access', 'seals', 'explorer', 'lineage'] as const
+const TAB_KEYS = ['overview', 'schema', 'config', 'access', 'explorer', 'lineage'] as const
 type TabKey = (typeof TAB_KEYS)[number]
 
 function isTabKey(v: string | null): v is TabKey {
@@ -133,7 +139,7 @@ function detectPII(fields: DatasetField[]): Map<string, PIIDetection> {
 
 // ── Activity fixture ────────────────────────────────────────────────────────
 
-type ActivityKind = 'seal' | 'query' | 'access' | 'source'
+type ActivityKind = 'sync' | 'query' | 'access' | 'source'
 
 interface ActivityEvent {
   id: string
@@ -146,15 +152,15 @@ interface ActivityEvent {
 const ACTIVITY_FIXTURE: ActivityEvent[] = [
   { id: 'a1', kind: 'query', actor: 'Gauntlet', action: 'ran concentration check', at: '12s ago' },
   { id: 'a2', kind: 'query', actor: 'Morpho', action: 'pulled NAV feed view', at: '7 min ago' },
-  { id: 'a3', kind: 'seal', actor: 'mark.t@securitize.io', action: 'sealed snapshot', at: '11 min ago' },
+  { id: 'a3', kind: 'sync', actor: 'Apollo PMS', action: 'synced new tick', at: '11 min ago' },
   { id: 'a4', kind: 'source', actor: 'Apollo PMS', action: 'delivered tick', at: '34 min ago' },
   { id: 'a5', kind: 'access', actor: 'Aave V4', action: 'requested vault access', at: '2 h ago' },
   { id: 'a6', kind: 'query', actor: 'Gauntlet', action: 'ran advance rate', at: '3 h ago' },
-  { id: 'a7', kind: 'seal', actor: 'mark.t@securitize.io', action: 'sealed April loan tape', at: '24 h ago' },
+  { id: 'a7', kind: 'sync', actor: 'Apollo PMS', action: 'completed monthly ingestion', at: '24 h ago' },
 ]
 
 const ACTIVITY_TONE: Record<ActivityKind, { dot: string; label: string }> = {
-  seal: { dot: 'bg-v2-success', label: 'Seal' },
+  sync: { dot: 'bg-v2-success', label: 'Sync' },
   query: { dot: 'bg-v2-info', label: 'Query' },
   access: { dot: 'bg-v2-warning', label: 'Access' },
   source: { dot: 'bg-v2-muted/60', label: 'Source' },
@@ -200,8 +206,9 @@ export function DatasetDetailPage({ vault, dataset }: Props) {
 
   const piiMap = useMemo(() => detectPII(fields), [fields])
   const mix = countByPrivacy(fields, dataset.fieldCount)
+  // computable = all fields that can participate in any query (non-private)
   const computablePct = Math.round(
-    ((mix.onChain + mix.queryable) / Math.max(dataset.fieldCount, 1)) * 100,
+    ((mix.join + mix.aggregate + mix.dimension + mix.select) / Math.max(dataset.fieldCount, 1)) * 100,
   )
 
   const navigateToTab = useCallback(
@@ -223,7 +230,6 @@ export function DatasetDetailPage({ vault, dataset }: Props) {
     { key: 'schema', label: 'Schema', count: dataset.fields.length },
     { key: 'config', label: 'Configuration' },
     { key: 'access', label: 'Access & Templates' },
-    { key: 'seals', label: 'Seals', count: dataset.sealHistory.length },
     { key: 'explorer', label: 'Data Explorer' },
     { key: 'lineage', label: 'Lineage' },
   ]
@@ -266,6 +272,7 @@ export function DatasetDetailPage({ vault, dataset }: Props) {
                 fields={fields}
                 total={dataset.fieldCount}
                 piiMap={piiMap}
+                analysisRule={dataset.analysisRule}
                 onChange={setPrivacy}
               />
             )}
@@ -273,7 +280,6 @@ export function DatasetDetailPage({ vault, dataset }: Props) {
             {tab === 'access' && (
               <AccessPanel vault={vault} dataset={dataset} />
             )}
-            {tab === 'seals' && <HistoryPanel dataset={dataset} />}
             {tab === 'explorer' && <SamplePanel dataset={dataset} fields={fields} piiMap={piiMap} />}
             {tab === 'lineage' && (
               <LineagePanel vault={vault} dataset={dataset} />
@@ -351,13 +357,12 @@ function Header({ dataset }: { dataset: Dataset }) {
             </>
           )}
           <span className="mx-1.5 text-v2-muted/40">·</span>
-          <span suppressHydrationWarning>sealed {fmtRelative(dataset.lastSealedAt)}</span>
+          <span suppressHydrationWarning>synced {fmtRelative(dataset.lastSyncedAt)}</span>
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <SecondaryAction icon={Code2} label="Run query" />
         <SecondaryAction icon={Download} label="Export" />
-        <PrimaryAction icon={RefreshCw} label="Re-seal" />
       </div>
     </motion.header>
   )
@@ -368,18 +373,6 @@ function SecondaryAction({ icon: Icon, label }: { icon: typeof Code2; label: str
     <button
       type="button"
       className="inline-flex items-center gap-1.5 rounded-md border border-v2-border/60 bg-v2-surface px-2.5 py-1.5 text-[12px] font-medium text-v2-foreground/90 transition-colors hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
-    >
-      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      {label}
-    </button>
-  )
-}
-
-function PrimaryAction({ icon: Icon, label }: { icon: typeof Code2; label: string }) {
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1.5 rounded-md border border-v2-foreground/80 bg-v2-foreground px-2.5 py-1.5 text-[12px] font-medium text-v2-background transition-colors hover:bg-v2-foreground/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       {label}
@@ -409,7 +402,7 @@ function Hero({
         label="Volume"
         value={fmtCount(dataset.recordCount)}
         unit="rows"
-        sub={`${fmtCount(dataset.fieldCount)} fields · ${dataset.sealHistory.length} seals`}
+        sub={`${fmtCount(dataset.fieldCount)} fields`}
       />
       <HeroStat
         label="Privacy posture"
@@ -443,7 +436,7 @@ function HeroStat({
       <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-v2-muted/70">
         {label}
       </p>
-      <p className="flex items-baseline gap-1.5 font-serif text-[44px] font-normal leading-[0.95] tracking-tight tabular-nums text-v2-foreground">
+      <p className="flex items-baseline gap-1.5 font-mono text-[40px] font-normal leading-[0.95] tracking-tight tabular-nums text-v2-foreground">
         {value}
         {unit && (
           <span className="font-sans text-[14px] font-normal tracking-normal text-v2-muted/80">
@@ -461,12 +454,14 @@ function HeroStat({
 function PrivacyPosture({
   totalFields,
   mix,
+  analysisRule,
   piiMap,
   family,
   onMarkPrivate,
 }: {
   totalFields: number
-  mix: { onChain: number; queryable: number; private: number }
+  mix: Record<PrivacyLevel, number>
+  analysisRule: import('./data-fixture').AnalysisRule
   piiMap: Map<string, PIIDetection>
   family: [string, string, string]
   onMarkPrivate: (name: string) => void
@@ -485,29 +480,24 @@ function PrivacyPosture({
       {/* Distribution */}
       <div className="relative flex flex-col gap-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-serif text-[20px] font-normal leading-none tracking-tight text-v2-foreground">
+          <h2 className="text-[14px] font-medium tracking-tight text-v2-foreground">
             Privacy posture
           </h2>
-          <span className="font-mono text-[11px] tabular-nums text-v2-muted/70">
-            {fmtCount(totalFields)} fields
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="rounded-md bg-v2-foreground/[0.05] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-v2-muted/80">
+              {analysisRule}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-v2-muted/70">
+              {fmtCount(totalFields)} fields
+            </span>
+          </div>
         </div>
-        <PrivacyBar
-          onChain={mix.onChain}
-          queryable={mix.queryable}
-          privateCount={mix.private}
-          height="h-2"
-        />
-        <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-          {(['on-chain', 'queryable', 'private'] as const).map((level) => {
+        <PrivacyBar counts={mix} height="h-2" />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
+          {(['private', 'join', 'aggregate', 'dimension', 'select'] as const).map((level) => {
             const tone = PRIVACY_TONE[level]
             const Icon = tone.Icon
-            const count =
-              level === 'on-chain'
-                ? mix.onChain
-                : level === 'queryable'
-                  ? mix.queryable
-                  : mix.private
+            const count = mix[level]
             const pct = totalFields > 0 ? Math.round((count / totalFields) * 100) : 0
             return (
               <div key={level} className="flex flex-col gap-1">
@@ -520,7 +510,7 @@ function PrivacyPosture({
                   <Icon className="h-3 w-3" strokeWidth={2.25} aria-hidden="true" />
                   {tone.short}
                 </span>
-                <p className="font-serif text-[24px] font-normal leading-none tracking-tight tabular-nums text-v2-foreground">
+                <p className="font-mono text-[22px] font-normal leading-none tracking-tight tabular-nums text-v2-foreground">
                   {fmtCount(count)}
                   <span className="ml-1.5 font-sans text-[11.5px] text-v2-muted">{pct}%</span>
                 </p>
@@ -622,7 +612,7 @@ function OverviewTab({
 }: {
   dataset: Dataset
   computablePct: number
-  mix: { onChain: number; queryable: number; private: number }
+  mix: Record<PrivacyLevel, number>
   piiMap: Map<string, PIIDetection>
   family: [string, string, string]
   vaultId: string
@@ -638,6 +628,7 @@ function OverviewTab({
       <PrivacyPosture
         totalFields={dataset.fieldCount}
         mix={mix}
+        analysisRule={dataset.analysisRule}
         piiMap={piiMap}
         family={family}
         onMarkPrivate={onMarkPrivate}
@@ -645,7 +636,7 @@ function OverviewTab({
       <SubscribedCounterparties vaultId={vaultId} grants={grants} />
       <section className="flex flex-col gap-4">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-serif text-[18px] font-normal tracking-tight text-v2-foreground">
+          <h2 className="text-[14px] font-medium tracking-tight text-v2-foreground">
             Recent activity
           </h2>
           <Link
@@ -674,7 +665,7 @@ function SubscribedCounterparties({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="font-serif text-[18px] font-normal tracking-tight text-v2-foreground">
+        <h2 className="text-[14px] font-medium tracking-tight text-v2-foreground">
           Subscribed counterparties
         </h2>
         <p className="text-[12px] text-v2-muted">
@@ -692,13 +683,13 @@ function SubscribedCounterparties({
             >
               <p className="text-[13px] font-medium text-v2-foreground">{grant.counterparty}</p>
               <span className="hidden text-right sm:block">
-                <span className="font-serif text-[20px] font-normal leading-none tabular-nums text-v2-foreground">
+                <span className="font-mono text-[18px] font-normal leading-none tabular-nums text-v2-foreground">
                   {grant.runs7d}
                 </span>
                 <span className="ml-1 text-[11px] text-v2-muted">queries</span>
               </span>
               <span className="hidden text-right sm:block">
-                <span className="font-serif text-[20px] font-normal leading-none tabular-nums text-v2-foreground">
+                <span className="font-mono text-[18px] font-normal leading-none tabular-nums text-v2-foreground">
                   {grant.templateIds.length}
                 </span>
                 <span className="ml-1 text-[11px] text-v2-muted">templates</span>
@@ -912,7 +903,7 @@ function ConfigPanel({ dataset, vaultId }: { dataset: Dataset; vaultId: string }
         <SectionHeading
           id="cfg-validation-heading"
           title="Validation"
-          caption="Automatic checks on each ingestion. Failures pause the seal."
+          caption="Automatic checks on each ingestion. Failures pause sync."
         />
         <Surface radius="xl" className="overflow-hidden">
           <ul className="divide-y divide-v2-border/30" aria-label="Validation rules">
@@ -1023,10 +1014,8 @@ function ConfigPanel({ dataset, vaultId }: { dataset: Dataset; vaultId: string }
                 className="font-mono tabular-nums text-v2-foreground/70"
                 suppressHydrationWarning
               >
-                {fmtRelative(dataset.lastSealedAt)}
+                {fmtRelative(dataset.lastSyncedAt)}
               </span>
-              <span className="text-v2-muted/40">·</span>
-              <span className="text-v2-muted">by {dataset.sealHistory[0]?.by ?? '—'}</span>
             </div>
           </Surface>
         </section>
@@ -1092,8 +1081,7 @@ function ConfigPanel({ dataset, vaultId }: { dataset: Dataset; vaultId: string }
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium text-v2-foreground">Delete this dataset</p>
               <p className="mt-0.5 text-[12px] leading-relaxed text-v2-muted">
-                Sealed history stays on-chain. Counterparties lose access immediately; new seals
-                will fail. This cannot be undone.
+                Counterparties lose access immediately. Ingestion stops. This cannot be undone.
               </p>
             </div>
             {!confirming && (
@@ -1218,7 +1206,6 @@ function TabNav({
           <div className="flex shrink-0 items-center gap-1.5">
             <SecondaryAction icon={Code2} label="Run query" />
             <SecondaryAction icon={Download} label="Export" />
-            <PrimaryAction icon={RefreshCw} label="Re-seal" />
           </div>
         </div>
       </div>
@@ -1292,11 +1279,13 @@ function SchemaPanel({
   fields,
   total,
   piiMap,
+  analysisRule,
   onChange,
 }: {
   fields: DatasetField[]
   total: number
   piiMap: Map<string, PIIDetection>
+  analysisRule: AnalysisRule
   onChange: (name: string, level: PrivacyLevel) => void
 }) {
   const [filter, setFilter] = useState<SchemaFilter>('all')
@@ -1307,6 +1296,14 @@ function SchemaPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Analysis rule caption */}
+      <p className="text-[11.5px] text-v2-muted/80">
+        <span className="font-medium text-v2-foreground/70 uppercase tracking-[0.08em] text-[10px]">
+          {analysisRule}
+        </span>
+        {' '}—{' '}
+        {ANALYSIS_RULE_LABEL[analysisRule]}
+      </p>
       <div className="flex items-center justify-between">
         <p className="text-[12.5px] text-v2-muted">
           Showing <span className="font-mono tabular-nums text-v2-foreground/90">{filtered.length}</span>{' '}
@@ -1431,7 +1428,13 @@ function SamplePanel({
   fields: DatasetField[]
   piiMap: Map<string, PIIDetection>
 }) {
-  const previewFields = useMemo(() => fields.slice(0, 6), [fields])
+  // Prefer showing fields that have renderable values (select/dimension first),
+  // ensuring the preview isn't 100% masked. Fall back to first 6.
+  const previewFields = useMemo(() => {
+    const renderable = fields.filter((f) => f.privacy === 'select' || f.privacy === 'dimension')
+    const rest = fields.filter((f) => f.privacy !== 'select' && f.privacy !== 'dimension')
+    return [...renderable, ...rest].slice(0, 6)
+  }, [fields])
   const rows = useMemo(() => {
     const out: Array<{ index: number; values: Record<string, string> }> = []
     for (let i = 0; i < SAMPLE_ROWS; i++) {
@@ -1529,6 +1532,46 @@ function SamplePanel({
 }
 
 function CellValue({ field, value }: { field: DatasetField; value: string }) {
+  // Clean-room masking: only select and dimension fields return raw values.
+  if (field.privacy === 'private') {
+    return (
+      <span
+        className="font-mono text-[11.5px] text-v2-muted/50"
+        title="Private — never accessible"
+      >
+        [private]
+      </span>
+    )
+  }
+  if (field.privacy === 'aggregate') {
+    return (
+      <span
+        className="font-mono text-[11.5px] text-v2-muted/50"
+        title="Aggregate-only — raw values are never returned"
+      >
+        —
+      </span>
+    )
+  }
+  if (field.privacy === 'join') {
+    // Show a hashed/truncated form to illustrate the join-key concept.
+    const isHashLike = field.type === 'hash' || field.type === 'address' || /did/i.test(field.name)
+    if (isHashLike) {
+      return (
+        <span className="font-mono text-[11.5px] text-v2-muted/70" title="Join key — raw value is never returned in results">
+          {value}
+        </span>
+      )
+    }
+    // For non-hash join keys, show a truncated hash hint
+    return (
+      <span className="font-mono text-[11.5px] text-v2-muted/70" title="Join key — raw value is never returned in results">
+        0x…{value.slice(-4)}
+      </span>
+    )
+  }
+
+  // select and dimension: render raw value using type-appropriate styling
   switch (field.type) {
     case 'currency':
     case 'percent':
@@ -1563,11 +1606,8 @@ function CellValue({ field, value }: { field: DatasetField; value: string }) {
         </span>
       )
     case 'string':
-    default: {
-      const isId = /(_id|^id$|did)/i.test(field.name)
-      if (isId) return <span className="font-mono text-[11.5px] text-v2-muted">{value}</span>
+    default:
       return <span className="text-[12.5px] text-v2-foreground/95">{value}</span>
-    }
   }
 }
 
@@ -1575,69 +1615,33 @@ function CellValue({ field, value }: { field: DatasetField; value: string }) {
 
 function ActivityPanel() {
   return (
-    <Surface radius="xl" className="divide-y divide-v2-border/30">
+    <div role="list" aria-label="Recent activity">
       {ACTIVITY_FIXTURE.map((e) => {
         const tone = ACTIVITY_TONE[e.kind]
         return (
-          <div key={e.id} className="flex items-center gap-3 px-4 py-3">
-            <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', tone.dot)} aria-hidden="true" />
-            <span className="hidden w-14 shrink-0 text-[10.5px] font-medium uppercase tracking-[0.1em] text-v2-muted/70 sm:inline">
+          <div
+            key={e.id}
+            role="listitem"
+            tabIndex={0}
+            className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+          >
+            <span className="w-16 shrink-0 font-mono text-[10.5px] uppercase tracking-[0.1em] text-v2-muted/60">
               {tone.label}
             </span>
-            <p className="min-w-0 flex-1 truncate text-[12.5px] text-v2-foreground/90">
-              <span className="font-medium">{e.actor}</span>{' '}
+            <p className="min-w-0 flex-1 truncate text-[13px] text-v2-foreground/90">
+              <span className="font-medium text-v2-foreground">{e.actor}</span>{' '}
               <span className="text-v2-muted">{e.action}</span>
             </p>
-            <span className="shrink-0 font-mono text-[11px] tabular-nums text-v2-muted/70">
+            <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-v2-muted/60">
               {e.at}
             </span>
           </div>
         )
       })}
-    </Surface>
+    </div>
   )
 }
 
-// ── Seal history panel ──────────────────────────────────────────────────────
-
-function HistoryPanel({ dataset }: { dataset: Dataset }) {
-  return (
-    <Surface radius="xl" className="divide-y divide-v2-border/30">
-      {dataset.sealHistory.map((s, i) => (
-        <div
-          key={s.id}
-          className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 px-4 py-3"
-        >
-          <span
-            className={cn(
-              'h-1.5 w-1.5 shrink-0 rounded-full',
-              i === 0 ? 'bg-v2-success' : 'bg-v2-muted/60',
-            )}
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-[13px] text-v2-foreground">
-              <span className="font-mono tabular-nums text-v2-foreground/90" suppressHydrationWarning>
-                {fmtRelative(s.at)}
-              </span>
-              <span className="mx-1.5 text-v2-muted/40">·</span>
-              <span className="text-v2-muted">by {s.by}</span>
-            </p>
-            <p className="mt-0.5 truncate text-[11px] text-v2-muted/80" suppressHydrationWarning>
-              {new Date(s.at).toLocaleString('en-US')}
-            </p>
-          </div>
-          <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-v2-muted">
-            {fmtCount(s.records)} rows
-          </span>
-          <span className="shrink-0 rounded-md border border-v2-border/60 bg-v2-surface px-1.5 py-0.5 font-mono text-[10.5px] text-v2-foreground/80">
-            {s.hash}
-          </span>
-        </div>
-      ))}
-    </Surface>
-  )
-}
 // ── Preview row synthesis ───────────────────────────────────────────────────
 
 const ENUM_SAMPLES: Record<string, string[]> = {
@@ -1655,6 +1659,8 @@ const ENUM_SAMPLES: Record<string, string[]> = {
   venue: ['NYSE', 'NASDAQ', 'OTC', 'BLP'],
   covenant_status: ['Pass', 'Watch', 'Breach'],
   risk_grade: ['A', 'BBB', 'BB', 'B', 'CCC'],
+  lien_position: ['First-lien', 'Second-lien', 'Unsecured'],
+  reporting_period: ['Q1 2026', 'Q4 2025', 'Q3 2025', 'Q2 2025'],
 }
 
 function hash(input: string): number {

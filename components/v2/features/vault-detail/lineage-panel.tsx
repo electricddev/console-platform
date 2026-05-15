@@ -406,15 +406,15 @@ export function LineagePanel({ vault, dataset }: LineagePanelProps) {
                     </span>
                     <StatusPill
                       tone={
-                        dataset.status === 'sealed'
+                        dataset.status === 'live'
                           ? 'success'
-                          : dataset.status === 'pending'
+                          : dataset.status === 'syncing'
                             ? 'warning'
                             : 'danger'
                       }
                       size="xs"
                     >
-                      {dataset.status}
+                      {dataset.status === 'live' ? 'Live' : dataset.status === 'syncing' ? 'Syncing' : 'Failed'}
                     </StatusPill>
                   </div>
                 </LineageNode>
@@ -580,7 +580,7 @@ export function LineagePanel({ vault, dataset }: LineagePanelProps) {
           </Link>{' '}
           stops delivering data, the{' '}
           <strong className="font-medium text-v2-foreground">{dataset.name}</strong>{' '}
-          dataset&apos;s seal will fail, breaking{' '}
+          dataset will go stale, breaking{' '}
           <strong className="font-medium text-v2-foreground">
             {templates.length}{' '}
             {templates.length === 1 ? 'query template' : 'query templates'}

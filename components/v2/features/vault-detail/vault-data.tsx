@@ -16,8 +16,8 @@ interface Props {
 
 const STATUS_FILTERS: Array<{ value: DatasetStatus | 'all'; label: string }> = [
   { value: 'all', label: 'All' },
-  { value: 'sealed', label: 'Sealed' },
-  { value: 'pending', label: 'Pending' },
+  { value: 'live', label: 'Live' },
+  { value: 'syncing', label: 'Syncing' },
   { value: 'failed', label: 'Failed' },
 ]
 
@@ -46,7 +46,7 @@ export function VaultData({ vault }: Props) {
       out = [...out].sort((a, b) => b.recordCount - a.recordCount)
     } else {
       out = [...out].sort(
-        (a, b) => new Date(b.lastSealedAt).getTime() - new Date(a.lastSealedAt).getTime(),
+        (a, b) => new Date(b.lastSyncedAt).getTime() - new Date(a.lastSyncedAt).getTime(),
       )
     }
     return out
@@ -67,8 +67,8 @@ export function VaultData({ vault }: Props) {
           Data
         </h1>
         <p className="max-w-prose text-[14px] leading-relaxed text-v2-muted">
-          The sealed contents of this vault. Search, filter, and open any dataset to manage its
-          schema, privacy, and seal history.
+          The synced datasets in this vault. Search, filter, and open any dataset to manage its
+          schema, privacy, and configuration.
         </p>
       </motion.header>
 
