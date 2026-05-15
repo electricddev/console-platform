@@ -112,6 +112,8 @@ export const vaults: Vault[] = [
   },
 ]
 
+export type ActivityKind = 'sync' | 'query' | 'access' | 'source'
+
 export interface ActivityEvent {
   id: string
   at: string
@@ -119,6 +121,7 @@ export interface ActivityEvent {
   vaultSymbol: string
   actor: string
   action: string
+  kind: ActivityKind
 }
 
 export const activityFeed: ActivityEvent[] = [
@@ -129,45 +132,127 @@ export const activityFeed: ActivityEvent[] = [
     vaultSymbol: 'BUIDL',
     actor: 'BNY Mellon',
     action: 'sealed holdings snapshot',
+    kind: 'sync',
   },
   {
     id: 'evt-2',
     at: minsAgo(11),
     vaultId: 'acred',
     vaultSymbol: 'ACRED',
-    actor: 'BNY Mellon',
-    action: 'sealed holdings snapshot',
+    actor: 'Gauntlet',
+    action: 'ran concentration check',
+    kind: 'query',
   },
   {
     id: 'evt-3',
+    at: minsAgo(34),
+    vaultId: 'acred',
+    vaultSymbol: 'ACRED',
+    actor: 'Morpho',
+    action: 'pulled NAV feed view',
+    kind: 'query',
+  },
+  {
+    id: 'evt-4',
     at: hoursAgo(2),
+    vaultId: 'acred',
+    vaultSymbol: 'ACRED',
+    actor: 'Aave V4',
+    action: 'requested vault access',
+    kind: 'access',
+  },
+  {
+    id: 'evt-5',
+    at: hoursAgo(3),
     vaultId: 'kstr',
     vaultSymbol: 'KSTR',
     actor: 'admin@apollo.com',
     action: 'submitted NAV report for review',
+    kind: 'source',
   },
   {
-    id: 'evt-4',
+    id: 'evt-6',
     at: hoursAgo(5),
     vaultId: 'scope',
     vaultSymbol: 'SCOPE',
     actor: 'IHS Markit',
-    action: 'ingested loan pricing',
+    action: 'ingested loan pricing marks',
+    kind: 'sync',
   },
   {
-    id: 'evt-5',
+    id: 'evt-7',
     at: daysAgo(1),
     vaultId: 'acred',
     vaultSymbol: 'ACRED',
     actor: 'mark.t@securitize.io',
     action: 'sealed April loan tape',
+    kind: 'sync',
   },
   {
-    id: 'evt-6',
+    id: 'evt-8',
     at: daysAgo(2),
     vaultId: 'benji',
     vaultSymbol: 'BENJI',
     actor: 'SEC EDGAR',
     action: 'ingested N-MFP Q1 2026',
+    kind: 'source',
+  },
+]
+
+// ── Attention items ───────────────────────────────────────────────────────────
+
+export type AttentionKind = 'sync-failure' | 'grant-expiring' | 'schema-drift' | 'access-request'
+
+export interface AttentionItem {
+  id: string
+  kind: AttentionKind
+  title: string
+  context: string
+  vaultId: string
+  vaultSymbol: string
+  href: string
+  at: string
+}
+
+export const attentionItems: AttentionItem[] = [
+  {
+    id: 'att-1',
+    kind: 'sync-failure',
+    title: 'NAV report ingestion failed',
+    context: 'ACRED · Apollo Credit',
+    vaultId: 'acred',
+    vaultSymbol: 'ACRED',
+    href: '/v2/vaults/acred/data/nav-report',
+    at: hoursAgo(2),
+  },
+  {
+    id: 'att-2',
+    kind: 'grant-expiring',
+    title: 'Aave V4 grant on Borrower performance expires in 5 days',
+    context: 'ACRED · Borrower performance',
+    vaultId: 'acred',
+    vaultSymbol: 'ACRED',
+    href: '/v2/vaults/acred/access?counterparty=aave-v4',
+    at: daysAgo(1),
+  },
+  {
+    id: 'att-3',
+    kind: 'schema-drift',
+    title: 'Pricing marks · schema drift detected',
+    context: 'ACRED · Bloomberg BPIPE',
+    vaultId: 'acred',
+    vaultSymbol: 'ACRED',
+    href: '/v2/vaults/acred/data/pricing?tab=schema',
+    at: hoursAgo(5),
+  },
+  {
+    id: 'att-4',
+    kind: 'access-request',
+    title: 'BUIDL · 2 pending grant requests',
+    context: 'BUIDL · BlackRock USD',
+    vaultId: 'buidl',
+    vaultSymbol: 'BUIDL',
+    href: '/v2/vaults/buidl/access',
+    at: hoursAgo(8),
   },
 ]

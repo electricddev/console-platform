@@ -9,9 +9,8 @@ import { V2MobileNav } from './mobile-nav'
 
 const FULL_WIDTH_PREFIXES: string[] = []
 // Routes that take the full height of the main area (no inner scroll, no
-// max-w cap) — typically pages that own their own viewport, like the live
-// pipeline graph on /v2.
-const FULL_BLEED_EXACT: string[] = ['/v2']
+// max-w cap) — typically pages that own their own viewport.
+const FULL_BLEED_EXACT: string[] = []
 // Routes matched by pattern (e.g. dynamic segments) that also get full-bleed.
 const FULL_BLEED_PATTERNS: RegExp[] = [
   // /v2/vaults/[id]/data/[datasetId] — dataset exploration is a desktop-app
