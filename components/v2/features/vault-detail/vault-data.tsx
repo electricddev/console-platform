@@ -1,47 +1,59 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { DatasetDetail } from './dataset-detail'
-import { DatasetList } from './dataset-list'
-import { VaultDataPolicy } from './vault-data-policy'
-import { datasets, findDataset } from './data-fixture'
+import { getPaletteFamily } from '@/components/v2/lib/palette'
+import { DatasetCard } from './dataset-card'
+import { datasets } from './data-fixture'
+import type { DatasetStatus } from './data-fixture'
 import type { Vault } from '@/components/v2/features/origination/origination-fixture'
 
 interface Props {
   vault: Vault
 }
 
-type FilterKey = 'all' | 'sealed' | 'pending' | 'failed'
-
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'sealed', label: 'Sealed' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'failed', label: 'Failed' },
+const STATUS_FILTERS: Array<{ value: DatasetStatus | 'all'; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'sealed', label: 'Sealed' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'failed', label: 'Failed' },
 ]
 
+type SortKey = 'recent' | 'name' | 'rows'
+
 export function VaultData({ vault }: Props) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<FilterKey>('all')
+  const family = getPaletteFamily(vault.palette)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<DatasetStatus | 'all'>('all')
+  const [sort, setSort] = useState<SortKey>('recent')
 
-  const selected = selectedId ? findDataset(selectedId) : null
-
-  const visibleDatasets = useMemo(() => {
-    if (filter === 'all') return datasets
-    return datasets.filter((d) => d.status === filter)
-  }, [filter])
-
-  const counts = useMemo(() => {
-    const c = { all: datasets.length, sealed: 0, pending: 0, failed: 0 }
-    for (const d of datasets) c[d.status]++
-    return c
-  }, [])
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    let out = datasets.filter((d) => {
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false
+      if (!q) return true
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.description.toLowerCase().includes(q) ||
+        d.source.toLowerCase().includes(q)
+      )
+    })
+    if (sort === 'name') {
+      out = [...out].sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sort === 'rows') {
+      out = [...out].sort((a, b) => b.recordCount - a.recordCount)
+    } else {
+      out = [...out].sort(
+        (a, b) => new Date(b.lastSealedAt).getTime() - new Date(a.lastSealedAt).getTime(),
+      )
+    }
+    return out
+  }, [query, statusFilter, sort])
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-4">
-      {/* Hero header */}
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 py-4">
       <motion.header
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
@@ -55,80 +67,85 @@ export function VaultData({ vault }: Props) {
           Data
         </h1>
         <p className="max-w-prose text-[14px] leading-relaxed text-v2-muted">
-          The sealed contents of this data vault. Per-field privacy controls determine
-          what leaves the vault — counterparties compute against approved aggregates and
-          on-chain references, never raw rows.
+          The sealed contents of this vault. Search, filter, and open any dataset to manage its
+          schema, privacy, and seal history.
         </p>
       </motion.header>
 
-      {/* Master/detail body */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* LEFT — Sealed datasets */}
-        <section className="flex flex-col gap-4 lg:col-span-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <h2 className="text-[15px] font-medium tracking-tight text-v2-foreground">
-                Sealed datasets
-              </h2>
-              <span className="font-mono text-[11px] tabular-nums text-v2-muted/70">
-                {visibleDatasets.length} of {datasets.length}
-              </span>
-            </div>
+      {/* Controls */}
+      <section className="flex flex-col gap-3" aria-label="Dataset controls">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="relative flex w-full max-w-sm items-center">
+            <Search
+              className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-v2-muted/70"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search datasets, sources, descriptions"
+              className="h-9 w-full rounded-lg border border-v2-border/60 bg-v2-surface pl-8 pr-3 text-[12.5px] text-v2-foreground placeholder:text-v2-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+              aria-label="Search datasets"
+            />
+          </label>
+          <div className="flex items-center gap-3 text-[12px] text-v2-muted">
+            <span className="font-mono tabular-nums text-v2-muted/70">
+              {filtered.length} of {datasets.length}
+            </span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="h-8 rounded-md border border-v2-border/60 bg-v2-surface px-2 text-[11.5px] text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+              aria-label="Sort datasets"
+            >
+              <option value="recent">Recent</option>
+              <option value="name">Name</option>
+              <option value="rows">Rows</option>
+            </select>
           </div>
-
-          {/* Filter chips */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {FILTERS.map((f) => {
-              const isActive = filter === f.key
-              const count = counts[f.key]
-              if (f.key !== 'all' && count === 0) return null
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setFilter(f.key)}
-                  className={cn(
-                    'group inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11.5px] font-medium tracking-tight transition-all duration-150',
-                    isActive
-                      ? 'border-v2-border bg-v2-surface text-v2-foreground shadow-sm shadow-black/[0.02] dark:shadow-black/30'
-                      : 'border-transparent bg-transparent text-v2-muted hover:bg-v2-foreground/[0.045] hover:text-v2-foreground',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground'
-                  )}
-                  aria-pressed={isActive}
-                >
-                  {f.label}
-                  <span className="font-mono text-[10.5px] tabular-nums text-v2-muted/70">
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          <DatasetList
-            datasets={visibleDatasets}
-            selectedId={selectedId}
-            onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
-          />
-        </section>
-
-        {/* RIGHT — Default = vault policy, or selected dataset detail */}
-        <aside className="relative lg:col-span-7">
-          <div className="lg:sticky lg:top-2">
-            <AnimatePresence mode="wait" initial={false}>
-              {selected ? (
-                <DatasetDetail
-                  key={`detail-${selected.id}`}
-                  dataset={selected}
-                  onBack={() => setSelectedId(null)}
-                />
-              ) : (
-                <VaultDataPolicy key="policy" />
+        </div>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setStatusFilter(f.value)}
+              aria-pressed={statusFilter === f.value}
+              className={cn(
+                'rounded-md px-2.5 py-1 text-[11.5px] font-medium tracking-tight transition-colors',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground',
+                statusFilter === f.value
+                  ? 'bg-v2-foreground/[0.08] text-v2-foreground'
+                  : 'text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground',
               )}
-            </AnimatePresence>
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Card stack */}
+      <section className="flex flex-col gap-3" aria-label="Datasets">
+        {filtered.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-v2-border/60 px-6 py-10 text-center">
+            <p className="text-[13px] text-v2-muted">No datasets match these filters.</p>
           </div>
-        </aside>
-      </div>
+        ) : (
+          filtered.map((d, i) => (
+            <DatasetCard
+              key={d.id}
+              dataset={d}
+              vaultId={vault.id}
+              family={family}
+              seed={i + 3}
+              index={i}
+            />
+          ))
+        )}
+      </section>
     </div>
   )
 }

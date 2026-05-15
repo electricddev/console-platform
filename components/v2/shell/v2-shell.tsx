@@ -12,12 +12,20 @@ const FULL_WIDTH_PREFIXES: string[] = []
 // max-w cap) — typically pages that own their own viewport, like the live
 // pipeline graph on /v2.
 const FULL_BLEED_EXACT: string[] = ['/v2']
+// Routes matched by pattern (e.g. dynamic segments) that also get full-bleed.
+const FULL_BLEED_PATTERNS: RegExp[] = [
+  // /v2/vaults/[id]/data/[datasetId] — dataset exploration is a desktop-app
+  // experience: header + tabs stay put, table fills the rest of the viewport.
+  /^\/v2\/vaults\/[^/]+\/data\/[^/]+\/?$/,
+]
 
 export function V2Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
   const isFullWidth = FULL_WIDTH_PREFIXES.some((p) => pathname.startsWith(p))
-  const isFullBleed = FULL_BLEED_EXACT.includes(pathname)
+  const isFullBleed =
+    FULL_BLEED_EXACT.includes(pathname) ||
+    FULL_BLEED_PATTERNS.some((re) => re.test(pathname))
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-v2-background">

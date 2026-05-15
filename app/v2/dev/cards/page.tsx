@@ -1,24 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  ArrowRight,
-  ChevronRight,
-  Code2,
-  Database,
-  Plug,
-  Plus,
-} from 'lucide-react'
+import { ArrowRight, ChevronRight, Code2, Database, Plug, Plus } from 'lucide-react'
 import { AuraCard } from '@/components/v2/ui/aura-card'
 import { Surface } from '@/components/v2/ui/surface'
 import { v2Palette } from '@/components/v2/lib/palette'
-import { cn } from '@/lib/utils'
 
 export default function CardShowcasePage() {
-  const forest = '#3F7D5F'
-  const sky = '#5FA3C7'
-  const amber = '#D9A24A'
-  const mauve = '#9A87C0'
+  const forestFamily = v2Palette.find((p) => p.id === 'forest')!.family
+  const skyFamily = v2Palette.find((p) => p.id === 'sky')!.family
+  const amberFamily = v2Palette.find((p) => p.id === 'amber')!.family
+  const mauveFamily = v2Palette.find((p) => p.id === 'mauve')!.family
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-16 py-4">
@@ -30,109 +22,132 @@ export default function CardShowcasePage() {
           Card designs
         </h1>
         <p className="max-w-prose text-[14px] text-v2-muted">
-          The complete card catalog. Three building blocks compose into every card you'll see in v2:
-          <span className="font-mono text-[13px] text-v2-foreground/90"> Surface</span> for the panel,
-          <span className="font-mono text-[13px] text-v2-foreground/90"> Aura</span> for the gradient,
-          and <span className="font-mono text-[13px] text-v2-foreground/90">AuraCard</span> which bundles them
-          with three variants:
-          <span className="text-v2-foreground"> hero</span>,
-          <span className="text-v2-foreground"> muted</span>, and
-          <span className="text-v2-foreground"> multi</span>.
+          Three building blocks compose every card in v2:
+          <span className="font-mono text-[13px] text-v2-foreground/90"> Surface</span> for the
+          panel,
+          <span className="font-mono text-[13px] text-v2-foreground/90"> Aura</span> for the
+          in-card multi-blob gradient, and
+          <span className="font-mono text-[13px] text-v2-foreground/90"> AuraCard</span> which
+          bundles them with two intensity variants —
+          <span className="text-v2-foreground"> hero</span> and
+          <span className="text-v2-foreground"> muted</span>.
+        </p>
+        <p className="mt-1 max-w-prose text-[12.5px] text-v2-muted/80">
+          Auras are <em>compositions</em>, not random color washes. A vault's palette family
+          (3 harmonious hexes) is the input, so every card across a vault sub-page reads in
+          one consistent color family.
         </p>
       </header>
 
-      {/* 1. AuraCard variants — the headline */}
+      {/* 1. AuraCard variants */}
       <Block
         eyebrow="01"
-        title="AuraCard · the three variants"
-        description="Pick the variant that matches the prominence of the card. Same building blocks — different intensity."
+        title="AuraCard · hero vs muted"
+        description="Same composition, different intensity. Use hero for landing-page tiles; muted for sub-page cards."
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <AuraCard variant="hero" accent={forest} interactive className="flex h-44 flex-col justify-between p-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <AuraCard variant="hero" family={forestFamily} interactive className="flex h-48 flex-col justify-between p-6">
             <div className="relative">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-v2-muted/70">variant="hero"</p>
+              <p className="text-[11px] uppercase tracking-[0.12em] text-v2-muted/70">
+                variant="hero"
+              </p>
               <h3 className="mt-2 text-[24px] font-semibold leading-none tracking-tight text-v2-foreground">
                 ACRED
               </h3>
-              <p className="mt-2 text-[13px] text-v2-muted">Apollo</p>
+              <p className="mt-2 text-[13px] text-v2-muted">family = forest · teal · light-green</p>
             </div>
-            <p className="relative text-[12px] text-v2-muted/80">
-              Big aura · used on landing pages
-            </p>
+            <p className="relative text-[12px] text-v2-muted/80">3-blob composition</p>
           </AuraCard>
-          <AuraCard variant="muted" accent={forest} interactive className="flex h-44 flex-col justify-between p-6">
+          <AuraCard variant="muted" family={forestFamily} interactive className="flex h-48 flex-col justify-between p-6">
             <div className="relative">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-v2-muted/70">variant="muted"</p>
-              <h3 className="mt-2 text-[20px] font-semibold leading-none tracking-tight text-v2-foreground">
-                Same look, dialed down
+              <p className="text-[11px] uppercase tracking-[0.12em] text-v2-muted/70">
+                variant="muted"
+              </p>
+              <h3 className="mt-2 text-[24px] font-semibold leading-none tracking-tight text-v2-foreground">
+                Same family, dialed down
               </h3>
               <p className="mt-2 text-[13px] text-v2-muted">For sub-page cards</p>
             </div>
-            <p className="relative text-[12px] text-v2-muted/80">
-              Smaller blob · same palette
-            </p>
-          </AuraCard>
-          <AuraCard
-            variant="multi"
-            accents={[forest, sky, mauve, amber]}
-            interactive
-            className="flex h-44 flex-col justify-between p-6"
-          >
-            <div className="relative">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-v2-muted/70">variant="multi"</p>
-              <h3 className="mt-2 text-[20px] font-semibold leading-none tracking-tight text-v2-foreground">
-                Multi-tinted
-              </h3>
-              <p className="mt-2 text-[13px] text-v2-muted">When several entities share a card</p>
-            </div>
-            <p className="relative text-[12px] text-v2-muted/80">
-              Spread of palette colors
-            </p>
+            <p className="relative text-[12px] text-v2-muted/80">Lower opacity stops</p>
           </AuraCard>
         </div>
       </Block>
 
-      {/* 2. AuraCard hero — palette gallery (the Data Vaults grid) */}
+      {/* 2. Palette families — the vault gallery */}
       <Block
         eyebrow="02"
-        title="Hero · palette gallery"
-        description="What you see on /v2/vaults — one AuraCard hero per fund, each with its own palette color."
+        title="Palette families"
+        description="Each vault picks one. The aura always reads in that family — BUIDL blueish, ACRED greenish, KSTR mauveish, etc."
       >
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
           {v2Palette.map((p) => (
-            <AuraCard key={p.id} variant="hero" accent={p.hex} className="flex h-28 flex-col justify-between p-4">
-              <p className="relative text-[12px] font-medium tracking-tight text-v2-foreground">
+            <AuraCard
+              key={p.id}
+              variant="hero"
+              family={p.family}
+              className="flex h-32 flex-col justify-between p-4"
+            >
+              <p className="relative text-[13px] font-medium tracking-tight text-v2-foreground">
                 {p.label}
               </p>
-              <p className="relative font-mono text-[10px] tabular-nums text-v2-muted">
-                {p.hex}
-              </p>
+              <div className="relative flex flex-wrap gap-1">
+                {p.family.map((c) => (
+                  <span
+                    key={c}
+                    className="font-mono text-[9.5px] tabular-nums text-v2-muted"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
             </AuraCard>
           ))}
         </div>
       </Block>
 
-      {/* 3. AuraCard muted — what /v2/vaults/[id] uses */}
+      {/* 3. Single-color shortcut */}
       <Block
         eyebrow="03"
-        title="Muted · sub-page stat tiles"
-        description="What you see on /v2/vaults/[id] — same visual language as hero, dialed down so 4 in a row don't fight each other."
+        title="Single-color shortcut (accent)"
+        description="Pass accent={hex} when you want one color — used for tier cards (on-chain, queryable, private) where the color encodes meaning, not a vault identity."
       >
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="NAV" value="$1.25B" accent={forest} position="br" />
-          <StatTile label="Sources" value="8" accent={forest} position="tr" />
-          <StatTile label="Consumers" value="9" accent={forest} position="bl" />
-          <StatTile label="Queries" value="14" accent={forest} position="tl" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <AuraCard variant="muted" accent="#3F7D5F" className="flex h-32 flex-col justify-between p-4">
+            <p className="relative text-[13px] font-medium text-v2-foreground">On-chain tier</p>
+            <p className="relative font-mono text-[10.5px] tabular-nums text-v2-muted">#3F7D5F</p>
+          </AuraCard>
+          <AuraCard variant="muted" accent="#5FA3C7" className="flex h-32 flex-col justify-between p-4">
+            <p className="relative text-[13px] font-medium text-v2-foreground">Queryable tier</p>
+            <p className="relative font-mono text-[10.5px] tabular-nums text-v2-muted">#5FA3C7</p>
+          </AuraCard>
+          <AuraCard variant="muted" accent="#71706C" className="flex h-32 flex-col justify-between p-4">
+            <p className="relative text-[13px] font-medium text-v2-foreground">Private tier</p>
+            <p className="relative font-mono text-[10.5px] tabular-nums text-v2-muted">#71706C</p>
+          </AuraCard>
         </div>
       </Block>
 
-      {/* 4. List container */}
+      {/* 4. Stat tiles */}
       <Block
         eyebrow="04"
+        title="Stat tiles"
+        description="Compact AuraCards used for vault KPIs. All four read in the same family — feels coherent, not noisy."
+      >
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatTile label="NAV" value="$1.25B" family={skyFamily} />
+          <StatTile label="Sources" value="8" family={skyFamily} />
+          <StatTile label="Consumers" value="9" family={skyFamily} />
+          <StatTile label="Queries" value="14" family={skyFamily} />
+        </div>
+      </Block>
+
+      {/* 5. List container */}
+      <Block
+        eyebrow="05"
         title="List container"
         description="AuraCard muted wrapping divider rows. Each row links/hovers independently."
       >
-        <AuraCard variant="muted" accent={sky} position="tr" className="divide-y divide-v2-border/40">
+        <AuraCard variant="muted" family={skyFamily} className="divide-y divide-v2-border/40">
           {[
             { name: 'Apollo PMS', detail: 'Position management · daily', time: '1 h ago' },
             { name: 'BNY Mellon SWIFT', detail: 'Custodian holdings · 13:00 UTC', time: '11 min ago' },
@@ -145,9 +160,7 @@ export default function CardShowcasePage() {
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-v2-success" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-medium text-v2-foreground">
-                  {s.name}
-                </p>
+                <p className="truncate text-[13.5px] font-medium text-v2-foreground">{s.name}</p>
                 <p className="truncate text-[12px] text-v2-muted">{s.detail}</p>
               </div>
               <span className="shrink-0 text-[12px] tabular-nums text-v2-muted/70">{s.time}</span>
@@ -161,16 +174,15 @@ export default function CardShowcasePage() {
         </AuraCard>
       </Block>
 
-      {/* 5. CTA / banner */}
+      {/* 6. CTA / banner */}
       <Block
-        eyebrow="05"
+        eyebrow="06"
         title="CTA / banner"
-        description="Single-line affordance with icon, copy, chevron. Usually muted."
+        description="Single-line affordance with icon, copy, chevron. Picks up the vault family."
       >
         <AuraCard
           variant="muted"
-          accent={amber}
-          position="tr"
+          family={amberFamily}
           as={Link}
           href="/v2/dev/cards"
           interactive
@@ -191,10 +203,10 @@ export default function CardShowcasePage() {
         </AuraCard>
       </Block>
 
-      {/* 6. Surface (no aura) — the underlying primitive */}
+      {/* 7. Surface — primitive without aura */}
       <Block
-        eyebrow="06"
-        title="Surface · primitive (no aura)"
+        eyebrow="07"
+        title="Surface · no aura"
         description="The bare wrapper. Use directly when you want a clean panel without a palette accent."
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -215,9 +227,9 @@ export default function CardShowcasePage() {
         </div>
       </Block>
 
-      {/* 7. Buttons */}
+      {/* 8. Buttons */}
       <Block
-        eyebrow="07"
+        eyebrow="08"
         title="Floating buttons"
         description="Surface used as a small action. Solid bg + hover lift — never transparent."
       >
@@ -254,9 +266,9 @@ export default function CardShowcasePage() {
         </div>
       </Block>
 
-      {/* 8. Dashed placeholders */}
+      {/* 9. Dashed placeholders */}
       <Block
-        eyebrow="08"
+        eyebrow="09"
         title="Empty · placeholder"
         description="Dashed-border Surface for 'add new' affordances inside grids."
       >
@@ -289,9 +301,9 @@ export default function CardShowcasePage() {
         </div>
       </Block>
 
-      {/* 9. Pills / chips */}
+      {/* 10. Pills / chips */}
       <Block
-        eyebrow="09"
+        eyebrow="10"
         title="Pills · chips"
         description="Tiny floating surfaces — for status, role tags, counts."
       >
@@ -340,9 +352,7 @@ function Block({
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-v2-muted/70">
           {eyebrow}
         </p>
-        <h2 className="text-[18px] font-semibold tracking-tight text-v2-foreground">
-          {title}
-        </h2>
+        <h2 className="text-[18px] font-semibold tracking-tight text-v2-foreground">{title}</h2>
         <p className="max-w-prose text-[13px] text-v2-muted">{description}</p>
       </div>
       <div className="flex flex-col gap-4">{children}</div>
@@ -353,19 +363,15 @@ function Block({
 function StatTile({
   label,
   value,
-  accent,
-  position,
+  family,
 }: {
   label: string
   value: string
-  accent: string
-  position: 'tl' | 'tr' | 'bl' | 'br'
+  family: [string, string, string]
 }) {
   return (
-    <AuraCard variant="muted" accent={accent} position={position} className="flex flex-col gap-2 p-4">
-      <p className="relative text-[11px] uppercase tracking-[0.12em] text-v2-muted/80">
-        {label}
-      </p>
+    <AuraCard variant="muted" family={family} className="flex flex-col gap-2 p-4">
+      <p className="relative text-[11px] uppercase tracking-[0.12em] text-v2-muted/80">{label}</p>
       <p className="relative text-[22px] font-semibold leading-none tracking-tight tabular-nums text-v2-foreground">
         {value}
       </p>
