@@ -276,58 +276,54 @@ function SchemaPanel({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Compact header — one tight line */}
-      <div className="border-b border-v2-border/40 px-3 py-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10.5px] font-medium text-v2-foreground truncate">
-            vault.{slug}
-          </span>
-          <span className="shrink-0 text-[10px] text-v2-muted/50 truncate">
-            {vault.provider.name}
-          </span>
-          <span className="shrink-0 font-mono text-[9px] text-v2-muted/35">
-            {relativeTime(vault.lastProviderUpdateAt)}
-          </span>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden bg-v2-foreground/[0.03]">
+      {/* Panel header */}
+      <div className="border-b border-v2-border px-4 py-3">
+        <p className="font-mono text-[13px] font-medium text-v2-foreground">
+          vault.{slug}
+        </p>
+        <p className="mt-0.5 text-[11px] text-v2-muted truncate">
+          {vault.provider.name} <span className="text-v2-muted/60">·</span>{' '}
+          <span className="font-mono">{relativeTime(vault.lastProviderUpdateAt)}</span>
+        </p>
       </div>
 
       {/* Table list — accordion */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {vault.tables.map((tbl) => {
           const isOpen = expanded.has(tbl.name)
           const tblFieldCounts = countByPrivacy(tbl.fields)
           return (
-            <div key={tbl.name} className="mb-1">
+            <div key={tbl.name}>
               {/* Table row header */}
               <button
                 type="button"
                 onClick={() => toggleTable(tbl.name)}
                 aria-expanded={isOpen}
                 aria-label={`${isOpen ? 'Collapse' : 'Expand'} table ${tbl.name}`}
-                className="flex w-full items-center gap-1.5 rounded px-1.5 py-1.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+                className="flex w-full items-center gap-1.5 rounded px-2 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
               >
                 {isOpen ? (
                   <ChevronDown className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
                 ) : (
                   <ChevronRight className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
                 )}
-                <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-v2-foreground">
+                <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-v2-foreground">
                   {tbl.name}
                 </span>
-                <span className="shrink-0 font-mono text-[9px] text-v2-muted/40">
+                <span className="shrink-0 font-mono text-[11px] text-v2-muted">
                   {tbl.fields.length} cols
-                </span>
-                <span className="shrink-0 font-mono text-[9px] text-v2-muted/35">
-                  {tbl.refreshCadence}
                 </span>
               </button>
 
               {/* Expanded: privacy bar + fields + lineage */}
               {isOpen && (
                 <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1">
-                  {/* Per-table privacy bar */}
-                  <div className="px-1.5 pt-0.5 pb-1.5">
+                  {/* Refresh cadence + per-table privacy bar */}
+                  <div className="px-1.5 mt-2 mb-3">
+                    <p className="mb-1.5 font-mono text-[10.5px] text-v2-muted">
+                      refreshes {tbl.refreshCadence}
+                    </p>
                     <PrivacyBar counts={tblFieldCounts} height="h-px" />
                   </div>
 
@@ -338,10 +334,10 @@ function SchemaPanel({
                       <button
                         key={field.name}
                         type="button"
-                        title={field.description}
+                        title={`${field.description} — type: ${field.type}`}
                         onClick={() => handleFieldClick(field, tbl)}
                         className={cn(
-                          'flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left transition-colors',
+                          'flex w-full items-center gap-1.5 rounded px-1.5 py-2 text-left transition-colors',
                           isPrivate
                             ? 'cursor-not-allowed opacity-50'
                             : accessible
@@ -352,7 +348,7 @@ function SchemaPanel({
                       >
                         <span
                           className={cn(
-                            'min-w-0 flex-1 truncate font-mono text-[10.5px]',
+                            'min-w-0 flex-1 truncate font-mono text-[13px]',
                             accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
                           )}
                         >
@@ -360,23 +356,20 @@ function SchemaPanel({
                         </span>
                         {field.kMin !== undefined && (
                           <span
-                            className="shrink-0 rounded bg-v2-foreground/[0.06] px-1 py-px font-mono text-[9px] text-v2-muted/60"
+                            className="shrink-0 rounded bg-v2-foreground/[0.06] px-1.5 py-px font-mono text-[10.5px] text-v2-muted"
                             title={`Aggregates must include at least ${field.kMin} distinct identifiers.`}
                           >
                             min k={field.kMin}
                           </span>
                         )}
-                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.05em] text-v2-muted/35">
-                          {field.type}
-                        </span>
-                        <PrivacyChip level={field.privacy} size="xs" mode="operation" />
+                        <PrivacyChip level={field.privacy} size="sm" mode="operation" />
                       </button>
                     )
                   })}
 
                   {/* Lineage hint */}
                   {tbl.lineageHint && (
-                    <p className="mt-1 px-1.5 font-mono text-[9px] text-v2-muted/35 leading-relaxed">
+                    <p className="mt-3 pt-3 border-t border-v2-border/40 px-1.5 font-mono text-[11px] text-v2-muted leading-relaxed">
                       → {tbl.lineageHint}
                     </p>
                   )}
@@ -388,9 +381,12 @@ function SchemaPanel({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-v2-border/30 px-3 py-1.5">
-        <p className="font-mono text-[9px] text-v2-muted/35 leading-relaxed">
-          Tap a column to insert · Operations limited to your access grant
+      <div className="border-t border-v2-border px-4 py-3">
+        <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
+          Tap a column to insert.
+        </p>
+        <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
+          Operations limited to your access grant.
         </p>
       </div>
     </div>
@@ -1540,9 +1536,9 @@ FROM
         </div>
 
         {/* 3-column grid */}
-        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[260px_1fr_320px] border border-v2-border/60 rounded-xl overflow-hidden bg-v2-surface">
+        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border border-v2-border/60 rounded-xl overflow-hidden bg-v2-surface">
           {/* Left: schema browser */}
-          <div className="hidden xl:flex xl:flex-col border-r border-v2-border/40 overflow-hidden">
+          <div className="hidden xl:flex xl:flex-col border-r border-v2-border overflow-hidden">
             {vault ? (
               <SchemaPanel
                 vault={vault}
