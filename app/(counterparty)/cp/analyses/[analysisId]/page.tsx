@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Play, MoreHorizontal } from 'lucide-react'
+import { ArrowRight, Play, GitBranch } from 'lucide-react'
 import { Surface } from '@/components/v2/ui/surface'
 import { StatusPill } from '@/components/v2/ui/status-pill'
 import { ChainBadge } from '@/components/v2/features/cp/chain-badge'
@@ -61,7 +61,7 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<P
             {analysis.vaultLabel}
           </Link>
         </div>
-        {/* Action buttons — visual only */}
+        {/* Action buttons */}
         <div className="mt-4 flex items-center gap-2">
           <button
             type="button"
@@ -70,13 +70,15 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<P
             <Play className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
             Run now
           </button>
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-v2-border/60 bg-v2-surface text-v2-muted transition-all hover:border-v2-border hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
-            aria-label="More options"
-          >
-            <MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-          </button>
+          {(analysis.status === 'approved_executing') && (
+            <Link
+              href={`/cp/analyses/new?from=${analysis.id}&version=${analysis.currentVersion + 1}`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-v2-border/60 bg-v2-surface px-3 py-1.5 font-mono text-[12px] text-v2-muted transition-all hover:border-v2-border hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+            >
+              <GitBranch className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+              Propose new version
+            </Link>
+          )}
         </div>
       </div>
 

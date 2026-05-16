@@ -16,6 +16,25 @@ const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString()
 
 // ── Core types ────────────────────────────────────────────────────────────────
 
+export type FieldTier = 'public' | 'tier_1' | 'tier_2' | 'tier_3'
+
+export type VaultFieldType = 'NUMERIC' | 'TIMESTAMP' | 'TEXT' | 'BOOLEAN' | 'BYTES' | 'JSONB'
+
+export type VaultField = {
+  name: string
+  type: VaultFieldType
+  tier: FieldTier
+  description: string
+}
+
+export type VaultFunction = {
+  name: string
+  signature: string
+  description: string
+  fields: VaultField[]
+  cadence?: string
+}
+
 export type ChainId = 'ethereum' | 'base' | 'arbitrum' | 'optimism'
 
 export type AnalysisStatus =
@@ -95,6 +114,8 @@ export type ConsumerVault = {
   grantedAt: string
   grantedBy: string
   lastProviderUpdateAt: string
+  functions: VaultFunction[]
+  accessibleTiers: FieldTier[]
 }
 
 // ── Analysis code snippets ────────────────────────────────────────────────────
@@ -612,6 +633,116 @@ export const executions: Execution[] = [
   makeRow('exec-nf-16', 'acred_nav_freshness', 'acred_nav_freshness', 1, 5760, 94, 'success', '{"freshness":"fresh","age_seconds":900,"current_nav":1245500000,"nav_source":"ALPS API"}', 14, 1, 2, 2, ethOnly(62)),
 ]
 
+// ── Vault schemas ─────────────────────────────────────────────────────────────
+
+const ACRED_FUNCTIONS: VaultFunction[] = [
+  {
+    name: 'nav_latest',
+    signature: 'vault.acred.nav_latest() RETURNS row',
+    description: 'Current NAV snapshot with per-share price and next publication timestamp.',
+    cadence: 'updated every 1m',
+    fields: [
+      { name: 'current_nav',   type: 'NUMERIC',    tier: 'public',  description: 'Total fund NAV in USD at snapshot time' },
+      { name: 'snapshot_at',   type: 'TIMESTAMP',  tier: 'public',  description: 'UTC timestamp when this NAV was computed' },
+      { name: 'nav_per_share', type: 'NUMERIC',    tier: 'public',  description: 'NAV per share / unit in USD' },
+      { name: 'next_nav_at',   type: 'TIMESTAMP',  tier: 'public',  description: 'Scheduled timestamp for the next NAV publication' },
+      { name: 'nav_source',    type: 'TEXT',       tier: 'tier_1',  description: 'Administrator system that produced this NAV (e.g. ALPS API)' },
+      { name: 'nav_delta_pct', type: 'NUMERIC',    tier: 'tier_1',  description: 'NAV change since last snapshot as a fraction (e.g. 0.0012)' },
+    ],
+  },
+  {
+    name: 'positions_snapshot',
+    signature: 'vault.acred.positions_snapshot() RETURNS TABLE',
+    description: 'Open position rows as of the most recent ingest. One row per position.',
+    cadence: 'updated every 15m',
+    fields: [
+      { name: 'par_value',     type: 'NUMERIC',    tier: 'public',  description: 'Face/par value of the position in USD' },
+      { name: 'status',        type: 'TEXT',       tier: 'public',  description: 'Performing status: performing | watch | non_performing' },
+      { name: 'asset_class',   type: 'TEXT',       tier: 'public',  description: 'Asset class bucket: senior_secured_loan | first_lien | second_lien | subordinated | other' },
+      { name: 'vintage_year',  type: 'NUMERIC',    tier: 'tier_1',  description: 'Year the loan was originated' },
+      { name: 'coupon_rate',   type: 'NUMERIC',    tier: 'tier_2',  description: 'Current coupon rate as a decimal (e.g. 0.0875 = 8.75%)' },
+      { name: 'ltv_band',      type: 'TEXT',       tier: 'tier_2',  description: 'LTV tier bucket: <50% | 50-65% | 65-75% | 75-85% | >85%' },
+      { name: 'obligor_name',  type: 'TEXT',       tier: 'tier_3',  description: 'Legal name of the obligor (borrower)' },
+      { name: 'industry_code', type: 'TEXT',       tier: 'tier_3',  description: 'NAICS 2-digit industry classification code' },
+      { name: 'obligor_id',    type: 'TEXT',       tier: 'tier_1',  description: 'Anonymized obligor identifier (stable hash, not name)' },
+    ],
+  },
+  {
+    name: 'vintage_summary',
+    signature: 'vault.acred.vintage_summary() RETURNS TABLE',
+    description: 'Aggregate portfolio metrics grouped by origination vintage year.',
+    cadence: 'updated daily',
+    fields: [
+      { name: 'vintage_year',      type: 'NUMERIC', tier: 'public',  description: 'Origination year of the cohort' },
+      { name: 'total_par',         type: 'NUMERIC', tier: 'public',  description: 'Total par value of performing positions in this vintage' },
+      { name: 'position_count',    type: 'NUMERIC', tier: 'public',  description: 'Number of positions in this vintage cohort' },
+      { name: 'wac',               type: 'NUMERIC', tier: 'tier_1',  description: 'Weighted average coupon across the vintage' },
+      { name: 'wal_years',         type: 'NUMERIC', tier: 'tier_1',  description: 'Weighted average life remaining in years' },
+      { name: 'default_rate_ytd',  type: 'NUMERIC', tier: 'tier_2',  description: 'Year-to-date default rate for this vintage (fraction)' },
+      { name: 'recovery_rate_avg', type: 'NUMERIC', tier: 'tier_2',  description: 'Average recovery rate on defaulted positions in this vintage' },
+    ],
+  },
+  {
+    name: 'redemption_queue',
+    signature: 'vault.acred.redemption_queue() RETURNS TABLE',
+    description: 'Pending investor redemption requests and cycle timing.',
+    cadence: 'updated on redemption events',
+    fields: [
+      { name: 'pending_usd',   type: 'NUMERIC',   tier: 'public',  description: 'Total USD value of pending redemption requests' },
+      { name: 'next_cycle_at', type: 'TIMESTAMP', tier: 'public',  description: 'Timestamp of the next redemption settlement cycle' },
+      { name: 'holder_count',  type: 'NUMERIC',   tier: 'tier_1',  description: 'Number of distinct holders with pending requests' },
+      { name: 'oldest_at',     type: 'TIMESTAMP', tier: 'tier_1',  description: 'Timestamp of the oldest pending redemption request' },
+      { name: 'status',        type: 'TEXT',       tier: 'public',  description: 'Queue status: pending | processing | settled' },
+    ],
+  },
+]
+
+const MAPLE_FUNCTIONS: VaultFunction[] = [
+  {
+    name: 'pool_summary',
+    signature: 'vault.maple_tf.pool_summary() RETURNS row',
+    description: 'Current state of the trade finance revolving credit pool.',
+    cadence: 'updated every 5m',
+    fields: [
+      { name: 'total_committed_usd', type: 'NUMERIC',   tier: 'public',  description: 'Total committed capital in the pool' },
+      { name: 'deployed_usd',        type: 'NUMERIC',   tier: 'public',  description: 'Currently deployed (outstanding loans)' },
+      { name: 'utilization_rate',    type: 'NUMERIC',   tier: 'public',  description: 'deployed / committed as a fraction' },
+      { name: 'snapshot_at',         type: 'TIMESTAMP', tier: 'public',  description: 'Snapshot UTC timestamp' },
+      { name: 'wac',                 type: 'NUMERIC',   tier: 'tier_1',  description: 'Weighted average coupon of deployed loans' },
+      { name: 'avg_tenor_days',      type: 'NUMERIC',   tier: 'tier_1',  description: 'Average loan tenor in days' },
+    ],
+  },
+  {
+    name: 'loan_book',
+    signature: 'vault.maple_tf.loan_book() RETURNS TABLE',
+    description: 'Individual trade finance loan records.',
+    cadence: 'updated every 15m',
+    fields: [
+      { name: 'loan_id',          type: 'TEXT',       tier: 'tier_1', description: 'Anonymized loan identifier' },
+      { name: 'principal_usd',    type: 'NUMERIC',    tier: 'tier_1', description: 'Outstanding principal in USD' },
+      { name: 'maturity_date',    type: 'TIMESTAMP',  tier: 'tier_1', description: 'Loan maturity date' },
+      { name: 'status',           type: 'TEXT',       tier: 'public', description: 'Loan status: active | matured | defaulted' },
+      { name: 'borrower_country', type: 'TEXT',       tier: 'tier_2', description: 'ISO 3166-1 alpha-2 country code of the borrower' },
+      { name: 'borrower_name',    type: 'TEXT',       tier: 'tier_3', description: 'Legal name of the borrowing entity' },
+    ],
+  },
+]
+
+const BUIDL_FUNCTIONS: VaultFunction[] = [
+  {
+    name: 'nav_latest',
+    signature: 'vault.buidl.nav_latest() RETURNS row',
+    description: 'BUIDL fund NAV snapshot.',
+    cadence: 'updated daily at market close',
+    fields: [
+      { name: 'current_nav',   type: 'NUMERIC',    tier: 'public', description: 'Total fund NAV in USD' },
+      { name: 'snapshot_at',   type: 'TIMESTAMP',  tier: 'public', description: 'NAV as-of timestamp' },
+      { name: 'nav_per_share', type: 'NUMERIC',    tier: 'public', description: 'NAV per share — maintained near $1.00' },
+      { name: 'shares_issued', type: 'NUMERIC',    tier: 'public', description: 'Total shares outstanding' },
+    ],
+  },
+]
+
 // ── Vaults ────────────────────────────────────────────────────────────────────
 
 export const vaults: ConsumerVault[] = [
@@ -626,6 +757,8 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(60),
     grantedBy: 'Sarah Chen',
     lastProviderUpdateAt: minsAgo(11),
+    functions: ACRED_FUNCTIONS,
+    accessibleTiers: ['public', 'tier_1', 'tier_2'],
   },
   {
     id: 'maple-tf-revolver',
@@ -638,6 +771,8 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(30),
     grantedBy: 'Sidney Lim',
     lastProviderUpdateAt: hoursAgo(6),
+    functions: MAPLE_FUNCTIONS,
+    accessibleTiers: ['public', 'tier_1', 'tier_2'],
   },
   {
     id: 'buidl-treasury',
@@ -650,10 +785,16 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(14),
     grantedBy: 'Mark Torres',
     lastProviderUpdateAt: minsAgo(8),
+    functions: BUIDL_FUNCTIONS,
+    accessibleTiers: ['public'],
   },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+export function findVault(id: string): ConsumerVault | undefined {
+  return vaults.find((v) => v.id === id)
+}
 
 export function findAnalysis(id: string): Analysis | undefined {
   return analyses.find((a) => a.id === id)

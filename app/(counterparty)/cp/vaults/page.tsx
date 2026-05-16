@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { Surface } from '@/components/v2/ui/surface'
 import { StatusPill } from '@/components/v2/ui/status-pill'
 import { vaults } from '@/components/v2/features/cp/cp-fixtures'
@@ -62,14 +64,27 @@ export default function CpVaultsPage() {
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-v2-border/40 px-5 py-2.5">
               <span className="text-[11.5px] text-v2-muted/60">
-                Provider last updated
+                Provider last updated{' '}
+                <span
+                  title={fmtAbsolute(vault.lastProviderUpdateAt)}
+                  className="font-mono tabular-nums text-v2-muted/70"
+                >
+                  {fmtRelative(vault.lastProviderUpdateAt)}
+                </span>
               </span>
-              <span
-                title={fmtAbsolute(vault.lastProviderUpdateAt)}
-                className="font-mono text-[11.5px] tabular-nums text-v2-muted/70"
-              >
-                {fmtRelative(vault.lastProviderUpdateAt)}
-              </span>
+              {vault.myAccessLevel === 'author' && (
+                <Link
+                  href={`/cp/analyses/new?vault=${vault.id}`}
+                  className="group inline-flex items-center gap-1 font-mono text-[11.5px] text-v2-muted transition-colors hover:text-v2-foreground"
+                >
+                  Author analysis
+                  <ArrowRight
+                    className="h-3 w-3 transition-transform duration-150 group-hover:translate-x-0.5"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                </Link>
+              )}
             </div>
           </Surface>
         ))}

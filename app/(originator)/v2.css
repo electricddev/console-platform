@@ -140,3 +140,89 @@
     animation: none;
   }
 }
+
+/* ---------- react-simple-code-editor / Prism SQL theme (v2 tokens) ----------
+   Override Prism's default dark theme to match the v2 warm monochrome palette.
+   Monochrome-leaning: comments are muted, keywords are foreground weight,
+   strings and functions carry a subtle opacity shift. No synthetic colors.
+   ---------------------------------------------------------------- */
+
+[data-v2] .code-editor-root {
+  caret-color: var(--v2-foreground);
+}
+
+/* Base text — foreground at full opacity */
+[data-v2] .code-editor-pre,
+[data-v2] .code-editor-pre .token {
+  color: var(--v2-foreground);
+  background: transparent;
+}
+
+/* Comments — muted, same as surrounding UI metadata */
+[data-v2] .code-editor-pre .token.comment,
+[data-v2] .code-editor-pre .token.prolog,
+[data-v2] .code-editor-pre .token.doctype,
+[data-v2] .code-editor-pre .token.cdata {
+  color: var(--v2-muted);
+  opacity: 0.55;
+  font-style: italic;
+}
+
+/* Keywords (SELECT, FROM, WHERE, WITH, AS, etc.) — foreground, slightly bolder */
+[data-v2] .code-editor-pre .token.keyword {
+  color: var(--v2-foreground);
+  font-weight: 500;
+}
+
+/* Strings — warm foreground at 75% */
+[data-v2] .code-editor-pre .token.string,
+[data-v2] .code-editor-pre .token.char,
+[data-v2] .code-editor-pre .token.attr-value {
+  color: var(--v2-foreground);
+  opacity: 0.75;
+}
+
+/* Functions / identifiers — foreground at 85% */
+[data-v2] .code-editor-pre .token.function,
+[data-v2] .code-editor-pre .token.class-name {
+  color: var(--v2-foreground);
+  opacity: 0.85;
+}
+
+/* Numbers — foreground at 70%, tabular feel */
+[data-v2] .code-editor-pre .token.number,
+[data-v2] .code-editor-pre .token.boolean {
+  color: var(--v2-foreground);
+  opacity: 0.70;
+}
+
+/* Operators (+, -, *, /, =, <, >, etc.) — muted */
+[data-v2] .code-editor-pre .token.operator,
+[data-v2] .code-editor-pre .token.entity,
+[data-v2] .code-editor-pre .token.url {
+  color: var(--v2-muted);
+}
+
+/* Punctuation (parens, commas, semicolons) — subtle */
+[data-v2] .code-editor-pre .token.punctuation {
+  color: var(--v2-foreground);
+  opacity: 0.45;
+}
+
+/* Variables / parameters */
+[data-v2] .code-editor-pre .token.variable {
+  color: var(--v2-foreground);
+  opacity: 0.80;
+}
+
+/* Selected text in the editor textarea */
+[data-v2] .code-editor-textarea::selection {
+  background: color-mix(in oklab, var(--v2-foreground) 15%, transparent);
+}
+
+/* ---- dark-mode palette flip ---- */
+[data-v2].dark .code-editor-pre .token.comment,
+.dark [data-v2] .code-editor-pre .token.comment {
+  color: var(--v2-muted);
+  opacity: 0.5;
+}
