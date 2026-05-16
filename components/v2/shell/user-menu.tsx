@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Building2, Check, ChevronsUpDown, Globe, HelpCircle, LogOut, Settings, Wrench } from 'lucide-react'
+import { signOut } from '@/app/(auth)/login/actions'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -329,10 +330,12 @@ export function UserMenu({
 
         {/* Log out */}
         <DropdownMenuItem asChild className={ITEM_CLS}>
-          <button type="button" className="flex w-full items-center gap-3">
-            <LogOut className={ICON_CLS} strokeWidth={1.75} aria-hidden="true" />
-            <span>Log out</span>
-          </button>
+          <form action={signOut}>
+            <button type="submit" className="flex w-full items-center gap-3">
+              <LogOut className={ICON_CLS} strokeWidth={1.75} aria-hidden="true" />
+              <span>Log out</span>
+            </button>
+          </form>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
