@@ -27,6 +27,8 @@ export type VaultField = {
   type: VaultFieldType
   privacy: PrivacyLevel
   description: string
+  /** Minimum distinct identifiers required in an aggregate. Only relevant on aggregate-tier fields. */
+  kMin?: number
 }
 
 export type VaultTemplate = {
@@ -37,9 +39,8 @@ export type VaultTemplate = {
   code: string
 }
 
-export type VaultFunction = {
+export type VaultTable = {
   name: string
-  signature: string
   description: string
   fields: VaultField[]
   /** Human-readable cadence, e.g. "every 1m", "every 15m", "daily". */
@@ -127,7 +128,7 @@ export type ConsumerVault = {
   grantedAt: string
   grantedBy: string
   lastProviderUpdateAt: string
-  functions: VaultFunction[]
+  tables: VaultTable[]
   /**
    * Privacy levels accessible under this grant.
    * 'private' is never included — blocked at ingest, no path out.
@@ -141,11 +142,11 @@ export type ConsumerVault = {
 
 const CODE_ADVANCE_RATE_V1 = `-- acred_advance_rate v1
 WITH nav AS (
-  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest()
+  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest
 ),
 collateral AS (
   SELECT SUM(par_value) AS total_par
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status = 'performing'
 )
 SELECT
@@ -155,11 +156,11 @@ FROM nav, collateral;`
 
 const CODE_ADVANCE_RATE_V2 = `-- acred_advance_rate v2  (approved, executing)
 WITH nav AS (
-  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest()
+  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest
 ),
 collateral AS (
   SELECT SUM(par_value) AS total_par
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status = 'performing'
     AND asset_class IN ('senior_secured_loan', 'first_lien')
 )
@@ -172,13 +173,13 @@ FROM nav, collateral;`
 
 const CODE_ADVANCE_RATE_V3 = `-- acred_advance_rate v3  (proposed — pending provider review)
 WITH nav AS (
-  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest()
+  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest
 ),
 collateral AS (
   SELECT
     asset_class,
     SUM(par_value) AS total_par
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status = 'performing'
     AND asset_class IN ('senior_secured_loan', 'first_lien', 'second_lien')
   GROUP BY asset_class
@@ -207,16 +208,16 @@ SELECT
   extract(epoch FROM (now() - snapshot_at))::int              AS age_seconds,
   current_nav,
   nav_source
-FROM vault.acred.nav_latest();`
+FROM vault.acred.nav_latest;`
 
 const CODE_LTV_BAND_CAP = `-- acred_ltv_band_cap  (changes_requested — provider note below)
-WITH nav AS (SELECT current_nav FROM vault.acred.nav_latest()),
+WITH nav AS (SELECT current_nav FROM vault.acred.nav_latest),
 loans AS (
   SELECT
     obligor_id,
     SUM(par_value) AS exposure,
     MAX(ltv_ratio)  AS max_ltv
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status = 'performing'
   GROUP BY obligor_id
 )
@@ -228,14 +229,14 @@ SELECT
 FROM loans;`
 
 const CODE_CONCENTRATION_CHECK = `-- acred_concentration_check  (denied — see reason)
-WITH nav AS (SELECT current_nav FROM vault.acred.nav_latest()),
+WITH nav AS (SELECT current_nav FROM vault.acred.nav_latest),
 positions AS (
   SELECT
     obligor_id,
     obligor_name,
     industry_code,
     SUM(par_value) AS total_par
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status IN ('performing', 'watch')
   GROUP BY obligor_id, obligor_name, industry_code
 )
@@ -255,20 +256,20 @@ SELECT
   amount_usd,
   status,
   estimated_settlement_date
-FROM vault.acred.redemption_queue()
+FROM vault.acred.redemption_queue
 WHERE status = 'pending'
   AND requested_at > now() - interval '24 hours'
 ORDER BY requested_at DESC;`
 
 const CODE_DSCR_CHECK = `-- acred_dscr_check  (draft — not yet proposed)
--- TODO: confirm vault.acred.cash_flow_summary() is available under our
+-- TODO: confirm vault.acred.cash_flow_summary is available under our
 -- current access grant before proposing this version.
 WITH cf AS (
   SELECT
     period,
     net_interest_income,
     total_obligations
-  FROM vault.acred.cash_flow_summary()
+  FROM vault.acred.cash_flow_summary
   WHERE period >= date_trunc('month', now()) - interval '3 months'
 )
 SELECT
@@ -654,10 +655,9 @@ export const executions: Execution[] = [
 
 // ── Vault schemas ─────────────────────────────────────────────────────────────
 
-const ACRED_FUNCTIONS: VaultFunction[] = [
+const ACRED_TABLES: VaultTable[] = [
   {
     name: 'nav_latest',
-    signature: 'vault.acred.nav_latest() RETURNS row',
     description: 'Current NAV snapshot with per-share price and next publication timestamp.',
     refreshCadence: 'every 1m',
     lineageHint: 'Apollo state custodian → Bloomberg LP feed → vault',
@@ -672,16 +672,15 @@ const ACRED_FUNCTIONS: VaultFunction[] = [
   },
   {
     name: 'positions_snapshot',
-    signature: 'vault.acred.positions_snapshot() RETURNS TABLE',
     description: 'Open position rows as of the most recent ingest. One row per position.',
     refreshCadence: 'every 15m',
     lineageHint: 'Apollo PMS → daily reconciliation → vault',
     fields: [
-      { name: 'par_value',     type: 'NUMERIC',    privacy: 'aggregate', description: 'Face/par value of the position in USD — SUM/COUNT only; loan-level par not returned' },
+      { name: 'par_value',     type: 'NUMERIC',    privacy: 'aggregate', description: 'Face/par value of the position in USD — SUM/COUNT only; loan-level par not returned', kMin: 50 },
       { name: 'status',        type: 'TEXT',       privacy: 'dimension', description: 'Performing status: performing | watch | non_performing' },
       { name: 'asset_class',   type: 'TEXT',       privacy: 'dimension', description: 'Asset class bucket: senior_secured_loan | first_lien | second_lien | subordinated | other' },
       { name: 'vintage_year',  type: 'NUMERIC',    privacy: 'dimension', description: 'Year the loan was originated — usable in GROUP BY' },
-      { name: 'coupon_rate',   type: 'NUMERIC',    privacy: 'aggregate', description: 'Current coupon rate as a decimal (e.g. 0.0875 = 8.75%) — aggregate only' },
+      { name: 'coupon_rate',   type: 'NUMERIC',    privacy: 'aggregate', description: 'Current coupon rate as a decimal (e.g. 0.0875 = 8.75%) — aggregate only', kMin: 50 },
       { name: 'ltv_band',      type: 'TEXT',       privacy: 'dimension', description: 'LTV tier bucket: <50% | 50-65% | 65-75% | 75-85% | >85%' },
       { name: 'obligor_name',  type: 'TEXT',       privacy: 'private',   description: 'Legal name of the obligor — PII, blocked at ingest, no path out' },
       { name: 'industry_code', type: 'TEXT',       privacy: 'dimension', description: 'NAICS 2-digit industry classification code — usable in GROUP BY' },
@@ -690,7 +689,6 @@ const ACRED_FUNCTIONS: VaultFunction[] = [
   },
   {
     name: 'vintage_summary',
-    signature: 'vault.acred.vintage_summary() RETURNS TABLE',
     description: 'Aggregate portfolio metrics grouped by origination vintage year.',
     refreshCadence: 'daily',
     lineageHint: 'Derived from positions_snapshot, refreshed nightly',
@@ -706,14 +704,13 @@ const ACRED_FUNCTIONS: VaultFunction[] = [
   },
   {
     name: 'redemption_queue',
-    signature: 'vault.acred.redemption_queue() RETURNS TABLE',
     description: 'Pending investor redemption requests and cycle timing.',
     refreshCadence: 'event-driven',
-    lineageHint: 'Investor portal events → vault stream',
+    lineageHint: 'Investor portal events → vault',
     fields: [
       { name: 'pending_usd',   type: 'NUMERIC',   privacy: 'select',    description: 'Total USD value of pending redemption requests' },
       { name: 'next_cycle_at', type: 'TIMESTAMP', privacy: 'select',    description: 'Timestamp of the next redemption settlement cycle' },
-      { name: 'holder_count',  type: 'NUMERIC',   privacy: 'aggregate', description: 'Number of distinct holders with pending requests — aggregate only (small numbers could leak identity)' },
+      { name: 'holder_count',  type: 'NUMERIC',   privacy: 'aggregate', description: 'Number of distinct holders with pending requests — aggregate only (small numbers could leak identity)', kMin: 25 },
       { name: 'oldest_at',     type: 'TIMESTAMP', privacy: 'select',    description: 'Timestamp of the oldest pending redemption request' },
     ],
   },
@@ -730,11 +727,11 @@ const ACRED_TEMPLATES: VaultTemplate[] = [
     code: `-- Advance rate (basic)
 -- NAV-weighted advance rate with 0.85 cap
 WITH nav AS (
-  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest()
+  SELECT current_nav, snapshot_at FROM vault.acred.nav_latest
 ),
 collateral AS (
   SELECT SUM(par_value) AS total_par
-  FROM vault.acred.positions_snapshot()
+  FROM vault.acred.positions_snapshot
   WHERE status = 'performing'
 )
 SELECT
@@ -758,7 +755,7 @@ SELECT
   snapshot_at,
   extract(epoch FROM (now() - snapshot_at))::int            AS age_seconds,
   current_nav
-FROM vault.acred.nav_latest();`,
+FROM vault.acred.nav_latest;`,
   },
   {
     id: 'acred_tmpl_concentration_vintage',
@@ -771,7 +768,7 @@ SELECT
   vintage_year,
   SUM(par_value)  AS total_par,
   COUNT(*)        AS position_count
-FROM vault.acred.positions_snapshot()
+FROM vault.acred.positions_snapshot
 WHERE status = 'performing'
 GROUP BY vintage_year
 ORDER BY vintage_year DESC;`,
@@ -787,7 +784,7 @@ SELECT
   ltv_band,
   COUNT(*)        AS position_count,
   SUM(par_value)  AS total_par
-FROM vault.acred.positions_snapshot()
+FROM vault.acred.positions_snapshot
 WHERE status = 'performing'
 GROUP BY ltv_band
 ORDER BY ltv_band;`,
@@ -805,15 +802,14 @@ SELECT
   recovery_rate_avg,
   total_par,
   position_count
-FROM vault.acred.vintage_summary()
+FROM vault.acred.vintage_summary
 ORDER BY default_rate_ytd DESC;`,
   },
 ]
 
-const MAPLE_FUNCTIONS: VaultFunction[] = [
+const MAPLE_TABLES: VaultTable[] = [
   {
     name: 'pool_summary',
-    signature: 'vault.maple_tf.pool_summary() RETURNS row',
     description: 'Current state of the trade finance revolving credit pool.',
     refreshCadence: 'every 5m',
     lineageHint: 'Maple Finance pool state → vault',
@@ -828,7 +824,6 @@ const MAPLE_FUNCTIONS: VaultFunction[] = [
   },
   {
     name: 'loan_book',
-    signature: 'vault.maple_tf.loan_book() RETURNS TABLE',
     description: 'Individual trade finance loan records.',
     refreshCadence: 'every 15m',
     lineageHint: 'Maple Finance loan state → vault',
@@ -843,10 +838,9 @@ const MAPLE_FUNCTIONS: VaultFunction[] = [
   },
 ]
 
-const BUIDL_FUNCTIONS: VaultFunction[] = [
+const BUIDL_TABLES: VaultTable[] = [
   {
     name: 'nav_latest',
-    signature: 'vault.buidl.nav_latest() RETURNS row',
     description: 'BUIDL fund NAV snapshot.',
     refreshCadence: 'daily',
     lineageHint: 'BlackRock fund admin → Securitize → vault',
@@ -873,7 +867,7 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(60),
     grantedBy: 'Sarah Chen',
     lastProviderUpdateAt: minsAgo(11),
-    functions: ACRED_FUNCTIONS,
+    tables: ACRED_TABLES,
     accessibleOperations: ['join', 'aggregate', 'dimension', 'select'],
     templates: ACRED_TEMPLATES,
   },
@@ -888,7 +882,7 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(30),
     grantedBy: 'Sidney Lim',
     lastProviderUpdateAt: hoursAgo(6),
-    functions: MAPLE_FUNCTIONS,
+    tables: MAPLE_TABLES,
     accessibleOperations: ['join', 'aggregate', 'dimension', 'select'],
     templates: [],
   },
@@ -903,7 +897,7 @@ export const vaults: ConsumerVault[] = [
     grantedAt: daysAgo(14),
     grantedBy: 'Mark Torres',
     lastProviderUpdateAt: minsAgo(8),
-    functions: BUIDL_FUNCTIONS,
+    tables: BUIDL_TABLES,
     accessibleOperations: ['select'],
     templates: [],
   },

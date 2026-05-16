@@ -38,7 +38,7 @@ import {
   analyses,
   vaults,
   type ConsumerVault,
-  type VaultFunction,
+  type VaultTable,
   type VaultField,
   type PrivacyLevel,
   type VaultTemplate,
@@ -122,7 +122,7 @@ function suggestName(name: string): string {
 // ── Privacy summary helper ─────────────────────────────────────────────────────
 
 type FieldRef = {
-  funcName: string
+  tableName: string
   fieldName: string
   privacy: PrivacyLevel
   /** True if the field appears inside an aggregate function call (SUM/AVG/COUNT/etc.) */
@@ -139,39 +139,39 @@ function parseFieldRefs(code: string, vault: ConsumerVault): FieldRef[] {
   const groupByMatch = /GROUP\s+BY\s+([\s\S]*?)(?:ORDER\s+BY|HAVING|LIMIT|;|$)/i.exec(code)
   const groupByClause = groupByMatch ? groupByMatch[1] : ''
 
-  for (const fn of vault.functions) {
-    // Determine if this function is referenced in the code at all
-    const fnRefPattern = new RegExp(`vault\\.\\w+\\.${fn.name}\\(\\)`)
-    const fnIsReferenced = fnRefPattern.test(code)
+  for (const tbl of vault.tables) {
+    // Determine if this table is referenced in the code at all (as FROM vault.<slug>.<name>)
+    const tblRefPattern = new RegExp(`vault\\.\\w+\\.${tbl.name}\\b`)
+    const tblIsReferenced = tblRefPattern.test(code)
 
-    // Match vault.<slug>.<fn>().<field> qualified references
+    // Match vault.<slug>.<table>.<field> qualified references
     const qualPattern = new RegExp(
-      `vault\\.\\w+\\.${fn.name}\\(\\)\\.([a-z_]+)`,
+      `vault\\.\\w+\\.${tbl.name}\\.([a-z_]+)`,
       'g',
     )
     let m: RegExpExecArray | null
     while ((m = qualPattern.exec(code)) !== null) {
       const fieldName = m[1]
-      const field = fn.fields.find((f) => f.name === fieldName)
-      if (field && !seen.has(`${fn.name}.${fieldName}`)) {
-        seen.add(`${fn.name}.${fieldName}`)
+      const field = tbl.fields.find((f) => f.name === fieldName)
+      if (field && !seen.has(`${tbl.name}.${fieldName}`)) {
+        seen.add(`${tbl.name}.${fieldName}`)
         const wrappedInAggregate = isWrappedInAggregate(code, m.index)
         const inGroupBy = new RegExp(`\\b${fieldName}\\b`).test(groupByClause)
-        refs.push({ funcName: fn.name, fieldName, privacy: field.privacy, wrappedInAggregate, inGroupBy })
+        refs.push({ tableName: tbl.name, fieldName, privacy: field.privacy, wrappedInAggregate, inGroupBy })
       }
     }
 
-    // Also match bare field names when the function is referenced in code
-    if (fnIsReferenced) {
-      for (const field of fn.fields) {
-        if (seen.has(`${fn.name}.${field.name}`)) continue
+    // Also match bare field names when the table is referenced in code
+    if (tblIsReferenced) {
+      for (const field of tbl.fields) {
+        if (seen.has(`${tbl.name}.${field.name}`)) continue
         const barePattern = new RegExp(`\\b${field.name}\\b`, 'g')
         let bm: RegExpExecArray | null
         while ((bm = barePattern.exec(code)) !== null) {
-          seen.add(`${fn.name}.${field.name}`)
+          seen.add(`${tbl.name}.${field.name}`)
           const wrappedInAggregate = isWrappedInAggregate(code, bm.index)
           const inGroupBy = new RegExp(`\\b${field.name}\\b`).test(groupByClause)
-          refs.push({ funcName: fn.name, fieldName: field.name, privacy: field.privacy, wrappedInAggregate, inGroupBy })
+          refs.push({ tableName: tbl.name, fieldName: field.name, privacy: field.privacy, wrappedInAggregate, inGroupBy })
           break
         }
       }
@@ -221,13 +221,6 @@ function relativeTime(isoString: string): string {
 
 // ── Schema browser — clean room framing ──────────────────────────────────────
 
-type SchemaTab = 'data' | 'templates'
-
-type TemplateConfirmState = {
-  templateId: string
-  pending: true
-} | null
-
 function SchemaPanel({
   vault,
   onInsert,
@@ -239,15 +232,14 @@ function SchemaPanel({
   onPrivateClick: (fieldName: string) => void
   currentCode: string
 }) {
-  const [tab, setTab] = useState<SchemaTab>('data')
+  // Default: first table open on first load only
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const s = new Set<string>()
-    vault.functions.forEach((f) => s.add(f.name))
+    if (vault.tables.length > 0) s.add(vault.tables[0].name)
     return s
   })
-  const [templateConfirm, setTemplateConfirm] = useState<TemplateConfirmState>(null)
 
-  const toggleFn = (name: string) => {
+  const toggleTable = (name: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(name)) next.delete(name)
@@ -259,28 +251,23 @@ function SchemaPanel({
   const isAccessible = (privacy: PrivacyLevel) => vault.accessibleOperations.includes(privacy)
   const slug = vault.id.replace(/-/g, '_')
 
-  // Overall privacy bar across all fields in this vault
-  const allFields = vault.functions.flatMap((fn) => fn.fields)
-  const overallCounts = countByPrivacy(allFields)
-
-  const handleFieldClick = (field: VaultField, fn: VaultFunction) => {
+  const handleFieldClick = (field: VaultField, tbl: VaultTable) => {
     if (field.privacy === 'private') {
       onPrivateClick(field.name)
       return
     }
-    const base = `vault.${slug}.${fn.name}().${field.name}`
+    const base = `vault.${slug}.${tbl.name}.${field.name}`
     switch (field.privacy) {
       case 'select':
         onInsert(base)
         break
       case 'dimension': {
-        // Check if code already has GROUP BY
         const hasGroupBy = /\bGROUP\s+BY\b/i.test(currentCode)
         onInsert(hasGroupBy ? base : `${base} -- group by this dimension`)
         break
       }
       case 'aggregate':
-        onInsert(`SUM(${base})`)
+        onInsert(`SUM(vault.${slug}.${tbl.name}.${field.name})`)
         break
       case 'join':
         onInsert(`-- join key: ${base}`)
@@ -288,217 +275,244 @@ function SchemaPanel({
     }
   }
 
-  const handleTemplateInsert = (tmpl: VaultTemplate) => {
-    // Check if current code has non-trivial content (more than scaffold comment lines)
-    const nonTrivial = currentCode
-      .split('\n')
-      .some((line) => line.trim().length > 0 && !line.trim().startsWith('--'))
-    if (nonTrivial) {
-      setTemplateConfirm({ templateId: tmpl.id, pending: true })
-    } else {
-      onInsert(tmpl.code)
-      setTemplateConfirm(null)
-    }
-  }
-
-  const confirmTemplateReplace = (tmpl: VaultTemplate) => {
-    onInsert(tmpl.code)
-    setTemplateConfirm(null)
-  }
-
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Clean-room header */}
-      <div className="border-b border-v2-border/40 px-3 pt-2.5 pb-2 space-y-1.5">
-        <div className="flex items-baseline justify-between gap-1">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-v2-muted/50">
-            CLEAN ROOM
-          </span>
-          <span className="font-mono text-[9.5px] font-semibold text-v2-foreground/80 truncate">
+      {/* Compact header — one tight line */}
+      <div className="border-b border-v2-border/40 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-[10.5px] font-medium text-v2-foreground truncate">
             vault.{slug}
           </span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[10.5px] text-v2-muted/60 truncate">
+          <span className="shrink-0 text-[10px] text-v2-muted/50 truncate">
             {vault.provider.name}
           </span>
-          <span className="shrink-0 font-mono text-[9.5px] text-v2-muted/40">
+          <span className="shrink-0 font-mono text-[9px] text-v2-muted/35">
             {relativeTime(vault.lastProviderUpdateAt)}
           </span>
         </div>
-        <PrivacyBar counts={overallCounts} height="h-1" />
       </div>
 
-      {/* Segmented control */}
-      <div className="flex items-center gap-1 border-b border-v2-border/40 px-2.5 py-1.5">
-        {(['data', 'templates'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={cn(
-              'flex-1 rounded py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors',
-              tab === t
-                ? 'bg-v2-foreground/[0.08] text-v2-foreground'
-                : 'text-v2-muted/50 hover:text-v2-muted',
-            )}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {/* Table list — accordion */}
+      <div className="flex-1 overflow-y-auto px-2 py-2">
+        {vault.tables.map((tbl) => {
+          const isOpen = expanded.has(tbl.name)
+          const tblFieldCounts = countByPrivacy(tbl.fields)
+          return (
+            <div key={tbl.name} className="mb-1">
+              {/* Table row header */}
+              <button
+                type="button"
+                onClick={() => toggleTable(tbl.name)}
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Collapse' : 'Expand'} table ${tbl.name}`}
+                className="flex w-full items-center gap-1.5 rounded px-1.5 py-1.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+              >
+                {isOpen ? (
+                  <ChevronDown className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
+                ) : (
+                  <ChevronRight className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
+                )}
+                <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-v2-foreground">
+                  {tbl.name}
+                </span>
+                <span className="shrink-0 font-mono text-[9px] text-v2-muted/40">
+                  {tbl.fields.length} cols
+                </span>
+                <span className="shrink-0 font-mono text-[9px] text-v2-muted/35">
+                  {tbl.refreshCadence}
+                </span>
+              </button>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-y-auto">
-        {tab === 'data' ? (
-          <div className="px-2 py-2">
-            {vault.functions.map((fn) => {
-              const isOpen = expanded.has(fn.name)
-              const fnFieldCounts = countByPrivacy(fn.fields)
-              return (
-                <div key={fn.name} className="mb-1.5">
-                  {/* Function header */}
-                  <button
-                    type="button"
-                    onClick={() => toggleFn(fn.name)}
-                    className="flex w-full items-start gap-1.5 rounded px-1.5 py-1.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
-                  >
-                    {isOpen ? (
-                      <ChevronDown className="mt-0.5 h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                    ) : (
-                      <ChevronRight className="mt-0.5 h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                    )}
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex items-baseline justify-between gap-1">
-                        <span className="font-mono text-[11px] text-v2-foreground">
-                          {fn.name}
-                          <span className="text-v2-muted/50">()</span>
+              {/* Expanded: privacy bar + fields + lineage */}
+              {isOpen && (
+                <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1">
+                  {/* Per-table privacy bar */}
+                  <div className="px-1.5 pt-0.5 pb-1.5">
+                    <PrivacyBar counts={tblFieldCounts} height="h-px" />
+                  </div>
+
+                  {tbl.fields.map((field) => {
+                    const accessible = isAccessible(field.privacy)
+                    const isPrivate = field.privacy === 'private'
+                    return (
+                      <button
+                        key={field.name}
+                        type="button"
+                        title={field.description}
+                        onClick={() => handleFieldClick(field, tbl)}
+                        className={cn(
+                          'flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left transition-colors',
+                          isPrivate
+                            ? 'cursor-not-allowed opacity-50'
+                            : accessible
+                              ? 'hover:bg-v2-foreground/[0.04]'
+                              : 'cursor-not-allowed opacity-50',
+                        )}
+                        aria-disabled={isPrivate || !accessible}
+                      >
+                        <span
+                          className={cn(
+                            'min-w-0 flex-1 truncate font-mono text-[10.5px]',
+                            accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
+                          )}
+                        >
+                          {field.name}
                         </span>
-                        <span className="shrink-0 font-mono text-[9px] text-v2-muted/40">
-                          {fn.refreshCadence}
+                        {field.kMin !== undefined && (
+                          <span
+                            className="shrink-0 rounded bg-v2-foreground/[0.06] px-1 py-px font-mono text-[9px] text-v2-muted/60"
+                            title={`Aggregates must include at least ${field.kMin} distinct identifiers.`}
+                          >
+                            min k={field.kMin}
+                          </span>
+                        )}
+                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.05em] text-v2-muted/35">
+                          {field.type}
+                        </span>
+                        <PrivacyChip level={field.privacy} size="xs" mode="operation" />
+                      </button>
+                    )
+                  })}
+
+                  {/* Lineage hint */}
+                  {tbl.lineageHint && (
+                    <p className="mt-1 px-1.5 font-mono text-[9px] text-v2-muted/35 leading-relaxed">
+                      → {tbl.lineageHint}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-v2-border/30 px-3 py-1.5">
+        <p className="font-mono text-[9px] text-v2-muted/35 leading-relaxed">
+          Tap a column to insert · Operations limited to your access grant
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Template popover ──────────────────────────────────────────────────────────
+
+function TemplatePopover({
+  templates,
+  currentCode,
+  onInsert,
+}: {
+  templates: VaultTemplate[]
+  currentCode: string
+  onInsert: (snippet: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
+  const hasContent = currentCode
+    .split('\n')
+    .some((line) => line.trim().length > 0 && !line.trim().startsWith('--'))
+
+  const handleSelect = (tmpl: VaultTemplate) => {
+    if (hasContent) {
+      setConfirmId(tmpl.id)
+    } else {
+      onInsert(tmpl.code)
+      setOpen(false)
+    }
+  }
+
+  const confirmReplace = (tmpl: VaultTemplate) => {
+    onInsert(tmpl.code)
+    setOpen(false)
+    setConfirmId(null)
+  }
+
+  if (templates.length === 0) return null
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); setConfirmId(null) }}
+        aria-haspopup="true"
+        aria-expanded={open}
+        title={`${templates.length} provider-approved patterns`}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.06em] transition-colors',
+          open
+            ? 'border-v2-border bg-v2-foreground/[0.07] text-v2-foreground'
+            : 'border-v2-border/50 text-v2-muted/60 hover:border-v2-border hover:text-v2-muted',
+        )}
+      >
+        Start from template
+        <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} strokeWidth={2} />
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-30"
+            onClick={() => { setOpen(false); setConfirmId(null) }}
+            aria-hidden="true"
+          />
+          {/* Popover */}
+          <div
+            role="menu"
+            className="absolute left-0 top-full z-40 mt-1.5 w-72 rounded-xl border border-v2-border/60 bg-v2-surface shadow-lg overflow-hidden"
+          >
+            {templates.map((tmpl) => {
+              const isConfirming = confirmId === tmpl.id
+              return (
+                <div key={tmpl.id} className="border-b border-v2-border/30 last:border-b-0">
+                  {isConfirming ? (
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <span className="flex-1 font-mono text-[10px] text-v2-muted/70">
+                        Replace current code?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => confirmReplace(tmpl)}
+                        className="rounded bg-v2-foreground px-2 py-0.5 font-mono text-[9.5px] text-v2-surface"
+                      >
+                        Insert
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="rounded border border-v2-border/50 px-2 py-0.5 font-mono text-[9.5px] text-v2-muted"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      title={tmpl.description}
+                      onClick={() => handleSelect(tmpl)}
+                      className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block font-mono text-[11px] text-v2-foreground">
+                          {tmpl.name}
+                        </span>
+                        <span className="block text-[10px] text-v2-muted/60 leading-snug mt-0.5">
+                          {tmpl.description}
                         </span>
                       </div>
-                      <PrivacyBar counts={fnFieldCounts} height="h-px" />
-                    </div>
-                  </button>
-
-                  {/* Fields */}
-                  {isOpen && (
-                    <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1">
-                      {fn.fields.map((field) => {
-                        const accessible = isAccessible(field.privacy)
-                        const isPrivate = field.privacy === 'private'
-                        return (
-                          <button
-                            key={field.name}
-                            type="button"
-                            title={field.description}
-                            onClick={() => handleFieldClick(field, fn)}
-                            className={cn(
-                              'flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left transition-colors',
-                              isPrivate
-                                ? 'cursor-not-allowed opacity-50'
-                                : accessible
-                                  ? 'hover:bg-v2-foreground/[0.04]'
-                                  : 'cursor-not-allowed opacity-50',
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'min-w-0 flex-1 truncate font-mono text-[10.5px]',
-                                accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
-                              )}
-                            >
-                              {field.name}
-                            </span>
-                            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.05em] text-v2-muted/35">
-                              {field.type}
-                            </span>
-                            <PrivacyChip level={field.privacy} size="xs" />
-                          </button>
-                        )
-                      })}
-                      {/* Lineage hint */}
-                      {fn.lineageHint && (
-                        <p className="mt-1 px-1.5 font-mono text-[9px] text-v2-muted/35 leading-relaxed">
-                          → {fn.lineageHint}
-                        </p>
-                      )}
-                    </div>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-v2-muted/30" strokeWidth={1.75} />
+                    </button>
                   )}
                 </div>
               )
             })}
           </div>
-        ) : (
-          /* Templates tab */
-          <div className="px-2 py-2 space-y-1">
-            {vault.templates.length === 0 ? (
-              <p className="px-2 py-3 font-mono text-[10.5px] text-v2-muted/40">
-                No pre-approved templates for this vault.
-              </p>
-            ) : (
-              vault.templates.map((tmpl) => {
-                const tmplCounts: Record<PrivacyLevel, number> = {
-                  private: 0, join: 0, aggregate: 0, dimension: 0, select: 0,
-                }
-                for (const lvl of tmpl.privacyMix) tmplCounts[lvl]++
-                const isConfirming = templateConfirm?.templateId === tmpl.id
-
-                return (
-                  <div
-                    key={tmpl.id}
-                    className="rounded-md border border-v2-border/30 px-2.5 py-2 space-y-1.5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <span className="block font-mono text-[10.5px] font-semibold text-v2-foreground truncate">
-                          {tmpl.name}
-                        </span>
-                        <span className="block text-[10px] text-v2-muted/60 leading-snug">
-                          {tmpl.description}
-                        </span>
-                      </div>
-                      {!isConfirming && (
-                        <button
-                          type="button"
-                          onClick={() => handleTemplateInsert(tmpl)}
-                          className="shrink-0 rounded bg-v2-foreground/[0.07] px-2 py-0.5 font-mono text-[9.5px] text-v2-muted transition-colors hover:bg-v2-foreground/[0.12] hover:text-v2-foreground"
-                        >
-                          Insert
-                        </button>
-                      )}
-                    </div>
-                    <PrivacyBar counts={tmplCounts} height="h-px" />
-                    {/* Inline replace confirmation */}
-                    {isConfirming && (
-                      <div className="flex items-center gap-2 pt-0.5">
-                        <span className="font-mono text-[9.5px] text-v2-muted/60 flex-1">
-                          Replace current code?
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => confirmTemplateReplace(tmpl)}
-                          className="rounded bg-v2-foreground px-2 py-0.5 font-mono text-[9.5px] text-v2-surface"
-                        >
-                          Insert
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTemplateConfirm(null)}
-                          className="rounded border border-v2-border/50 px-2 py-0.5 font-mono text-[9.5px] text-v2-muted"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }
@@ -818,10 +832,10 @@ function SubmitDrawer({
                 <div className="flex flex-wrap gap-1.5">
                   {fieldRefs.map((r) => (
                     <span
-                      key={`${r.funcName}.${r.fieldName}`}
+                      key={`${r.tableName}.${r.fieldName}`}
                       className="rounded bg-v2-foreground/[0.05] px-1.5 py-0.5 font-mono text-[10.5px] text-v2-muted"
                     >
-                      {r.funcName}.{r.fieldName}
+                      {r.tableName}.{r.fieldName}
                     </span>
                   ))}
                 </div>
@@ -972,7 +986,7 @@ function VaultPicker({ open, onSelect, onCancel }: VaultPickerProps) {
                 </p>
                 <p className="mt-0.5 text-[12px] text-v2-muted truncate">{vault.label}</p>
                 <p className="mt-0.5 font-mono text-[10.5px] text-v2-muted/50">
-                  {vault.provider.name} · {vault.functions.length} functions · {vault.myAnalysisCount} analyses authored
+                  {vault.provider.name} · {vault.tables.length} tables · {vault.myAnalysisCount} analyses authored
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-v2-muted/40" strokeWidth={1.75} />
@@ -1012,7 +1026,7 @@ function PrivateFieldToast({
         <Lock className="h-3.5 w-3.5 shrink-0 text-v2-muted/60" strokeWidth={2} />
         <p className="text-[12.5px] text-v2-muted">
           <span className="font-mono text-v2-foreground">{fieldName}</span>{' '}
-          is private — blocked at ingest, never accessible in any query.
+          is blocked at ingest — cannot be referenced in any query.
         </p>
         <button
           type="button"
@@ -1249,10 +1263,10 @@ function MetaPanel({
                 const tierSummaryParts: string[] = []
                 for (const lvl of PRIVACY_LEVELS_ORDERED) {
                   if (refCounts[lvl] > 0 && lvl !== 'private') {
-                    tierSummaryParts.push(`${refCounts[lvl]} ${lvl}`)
+                    tierSummaryParts.push(`${refCounts[lvl]} ${PRIVACY_TONE[lvl].operationShort}`)
                   }
                 }
-                if (refCounts.private > 0) tierSummaryParts.push(`${refCounts.private} private`)
+                if (refCounts.private > 0) tierSummaryParts.push(`${refCounts.private} Blocked`)
                 return (
                   <div className="space-y-1">
                     <p className="font-mono text-[10.5px] text-v2-muted/70">
@@ -1267,7 +1281,7 @@ function MetaPanel({
               <div>
                 <span className="font-mono text-[10px] text-v2-muted/50">Reading: </span>
                 <span className="font-mono text-[10px] text-v2-muted/80">
-                  {okRefs.map((r) => `${r.funcName}.${r.fieldName}`).join(', ')}
+                  {okRefs.map((r) => `${r.tableName}.${r.fieldName}`).join(', ')}
                 </span>
               </div>
 
@@ -1365,7 +1379,7 @@ export function AnalysisWorkbench({
 SELECT
   -- your output columns
 FROM
-  vault.${slug}.nav_latest()`
+  vault.${slug}.nav_latest`
   }
 
   // Form state
@@ -1478,18 +1492,26 @@ FROM
               </div>
 
               {vault && (
-                <div className="flex items-center gap-2 text-[12.5px] text-v2-muted">
-                  <span>Authoring against</span>
-                  <span className="font-semibold text-v2-foreground">{vault.label}</span>
-                  {!pinnedVaultId && (
-                    <button
-                      type="button"
-                      onClick={() => setPickerOpen(true)}
-                      className="font-mono text-[11px] text-v2-muted/60 underline underline-offset-2 transition-colors hover:text-v2-foreground"
-                    >
-                      change vault
-                    </button>
-                  )}
+                <div className="flex flex-wrap items-center gap-3 text-[12.5px] text-v2-muted">
+                  <div className="flex items-center gap-2">
+                    <span>Authoring against</span>
+                    <span className="font-semibold text-v2-foreground">{vault.label}</span>
+                    {!pinnedVaultId && (
+                      <button
+                        type="button"
+                        onClick={() => setPickerOpen(true)}
+                        className="font-mono text-[11px] text-v2-muted/60 underline underline-offset-2 transition-colors hover:text-v2-foreground"
+                      >
+                        change vault
+                      </button>
+                    )}
+                  </div>
+                  {/* Template popover — visible next to vault line until code is authored */}
+                  <TemplatePopover
+                    templates={vault.templates}
+                    currentCode={code}
+                    onInsert={handleInsert}
+                  />
                 </div>
               )}
             </div>

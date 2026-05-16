@@ -21,6 +21,10 @@ export const PRIVACY_TONE: Record<
     chipText: string
     Icon: React.ComponentType<LucideProps>
     description: string
+    /** Consumer-facing operation verb (short label shown on consumer surfaces). */
+    operationShort: string
+    /** One-line tooltip explaining what the consumer can do with this tier. */
+    operationHint: string
   }
 > = {
   private: {
@@ -32,6 +36,8 @@ export const PRIVACY_TONE: Record<
     Icon: Lock,
     description:
       'Never accessible. Never in queries, results, joins, or aggregations. Blocked at ingest — no path out.',
+    operationShort: 'Blocked',
+    operationHint: 'Blocked at ingest. Cannot be referenced in any query.',
   },
   join: {
     label: 'Join key',
@@ -42,6 +48,8 @@ export const PRIVACY_TONE: Record<
     Icon: KeyRound,
     description:
       'Usable as a match key against counterparty data. Raw value is never returned, never aggregated.',
+    operationShort: 'Match key',
+    operationHint: 'Use only as a join key. Never appears in results.',
   },
   aggregate: {
     label: 'Aggregate',
@@ -52,6 +60,8 @@ export const PRIVACY_TONE: Record<
     Icon: Sigma,
     description:
       'Only usable inside aggregate functions (SUM, AVG, COUNT, percentiles). Raw row-level value is never returned.',
+    operationShort: 'Aggregable',
+    operationHint: 'Must be wrapped in SUM / AVG / COUNT / MIN / MAX. Never returned at row level.',
   },
   dimension: {
     label: 'Dimension',
@@ -62,6 +72,8 @@ export const PRIVACY_TONE: Record<
     Icon: Layers,
     description:
       'Usable in GROUP BY and returned as a label. Categorical only — not a numeric or personally identifying value.',
+    operationShort: 'Groupable',
+    operationHint: 'Use in GROUP BY / WHERE / partition. Returned as a label, not raw.',
   },
   select: {
     label: 'Select',
@@ -72,6 +84,8 @@ export const PRIVACY_TONE: Record<
     Icon: Eye,
     description:
       'Raw value returnable in query results. Reserved for genuinely non-sensitive fields only.',
+    operationShort: 'Returnable',
+    operationHint: 'Raw value can appear in your query results.',
   },
 }
 
@@ -79,15 +93,25 @@ export function PrivacyChip({
   level,
   size = 'sm',
   showIcon = false,
+  mode = 'tier',
 }: {
   level: PrivacyLevel
   size?: 'xs' | 'sm'
   showIcon?: boolean
+  /** 'tier' (default) renders the originator tier label; 'operation' renders the consumer operation verb. */
+  mode?: 'tier' | 'operation'
 }) {
   const t = PRIVACY_TONE[level]
   const Icon = t.Icon
+  const label = mode === 'operation' ? t.operationShort : t.short
+  const titleAttr = mode === 'operation'
+    ? level === 'aggregate'
+      ? `${t.operationShort} — SUM, AVG, COUNT, MIN, MAX`
+      : t.operationHint
+    : t.description
   return (
     <span
+      title={titleAttr}
       className={cn(
         'inline-flex items-center gap-1 rounded-md font-medium uppercase tracking-[0.08em]',
         t.chipBg,
@@ -100,7 +124,7 @@ export function PrivacyChip({
       ) : (
         <span className={cn('h-1 w-1 rounded-full', t.dot)} aria-hidden />
       )}
-      {t.short}
+      {label}
     </span>
   )
 }
