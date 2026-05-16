@@ -1,7 +1,7 @@
 /**
  * Hyve v2 palette — RGB tuples used by the canvas grid for snake/food
  * coloring and by shell components for accent dots. Kept in sync, by hand,
- * with the OKLCH tokens in app/v2/v2.css.
+ * with the OKLCH tokens in app/(originator)/v2.css.
  *
  * Each entry includes a `family` — 3 harmonious hexes used to compose
  * multi-blob auras. Inspired by hmm's ProjectBlobs technique, where a card's

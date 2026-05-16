@@ -13,9 +13,9 @@ const FULL_WIDTH_PREFIXES: string[] = []
 const FULL_BLEED_EXACT: string[] = []
 // Routes matched by pattern (e.g. dynamic segments) that also get full-bleed.
 const FULL_BLEED_PATTERNS: RegExp[] = [
-  // /v2/vaults/[id]/data/[datasetId] — dataset exploration is a desktop-app
+  // /vaults/[id]/data/[datasetId] — dataset exploration is a desktop-app
   // experience: header + tabs stay put, table fills the rest of the viewport.
-  /^\/v2\/vaults\/[^/]+\/data\/[^/]+\/?$/,
+  /^\/vaults\/[^/]+\/data\/[^/]+\/?$/,
 ]
 
 export function V2Shell({ children }: { children: ReactNode }) {

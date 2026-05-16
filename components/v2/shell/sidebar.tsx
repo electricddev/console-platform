@@ -56,10 +56,10 @@ const COLLAPSED_W = 64
 
 export function V2Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  // Detect vault detail routes — /v2/vaults/:id and anything beneath it (but
-  // NOT the index /v2/vaults). Inside a vault we swap the entire nav block.
+  // Detect vault detail routes — /vaults/:id and anything beneath it (but
+  // NOT the index /vaults). Inside a vault we swap the entire nav block.
   const vaultId = useMemo(() => {
-    const m = pathname.match(/^\/v2\/vaults\/([^/]+)/)
+    const m = pathname.match(/^\/vaults\/([^/]+)/)
     return m ? m[1] : null
   }, [pathname])
   const vault = vaultId ? findVault(vaultId) : null
