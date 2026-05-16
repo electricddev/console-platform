@@ -52,3 +52,6 @@ test-results/
 
 # superpowers brainstorming mockups
 .superpowers/
+
+# scratch screenshots from visual-fix iterations (root-level only)
+/*.png
