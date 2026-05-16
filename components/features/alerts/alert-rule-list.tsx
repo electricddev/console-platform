@@ -1,7 +1,7 @@
 'use client'
 import { useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { actionUpdateAlertRule, actionDeleteAlertRule, actionTestAlertRule } from '@/app/(app)/alerts/actions'
+import { actionUpdateAlertRule, actionDeleteAlertRule, actionTestAlertRule } from '@/app/(app)/legacy/alerts/actions'
 import type { AlertRule } from '@/lib/api/schemas'
 
 export function AlertRuleList({ rules }: { rules: AlertRule[] }) {

@@ -37,9 +37,9 @@ const navGroups: NavGroup[] = [
   {
     label: '',
     items: [
-      { href: '/v2', label: 'Overview', icon: Compass, exact: true },
-      { href: '/v2/vaults', label: 'Data Vaults', icon: Vault },
-      { href: '/v2/audit', label: 'Activity', icon: History },
+      { href: '/', label: 'Overview', icon: Compass, exact: true },
+      { href: '/vaults', label: 'Data Vaults', icon: Vault },
+      { href: '/audit', label: 'Activity', icon: History },
     ],
   },
 ]

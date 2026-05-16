@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { actionSendTestEvent } from '@/app/(app)/alerts/actions'
+import { actionSendTestEvent } from '@/app/(app)/legacy/alerts/actions'
 
 export function AlertTestButton({ channelId }: { channelId: string }) {
   const [pending, startTransition] = useTransition()

@@ -2,7 +2,7 @@
 
 import { useReducer, useState } from 'react'
 import type { Notebook } from '@/lib/api/types'
-import { saveNotebookCellsAction } from '@/app/(app)/notebooks/[notebookId]/compose/actions'
+import { saveNotebookCellsAction } from '@/app/(app)/legacy/notebooks/[notebookId]/compose/actions'
 import { composerReducer, initialComposerState } from './composer-reducer'
 import { MethodologySidebar } from './methodology-sidebar'
 import { ComposeCellList } from './compose-cell-list'

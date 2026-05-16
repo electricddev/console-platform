@@ -1,7 +1,7 @@
 'use client'
 import { useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { actionDeleteAlertChannel } from '@/app/(app)/alerts/actions'
+import { actionDeleteAlertChannel } from '@/app/(app)/legacy/alerts/actions'
 import { AlertTestButton } from './alert-test-button'
 import type { AlertChannel } from '@/lib/api/schemas'
 

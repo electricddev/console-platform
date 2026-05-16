@@ -612,7 +612,7 @@ function AuditStubSection({ vaultId, datasetId }: { vaultId: string; datasetId: 
         <p className="text-[12px] text-v2-muted">
           See the{' '}
           <Link
-            href={`/v2/vaults/${vaultId}/activity?dataset=${datasetId}`}
+            href={`/vaults/${vaultId}/activity?dataset=${datasetId}`}
             className="text-v2-foreground/80 underline underline-offset-2 transition-colors hover:text-v2-foreground"
           >
             activity log

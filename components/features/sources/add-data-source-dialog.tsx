@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { connectFromCatalog } from '@/app/(app)/sources/actions'
+import { connectFromCatalog } from '@/app/(app)/legacy/sources/actions'
 import type { SourceType } from '@/lib/api/schemas'
 
 type CatalogItem = {

@@ -41,7 +41,7 @@ export function VaultCard({ vault, index }: Props) {
         variant="hero"
         accent={hex}
         as={Link}
-        href={`/v2/vaults/${vault.id}`}
+        href={`/vaults/${vault.id}`}
         interactive
         className="flex h-44 w-full flex-col justify-between p-6 text-left"
       >

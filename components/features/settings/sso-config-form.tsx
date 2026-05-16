@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { updateSso } from '@/app/(app)/settings/security/actions'
+import { updateSso } from '@/app/(app)/legacy/settings/security/actions'
 
 type Provider = 'none' | 'okta' | 'azure-ad' | 'google'
 

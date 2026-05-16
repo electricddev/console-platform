@@ -258,7 +258,7 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
 
         {/* Settings */}
         <DropdownMenuItem asChild className={ITEM_CLS}>
-          <Link href="/v2/settings" className="flex items-center gap-3">
+          <Link href="/settings" className="flex items-center gap-3">
             <Settings className={ICON_CLS} strokeWidth={1.75} aria-hidden="true" />
             <span>Settings</span>
             <DropdownMenuShortcut className="text-[11px] tracking-[0.1em] text-v2-muted/80">
@@ -269,7 +269,7 @@ export function UserMenu({ collapsed }: { collapsed: boolean }) {
 
         {/* Organization settings */}
         <DropdownMenuItem asChild className={ITEM_CLS}>
-          <Link href="/v2/settings" className="flex items-center gap-3">
+          <Link href="/settings" className="flex items-center gap-3">
             <Wrench className={ICON_CLS} strokeWidth={1.75} aria-hidden="true" />
             <span>Organization settings</span>
           </Link>

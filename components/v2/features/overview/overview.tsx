@@ -217,7 +217,7 @@ export function Overview() {
             Recent activity
           </h2>
           <Link
-            href="/v2/audit"
+            href="/audit"
             className="group inline-flex items-center gap-1 text-[12.5px] text-v2-muted transition-colors hover:text-v2-foreground"
           >
             View all
@@ -232,7 +232,7 @@ export function Overview() {
           {activityFeed.slice(0, 8).map((event) => (
             <Link
               key={event.id}
-              href={`/v2/vaults/${event.vaultId}`}
+              href={`/vaults/${event.vaultId}`}
               role="listitem"
               className="group flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
             >

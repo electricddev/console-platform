@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { updateAllowlist } from '@/app/(app)/settings/security/actions'
+import { updateAllowlist } from '@/app/(app)/legacy/settings/security/actions'
 
 export function IpAllowlistForm({ initial }: { initial: string[] }) {
   const [list, setList] = useState<string[]>(initial)

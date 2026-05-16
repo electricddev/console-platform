@@ -222,7 +222,7 @@ export const attentionItems: AttentionItem[] = [
     context: 'ACRED · Apollo Credit',
     vaultId: 'acred',
     vaultSymbol: 'ACRED',
-    href: '/v2/vaults/acred/data/nav-report',
+    href: '/vaults/acred/data/nav-report',
     at: hoursAgo(2),
   },
   {
@@ -232,7 +232,7 @@ export const attentionItems: AttentionItem[] = [
     context: 'ACRED · Borrower performance',
     vaultId: 'acred',
     vaultSymbol: 'ACRED',
-    href: '/v2/vaults/acred/access?counterparty=aave-v4',
+    href: '/vaults/acred/access?counterparty=aave-v4',
     at: daysAgo(1),
   },
   {
@@ -242,7 +242,7 @@ export const attentionItems: AttentionItem[] = [
     context: 'ACRED · Bloomberg BPIPE',
     vaultId: 'acred',
     vaultSymbol: 'ACRED',
-    href: '/v2/vaults/acred/data/pricing?tab=schema',
+    href: '/vaults/acred/data/pricing?tab=schema',
     at: hoursAgo(5),
   },
   {
@@ -252,7 +252,7 @@ export const attentionItems: AttentionItem[] = [
     context: 'BUIDL · BlackRock USD',
     vaultId: 'buidl',
     vaultSymbol: 'BUIDL',
-    href: '/v2/vaults/buidl/access',
+    href: '/vaults/buidl/access',
     at: hoursAgo(8),
   },
 ]

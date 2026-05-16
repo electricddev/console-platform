@@ -14,11 +14,11 @@ type MobileNavItem = {
 }
 
 const items: MobileNavItem[] = [
-  { href: '/v2', label: 'Overview', icon: Compass, exact: true },
-  { href: '/v2/sources', label: 'Sources', icon: Plug },
-  { href: '/v2/datasets', label: 'Datasets', icon: Database },
-  { href: '/v2/rules', label: 'Rules', icon: Scale },
-  { href: '/v2/settings', label: 'Settings', icon: SlidersHorizontal },
+  { href: '/', label: 'Overview', icon: Compass, exact: true },
+  { href: '/sources', label: 'Sources', icon: Plug },
+  { href: '/datasets', label: 'Datasets', icon: Database },
+  { href: '/rules', label: 'Rules', icon: Scale },
+  { href: '/settings', label: 'Settings', icon: SlidersHorizontal },
 ]
 
 export function V2MobileNav() {

@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function VaultSidebarNav({ vault, pathname, collapsed }: Props) {
-  const base = `/v2/vaults/${vault.id}`
+  const base = `/vaults/${vault.id}`
 
   const items: NavItem[] = [
     { href: base, label: 'Overview', icon: LayoutDashboard, exact: true },
@@ -48,7 +48,7 @@ export function VaultSidebarNav({ vault, pathname, collapsed }: Props) {
       <div className={cn('flex-1 overflow-y-auto', collapsed ? 'px-2' : 'px-3', 'py-4')}>
         {/* Back to all vaults */}
         <Link
-          href="/v2/vaults"
+          href="/vaults"
           aria-label={collapsed ? 'All data vaults' : undefined}
           className={cn(
             'group flex items-center rounded-md text-[12px] font-medium text-v2-muted transition-all duration-150',

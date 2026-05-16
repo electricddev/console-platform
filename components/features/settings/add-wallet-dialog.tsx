@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { addWallet } from '@/app/(app)/settings/wallets/actions'
+import { addWallet } from '@/app/(app)/legacy/settings/wallets/actions'
 
 export function AddWalletDialog() {
   const [open, setOpen] = useState(false)

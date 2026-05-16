@@ -59,7 +59,7 @@ export function Vaults() {
           <h2 className="text-[16px] font-medium text-v2-foreground">Recent activity</h2>
           <Surface
             as={Link}
-            href="/v2/audit"
+            href="/audit"
             interactive
             radius="md"
             className="inline-flex items-center px-3 py-1.5 text-[13px] font-medium text-v2-foreground"
@@ -79,7 +79,7 @@ export function Vaults() {
                 transition={{ delay: i * 0.03, duration: 0.3 }}
               >
                 <Link
-                  href={`/v2/vaults/${e.vaultId}`}
+                  href={`/vaults/${e.vaultId}`}
                   className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-3 transition-all duration-150 hover:border-v2-border/60 hover:bg-v2-surface/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                 >
                   <span

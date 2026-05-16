@@ -309,7 +309,7 @@ function Breadcrumb({ vault, dataset }: { vault: Vault; dataset: Dataset }) {
       aria-label="Breadcrumb"
     >
       <Link
-        href={`/v2/vaults/${vault.id}/data`}
+        href={`/vaults/${vault.id}/data`}
         className="group inline-flex items-center gap-1.5 transition-colors hover:text-v2-foreground"
       >
         <ArrowLeft
@@ -640,7 +640,7 @@ function OverviewTab({
             Recent activity
           </h2>
           <Link
-            href={`/v2/vaults/${vaultId}/activity?dataset=${dataset.id}`}
+            href={`/vaults/${vaultId}/activity?dataset=${dataset.id}`}
             className="inline-flex items-center gap-1 text-[12px] text-v2-muted transition-colors hover:text-v2-foreground"
           >
             View all
@@ -678,7 +678,7 @@ function SubscribedCounterparties({
           return (
             <Link
               key={slug}
-              href={`/v2/vaults/${vaultId}/access?counterparty=${slug}`}
+              href={`/vaults/${vaultId}/access?counterparty=${slug}`}
               className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-3 transition-colors hover:bg-v2-foreground/[0.02] sm:grid-cols-[1fr_auto_auto_auto]"
             >
               <p className="text-[13px] font-medium text-v2-foreground">{grant.counterparty}</p>
@@ -812,7 +812,7 @@ function ConfigPanel({ dataset, vaultId }: { dataset: Dataset; vaultId: string }
             {/* Right: link */}
             <div className="flex items-center sm:justify-end">
               <Link
-                href={`/v2/vaults/${vaultId}/sources/${dataset.sourceId}`}
+                href={`/vaults/${vaultId}/sources/${dataset.sourceId}`}
                 className="inline-flex items-center gap-1.5 text-[12px] text-v2-foreground/70 transition-colors hover:text-v2-foreground"
               >
                 Open source

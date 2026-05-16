@@ -1,18 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Paths that bypass auth entirely (no session cookie required).
-const PUBLIC_PATHS = ['/login', '/v2']
-// Subset of public paths that should bounce signed-in users to the app home.
+// Paths that require an authenticated session. Everything else is public.
+// The legacy originator UI lives under /legacy/* and stays gated; the new
+// (originator) and (counterparty) surfaces at / and /cp/* are public.
+const PRIVATE_PATHS = ['/legacy']
+// Auth landing pages that bounce signed-in users back to home.
 const AUTH_PATHS = ['/login']
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  const requiresAuth = PRIVATE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
   // Read the iron-session cookie name (must match lib/auth/session.ts).
   const hasSession = req.cookies.has('hyve_session')
 
-  if (!isPublic && !hasSession) {
+  if (requiresAuth && !hasSession) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', pathname)

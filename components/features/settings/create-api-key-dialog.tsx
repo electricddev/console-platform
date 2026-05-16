@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CopyableHash } from '@/components/common/copyable-hash'
 import { useRouter } from 'next/navigation'
-import { createApiKeyAction } from '@/app/(app)/settings/integrations/actions'
+import { createApiKeyAction } from '@/app/(app)/legacy/settings/integrations/actions'
 import type { ApiKeyScopeSchema } from '@/lib/api/schemas'
 import type { z } from 'zod'
 

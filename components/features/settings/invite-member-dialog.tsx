@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { inviteMember } from '@/app/(app)/settings/members/actions'
+import { inviteMember } from '@/app/(app)/legacy/settings/members/actions'
 
 const ROLES = ['admin', 'editor', 'analyst', 'viewer', 'approver'] as const
 

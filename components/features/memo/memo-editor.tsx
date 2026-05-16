@@ -10,7 +10,7 @@ import { MemoAuditLog } from './memo-audit-log'
 import {
   actionUpdateMemoSection, actionRecordFlagDecision,
   actionSubmitMemo, actionApproveMemo, actionRequestMemoChanges,
-} from '@/app/(app)/datasets/[datasetId]/memo/actions'
+} from '@/app/(app)/legacy/datasets/[datasetId]/memo/actions'
 import type { Memo, MemoSection, RedFlag, Role, FlagDecision } from '@/lib/api/schemas'
 
 const SECTIONS: { key: keyof Memo['sections']; letter: string; name: string; prompt: string }[] = [

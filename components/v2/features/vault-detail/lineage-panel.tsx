@@ -573,7 +573,7 @@ export function LineagePanel({ vault, dataset }: LineagePanelProps) {
         <p className="text-[12.5px] leading-relaxed text-v2-muted">
           If{' '}
           <Link
-            href={`/v2/vaults/${vault.id}/sources/${dataset.sourceId}`}
+            href={`/vaults/${vault.id}/sources/${dataset.sourceId}`}
             className="font-medium text-v2-foreground/90 underline underline-offset-2 transition-colors hover:text-v2-foreground"
           >
             {dataset.source}
@@ -598,7 +598,7 @@ export function LineagePanel({ vault, dataset }: LineagePanelProps) {
                 return (
                   <span key={name}>
                     <Link
-                      href={`/v2/vaults/${vault.id}/access?counterparty=${slug}`}
+                      href={`/vaults/${vault.id}/access?counterparty=${slug}`}
                       className="font-medium text-v2-foreground/90 underline underline-offset-2 transition-colors hover:text-v2-foreground"
                     >
                       {name}

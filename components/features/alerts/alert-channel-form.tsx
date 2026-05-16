@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { actionCreateAlertChannel } from '@/app/(app)/alerts/actions'
+import { actionCreateAlertChannel } from '@/app/(app)/legacy/alerts/actions'
 import { useTransition } from 'react'
 import type { NotificationChannelKind } from '@/lib/api/schemas'
 

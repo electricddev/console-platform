@@ -46,7 +46,7 @@ export function DatasetCard({ dataset, vaultId, family, seed, index = 0 }: Props
         family={family}
         seed={seed}
         as={Link}
-        href={`/v2/vaults/${vaultId}/data/${dataset.id}`}
+        href={`/vaults/${vaultId}/data/${dataset.id}`}
         interactive
         radius="xl"
         className="group flex flex-col gap-3 p-5"

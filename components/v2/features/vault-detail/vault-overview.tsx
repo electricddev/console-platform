@@ -161,7 +161,7 @@ export function VaultOverview({ vault }: Props) {
       {/* Two-col: Sources + Recent activity */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         <section className="flex flex-col gap-4 lg:col-span-7">
-          <SectionTitle title="Sources" href={`/v2/vaults/${vault.id}/sources`} />
+          <SectionTitle title="Sources" href={`/vaults/${vault.id}/sources`} />
           <AuraCard
             variant="muted"
             family={family}
@@ -171,7 +171,7 @@ export function VaultOverview({ vault }: Props) {
             {SOURCES.map((s) => (
               <Link
                 key={s.name}
-                href={`/v2/vaults/${vault.id}/sources`}
+                href={`/vaults/${vault.id}/sources`}
                 className="group relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
               >
                 <div className="min-w-0 flex-1">
@@ -200,7 +200,7 @@ export function VaultOverview({ vault }: Props) {
         </section>
 
         <section className="flex flex-col gap-4 lg:col-span-5">
-          <SectionTitle title="Recent activity" href={`/v2/vaults/${vault.id}/activity`} />
+          <SectionTitle title="Recent activity" href={`/vaults/${vault.id}/activity`} />
           <AuraCard
             variant="muted"
             family={family}
@@ -210,7 +210,7 @@ export function VaultOverview({ vault }: Props) {
             {ACTIVITY.map((a) => (
               <Link
                 key={a.id}
-                href={`/v2/vaults/${vault.id}/activity`}
+                href={`/vaults/${vault.id}/activity`}
                 className="group relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
               >
                 <StatusPill tone="neutral" size="xs">
@@ -233,7 +233,7 @@ export function VaultOverview({ vault }: Props) {
 
       {/* Consumers — each card gets a different seed for variation */}
       <section className="flex flex-col gap-4">
-        <SectionTitle title="Access" href={`/v2/vaults/${vault.id}/access`} />
+        <SectionTitle title="Access" href={`/vaults/${vault.id}/access`} />
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {consumers.map((c, i) => (
             <AuraCard
@@ -242,7 +242,7 @@ export function VaultOverview({ vault }: Props) {
               family={family}
               seed={6 + i}
               as={Link}
-              href={`/v2/vaults/${vault.id}/access`}
+              href={`/vaults/${vault.id}/access`}
               interactive
               className="flex h-32 flex-col gap-3 p-4"
             >
@@ -270,7 +270,7 @@ export function VaultOverview({ vault }: Props) {
           family={family}
           seed={9}
           as={Link}
-          href={`/v2/vaults/${vault.id}/queries`}
+          href={`/vaults/${vault.id}/queries`}
           interactive
           className="group flex items-center gap-4 p-5"
         >

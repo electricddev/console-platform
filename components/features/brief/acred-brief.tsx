@@ -15,7 +15,7 @@ import { acredRedFlagRules } from '@/lib/data/acred/red-flags'
 import {
   actionAcknowledgeFlag, actionSnoozeFlag, actionSetThreshold,
   actionDismissAnomaly, actionSetWatch, actionClearWatch,
-} from '@/app/(app)/datasets/[datasetId]/decisions-actions'
+} from '@/app/(app)/legacy/datasets/[datasetId]/decisions-actions'
 import type {
   Dataset, RedFlag, AnomalyEvent, PeerDispersionRow,
   AttestationDiscipline, NotificationChannelKind,
