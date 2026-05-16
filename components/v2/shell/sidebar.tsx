@@ -7,17 +7,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { findVault } from '@/components/v2/features/origination/origination-fixture'
 import { VaultSidebarNav } from './vault-sidebar-nav'
+import { UserMenu } from './user-menu'
 import {
   Compass,
   Vault,
-  Plug,
-  Database,
-  Layers,
-  Scale,
-  Users,
-  Building2,
-  ScrollText,
-  SlidersHorizontal,
+  History,
   Sun,
   Moon,
   PanelLeftClose,
@@ -45,37 +39,11 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/v2', label: 'Overview', icon: Compass, exact: true },
       { href: '/v2/vaults', label: 'Data Vaults', icon: Vault },
-    ],
-  },
-  {
-    label: 'Pipeline',
-    items: [
-      { href: '/v2/sources', label: 'Sources', icon: Plug },
-      { href: '/v2/datasets', label: 'Datasets', icon: Database },
-      { href: '/v2/schemas', label: 'Schemas', icon: Layers },
-    ],
-  },
-  {
-    label: 'Policy',
-    items: [
-      { href: '/v2/rules', label: 'Rules', icon: Scale },
-      { href: '/v2/consumers', label: 'Consumers', icon: Users },
-    ],
-  },
-  {
-    label: 'Network',
-    items: [
-      { href: '/v2/counterparties', label: 'Counterparties', icon: Building2 },
-      { href: '/v2/audit', label: 'Audit log', icon: ScrollText },
+      { href: '/v2/audit', label: 'Activity', icon: History },
     ],
   },
 ]
 
-const settingsItem: NavItem = {
-  href: '/v2/settings',
-  label: 'Settings',
-  icon: SlidersHorizontal,
-}
 
 interface SidebarProps {
   collapsed: boolean
@@ -217,22 +185,21 @@ export function V2Sidebar({ collapsed, onToggle }: SidebarProps) {
                   )
                 })}
               </nav>
-
-              {/* Global Settings — only visible when not inside a vault */}
-              <div
-                className={cn(
-                  'border-t border-v2-border pt-3',
-                  collapsed ? 'px-2' : 'px-3'
-                )}
-              >
-                <NavLink item={settingsItem} pathname={pathname} collapsed={collapsed} />
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Theme toggle — always pinned at the very bottom */}
+      {/* User menu + theme toggle — pinned at the bottom, persists across
+          the root ↔ vault swap so the bottom section feels fixed. */}
+      <div
+        className={cn(
+          'border-t border-v2-border pt-3',
+          collapsed ? 'px-2' : 'px-3'
+        )}
+      >
+        <UserMenu collapsed={collapsed} />
+      </div>
       <div className={cn('pb-3 pt-1', collapsed ? 'px-2' : 'px-3')}>
         <ThemeToggle collapsed={collapsed} />
       </div>
@@ -322,6 +289,7 @@ function ThemeToggle({ collapsed }: { collapsed: boolean }) {
 
   return (
     <button
+      type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
         // Demoted: smaller type, lower base opacity, no font-medium.

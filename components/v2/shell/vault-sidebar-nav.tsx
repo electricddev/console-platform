@@ -40,13 +40,8 @@ export function VaultSidebarNav({ vault, pathname, collapsed }: Props) {
     { href: `${base}/access`, label: 'Access', icon: KeyRound },
     { href: `${base}/queries`, label: 'Queries', icon: Code2 },
     { href: `${base}/activity`, label: 'Activity', icon: History },
+    { href: `${base}/settings`, label: 'Settings', icon: SlidersHorizontal },
   ]
-
-  const settingsItem: NavItem = {
-    href: `${base}/settings`,
-    label: 'Settings',
-    icon: SlidersHorizontal,
-  }
 
   return (
     <>
@@ -85,21 +80,6 @@ export function VaultSidebarNav({ vault, pathname, collapsed }: Props) {
             />
           ))}
         </div>
-      </div>
-
-      {/* Per-vault Settings — anchored above theme toggle */}
-      <div
-        className={cn(
-          'border-t border-v2-border pt-3',
-          collapsed ? 'px-2' : 'px-3'
-        )}
-      >
-        <SideNavLink
-          item={settingsItem}
-          pathname={pathname}
-          collapsed={collapsed}
-          layoutId="v2-vault-settings-active"
-        />
       </div>
     </>
   )
