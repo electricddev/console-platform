@@ -14,13 +14,18 @@ export type StatusTone =
   | 'warning'
   | 'danger'
   | 'neutral'
+  | 'changes_requested'
+  | 'denied'
 
 const TONE_CLASS: Record<StatusTone, string> = {
-  success: 'bg-v2-success/[0.12] text-v2-success',
-  info: 'bg-v2-info/[0.14] text-v2-info',
-  warning: 'bg-v2-warning/[0.14] text-v2-warning',
-  danger: 'bg-v2-danger/[0.14] text-v2-danger',
-  neutral: 'bg-v2-foreground/[0.08] text-v2-foreground/80',
+  success:           'bg-v2-success/[0.12] text-v2-success',
+  info:              'bg-v2-info/[0.14] text-v2-info',
+  warning:           'bg-v2-warning/[0.14] text-v2-warning',
+  danger:            'bg-v2-danger/[0.14] text-v2-danger',
+  neutral:           'bg-v2-foreground/[0.08] text-v2-foreground/80',
+  // Analysis lifecycle states — subtle, not alarming
+  changes_requested: 'bg-v2-warning/[0.10] text-v2-warning',
+  denied:            'bg-v2-foreground/[0.06] text-v2-muted',
 }
 
 interface Props {

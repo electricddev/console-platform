@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Compass, Database, Code2, History } from 'lucide-react'
+import { Compass, FileCode2, Activity, Vault } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +14,10 @@ type MobileNavItem = {
 }
 
 const items: MobileNavItem[] = [
-  { href: '/cp', label: 'Overview', icon: Compass, exact: true },
-  { href: '/cp/datasets', label: 'Datasets', icon: Database },
-  { href: '/cp/queries', label: 'Queries', icon: Code2 },
-  { href: '/cp/activity', label: 'Activity', icon: History },
+  { href: '/cp', label: 'Home', icon: Compass, exact: true },
+  { href: '/cp/analyses', label: 'Analyses', icon: FileCode2 },
+  { href: '/cp/executions', label: 'Executions', icon: Activity },
+  { href: '/cp/vaults', label: 'Vaults', icon: Vault },
 ]
 
 export function CpMobileNav() {
