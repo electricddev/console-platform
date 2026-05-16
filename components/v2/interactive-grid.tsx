@@ -293,7 +293,10 @@ export function InteractiveGrid() {
     const colors = paletteRgbList()
 
     const draw = (now: number) => {
-      const dt = (now - lastTimeRef.current) / 1000
+      // Clamp dt so a paused-then-resumed tab can't produce a giant catch-up
+      // frame (the inner snake step loop would otherwise run hundreds of
+      // iterations synchronously).
+      const dt = Math.min(0.1, (now - lastTimeRef.current) / 1000)
       lastTimeRef.current = now
       const w = window.innerWidth,
         h = window.innerHeight,
@@ -317,7 +320,10 @@ export function InteractiveGrid() {
       const prev = smoothIdleRef.current
       smoothIdleRef.current = targetIdle > prev ? targetIdle : Math.max(0, prev - dt / (IDLE_FADE_OUT / 1000))
       const idle = smoothIdleRef.current
-      if (idle > 0 && now - lastWallScanRef.current > WALL_RESCAN_INTERVAL) {
+      // Periodic rescan only after the initial idle-init has populated walls
+      // — otherwise this fires on the same frame as the init block below and
+      // scanWalls runs twice.
+      if (idle > 0 && idleInitRef.current && now - lastWallScanRef.current > WALL_RESCAN_INTERVAL) {
         wallsRef.current = scanWalls(cols, rows)
         lastWallScanRef.current = now
       }
@@ -354,8 +360,12 @@ export function InteractiveGrid() {
         for (let si = 0; si < snakes.length; si++) {
           const s = snakes[si]
           s.progress += SNAKE_SPEED * dt
-          while (s.progress >= 1) {
+          // Cap the step count per frame so a single slow frame can't burn
+          // hundreds of BFS pathfindings synchronously.
+          let steps = 0
+          while (s.progress >= 1 && steps < 4) {
             s.progress -= 1
+            steps++
             const hd = s.trail[0]
             const bs = new Set<number>()
             for (let t = 1; t < s.trail.length; t++) bs.add(s.trail[t].row * 10000 + s.trail[t].col)
@@ -460,6 +470,9 @@ export function InteractiveGrid() {
             }
             while (s.trail.length > s.maxLength) s.trail.pop()
           }
+          // If progress overshot the per-frame cap, drop the remainder so we
+          // don't accumulate a debt that explodes on the next frame.
+          if (s.progress >= 1) s.progress = 0
         }
       }
 
@@ -564,6 +577,16 @@ export function InteractiveGrid() {
       }
       rafRef.current = requestAnimationFrame(draw)
     }
+    // When the tab becomes visible again, browsers resume rAF but our
+    // lastTime/lastActivity refs are stale. Reset both so the first frame
+    // computes a sane dt and idleTime, avoiding a multi-second catch-up.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const t = performance.now()
+        lastTimeRef.current = t
+        lastActivityRef.current = t
+      }
+    }
     window.addEventListener('mousemove', onMove)
     document.addEventListener('mouseleave', onLeave)
     window.addEventListener('mousedown', onClick)
@@ -571,6 +594,7 @@ export function InteractiveGrid() {
     window.addEventListener('keydown', markActivity)
     window.addEventListener('scroll', markActivity, true)
     window.addEventListener('touchstart', markActivity)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     rafRef.current = requestAnimationFrame(draw)
     return () => {
       window.removeEventListener('mousemove', onMove)
@@ -580,6 +604,7 @@ export function InteractiveGrid() {
       window.removeEventListener('keydown', markActivity)
       window.removeEventListener('scroll', markActivity, true)
       window.removeEventListener('touchstart', markActivity)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       cancelAnimationFrame(rafRef.current)
     }
   }, [onMove, onLeave, onClick, markActivity, isDark])
