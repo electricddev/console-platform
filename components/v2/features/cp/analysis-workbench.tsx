@@ -3090,7 +3090,7 @@ FROM
         </div>
 
         {/* 3-column grid */}
-        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border border-v2-border/60 rounded-xl overflow-hidden bg-v2-surface">
+        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border-2 border-v2-border rounded-2xl overflow-hidden bg-v2-surface shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-12px_oklch(0_0_0/0.08)]">
           {/* Left: schema browser */}
           <div className="hidden xl:flex xl:flex-col border-r-2 border-v2-border overflow-hidden">
             {vault ? (
