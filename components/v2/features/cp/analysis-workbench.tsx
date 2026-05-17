@@ -24,13 +24,23 @@ import 'prismjs/components/prism-sql'
 import {
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Lock,
   Plus,
   X,
   Check,
   AlertTriangle,
   ArrowLeft,
+  Copy,
+  Play,
+  Info,
 } from 'lucide-react'
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { Surface } from '@/components/v2/ui/surface'
 import { StatusPill } from '@/components/v2/ui/status-pill'
@@ -1018,6 +1028,930 @@ function VaultPicker({ open, onSelect, onCancel }: VaultPickerProps) {
   )
 }
 
+// ── Companion panel helpers ───────────────────────────────────────────────────
+
+type CompanionTab = 'policy' | 'dryrun' | 'integration' | 'lineage'
+
+/**
+ * Attempt to extract SELECT-list aliases + their underlying expressions from
+ * the SQL code. Best-effort regex; not a full SQL parser.
+ *
+ * Returns an array of { alias, expression } objects for each AS-aliased item
+ * in the top-level SELECT list. Also returns bare column references with no
+ * alias if they are simple `table.field` or `field` forms.
+ */
+type SelectColumn = {
+  alias: string
+  expression: string
+  /** Inferred SQL type from vault schema, or null if unknown */
+  type: string | null
+  /** Source reference string, e.g. `nav_latest.current_nav` */
+  source: string
+}
+
+/**
+ * Locate the body (between SELECT and FROM) of the LAST top-level SELECT
+ * statement at paren-depth 0. CTE inner SELECTs are nested in parens and
+ * therefore skipped. Returns null if no top-level SELECT is found.
+ */
+function extractFinalSelectBody(stripped: string): string | null {
+  const upper = stripped.toUpperCase()
+  let depth = 0
+  const selectEnds: number[] = []
+  const fromStarts: number[] = []
+  for (let i = 0; i < stripped.length; i++) {
+    const ch = stripped[i]
+    if (ch === '(') {
+      depth++
+      continue
+    }
+    if (ch === ')') {
+      depth--
+      continue
+    }
+    if (depth !== 0) continue
+    // Boundary-checked SELECT
+    if (
+      upper.substr(i, 6) === 'SELECT' &&
+      (i === 0 || /\W/.test(stripped[i - 1]!)) &&
+      /\W|$/.test(stripped[i + 6] ?? '')
+    ) {
+      selectEnds.push(i + 6)
+      i += 5
+      continue
+    }
+    // Boundary-checked FROM
+    if (
+      upper.substr(i, 4) === 'FROM' &&
+      (i === 0 || /\W/.test(stripped[i - 1]!)) &&
+      /\W|$/.test(stripped[i + 4] ?? '')
+    ) {
+      fromStarts.push(i)
+      i += 3
+    }
+  }
+  if (selectEnds.length === 0) return null
+  const lastSelectEnd = selectEnds[selectEnds.length - 1]!
+  const nextFrom = fromStarts.find((idx) => idx > lastSelectEnd)
+  const end = nextFrom ?? stripped.length
+  return stripped.substring(lastSelectEnd, end).trim()
+}
+
+function parseSelectColumns(code: string, vault: ConsumerVault | null): SelectColumn[] {
+  if (!vault) return []
+
+  // Strip comments
+  const stripped = code.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+
+  // Find the FINAL SELECT statement at paren-depth 0. For CTE'd queries
+  // (WITH x AS (SELECT ...), y AS (SELECT ...) SELECT ...) the inner SELECTs
+  // are nested in parens; only the outer SELECT lives at depth 0.
+  const selectBody = extractFinalSelectBody(stripped)
+  if (!selectBody || selectBody === '*') return []
+
+  // Build a field type lookup from vault
+  const fieldTypes = new Map<string, string>()
+  for (const tbl of vault.tables) {
+    for (const f of tbl.fields) {
+      fieldTypes.set(f.name, f.type)
+      fieldTypes.set(`${tbl.name}.${f.name}`, f.type)
+      fieldTypes.set(`vault.${vault.id.replace(/-/g, '_')}.${tbl.name}.${f.name}`, f.type)
+    }
+  }
+
+  // Split on commas that are NOT inside parens
+  const items: string[] = []
+  let depth = 0
+  let cur = ''
+  for (const ch of selectBody) {
+    if (ch === '(') { depth++; cur += ch }
+    else if (ch === ')') { depth--; cur += ch }
+    else if (ch === ',' && depth === 0) { items.push(cur.trim()); cur = '' }
+    else cur += ch
+  }
+  if (cur.trim()) items.push(cur.trim())
+
+  const results: SelectColumn[] = []
+  for (const item of items) {
+    if (!item) continue
+
+    // Match `expr AS alias`
+    const asMatch = /^([\s\S]+?)\s+AS\s+([a-z_][a-z0-9_]*)$/i.exec(item.trim())
+    if (asMatch) {
+      const expr = asMatch[1].trim()
+      const alias = asMatch[2].trim()
+
+      // Try to infer type
+      let inferredType: string | null = null
+      let source = expr
+
+      // Aggregate wrapping
+      const aggMatch = /^(SUM|AVG|COUNT|MIN|MAX)\s*\(\s*([\s\S]+?)\s*\)\s*$/i.exec(expr)
+      if (aggMatch) {
+        const innerField = aggMatch[2].split('.').pop() ?? ''
+        const baseType = fieldTypes.get(innerField) ?? fieldTypes.get(aggMatch[2]) ?? null
+        inferredType = aggMatch[1].toUpperCase() === 'COUNT' ? 'NUMERIC' : (baseType ?? 'NUMERIC')
+        source = `${aggMatch[1].toUpperCase()}(${aggMatch[2]})`
+      } else {
+        // Simple field reference
+        const fieldName = expr.split('.').pop() ?? ''
+        inferredType = fieldTypes.get(fieldName) ?? fieldTypes.get(expr) ?? null
+        // Shorten the source to table.field form
+        const parts = expr.split('.')
+        source = parts.length >= 2 ? `${parts[parts.length - 2]}.${parts[parts.length - 1]}` : expr
+      }
+
+      results.push({ alias, expression: expr, type: inferredType, source })
+    } else {
+      // No alias — bare column ref
+      const fieldName = item.split('.').pop() ?? item
+      const inferredType = fieldTypes.get(fieldName) ?? fieldTypes.get(item) ?? null
+      const parts = item.split('.')
+      const source = parts.length >= 2 ? `${parts[parts.length - 2]}.${parts[parts.length - 1]}` : item
+      results.push({ alias: fieldName, expression: item, type: inferredType, source })
+    }
+  }
+
+  return results
+}
+
+/** Check if SQL has a FROM clause */
+function hasFromClause(code: string): boolean {
+  return /\bFROM\b/i.test(code.replace(/--[^\n]*/g, ''))
+}
+
+// ── Policy check types ────────────────────────────────────────────────────────
+
+type PolicyCheckStatus = 'pass' | 'fail' | 'warn' | 'info'
+
+type PolicyCheck = {
+  id: string
+  status: PolicyCheckStatus
+  verb: string
+  detail: string
+}
+
+function buildPolicyChecks({
+  fieldRefs,
+  destinations,
+  name,
+  code,
+}: {
+  fieldRefs: FieldRef[]
+  destinations: Destination[]
+  name: string
+  code: string
+}): PolicyCheck[] {
+  const checks: PolicyCheck[] = []
+
+  // 1. Access grant
+  const privateRefs = fieldRefs.filter((r) => r.privacy === 'private')
+  const accessibleRefs = fieldRefs.filter((r) => r.privacy !== 'private')
+  if (privateRefs.length === 0) {
+    checks.push({
+      id: 'access-grant',
+      status: 'pass',
+      verb: 'Access grant',
+      detail:
+        accessibleRefs.length === 0
+          ? 'No vault fields referenced yet'
+          : `${accessibleRefs.length} field${accessibleRefs.length !== 1 ? 's' : ''} within your access grant`,
+    })
+  } else {
+    checks.push({
+      id: 'access-grant',
+      status: 'fail',
+      verb: 'Access grant',
+      detail: `${privateRefs.length} private field${privateRefs.length !== 1 ? 's' : ''} referenced — ${privateRefs.map((r) => r.fieldName).join(', ')} (blocked at ingest)`,
+    })
+  }
+
+  // 2. Aggregate wrapping
+  const aggregateRaw = fieldRefs.filter(
+    (r) => r.privacy === 'aggregate' && !r.wrappedInAggregate,
+  )
+  const aggregateWrapped = fieldRefs.filter(
+    (r) => r.privacy === 'aggregate' && r.wrappedInAggregate,
+  )
+  if (aggregateRaw.length === 0) {
+    if (aggregateWrapped.length > 0) {
+      checks.push({
+        id: 'aggregate-wrap',
+        status: 'pass',
+        verb: 'Aggregate wrapping',
+        detail: `Aggregable field${aggregateWrapped.length !== 1 ? 's' : ''} wrapped: ${aggregateWrapped.map((r) => r.fieldName).join(', ')}`,
+      })
+    } else if (fieldRefs.some((r) => r.privacy === 'aggregate')) {
+      // Shouldn't happen, but catch-all
+      checks.push({
+        id: 'aggregate-wrap',
+        status: 'pass',
+        verb: 'Aggregate wrapping',
+        detail: 'All aggregate fields correctly wrapped',
+      })
+    }
+    // If no aggregate fields at all, skip this check
+  } else {
+    checks.push({
+      id: 'aggregate-wrap',
+      status: 'fail',
+      verb: 'Aggregate wrapping',
+      detail: `${aggregateRaw.length} aggregable field${aggregateRaw.length !== 1 ? 's' : ''} used raw — ${aggregateRaw.map((r) => r.fieldName).join(', ')} must be wrapped in SUM/AVG/COUNT/MIN/MAX`,
+    })
+  }
+
+  // 3. Join-key usage
+  const joinRefsInSelect = fieldRefs.filter(
+    (r) => r.privacy === 'join' && !r.inGroupBy && !r.wrappedInAggregate,
+  )
+  const joinRefsAsKey = fieldRefs.filter(
+    (r) => r.privacy === 'join' && (r.inGroupBy || r.wrappedInAggregate),
+  )
+  if (joinRefsInSelect.length === 0) {
+    if (fieldRefs.some((r) => r.privacy === 'join')) {
+      checks.push({
+        id: 'join-key',
+        status: 'pass',
+        verb: 'Join-key usage',
+        detail: 'Join fields used as match keys',
+      })
+    }
+    // No join fields → skip
+  } else {
+    checks.push({
+      id: 'join-key',
+      status: 'warn',
+      verb: 'Join-key usage',
+      detail: `${joinRefsInSelect.length} join field${joinRefsInSelect.length !== 1 ? 's' : ''} appear${joinRefsInSelect.length === 1 ? 's' : ''} in SELECT — ${joinRefsInSelect.map((r) => r.fieldName).join(', ')} ${joinRefsInSelect.length === 1 ? 'is' : 'are'} match key${joinRefsInSelect.length !== 1 ? 's' : ''} and won't be returned`,
+    })
+  }
+  // Suppress join-key row if no join fields at all
+
+  // 4. k-min constraints
+  const kMinRefs = fieldRefs.filter(
+    (r) => r.privacy === 'aggregate' && r.wrappedInAggregate,
+  )
+  // We need kMin from the vault — look it up
+  // (We don't have vault here, so we accept it being passed)
+  // This is handled in the calling component which has vault access
+
+  // 5. Destinations
+  if (destinations.length >= 1) {
+    checks.push({
+      id: 'destinations',
+      status: 'pass',
+      verb: 'Destination',
+      detail: `${destinations.length} destination${destinations.length !== 1 ? 's' : ''} configured`,
+    })
+  } else {
+    checks.push({
+      id: 'destinations',
+      status: 'fail',
+      verb: 'Destination',
+      detail: 'No destination configured — add at least one in the meta panel before submitting',
+    })
+  }
+
+  // 6. Name
+  const trimmedName = name.trim()
+  if (!trimmedName) {
+    checks.push({
+      id: 'name',
+      status: 'fail',
+      verb: 'Name',
+      detail: 'Name is empty',
+    })
+  } else if (EXISTING_NAMES.has(trimmedName)) {
+    checks.push({
+      id: 'name',
+      status: 'fail',
+      verb: 'Name',
+      detail: `Name taken — try ${suggestName(trimmedName)}`,
+    })
+  } else {
+    checks.push({
+      id: 'name',
+      status: 'pass',
+      verb: 'Name',
+      detail: `Name available — ${trimmedName}`,
+    })
+  }
+
+  return checks
+}
+
+function buildPolicyChecksWithKMin({
+  fieldRefs,
+  destinations,
+  name,
+  vault,
+}: {
+  fieldRefs: FieldRef[]
+  destinations: Destination[]
+  name: string
+  vault: ConsumerVault | null
+}): PolicyCheck[] {
+  const base = buildPolicyChecks({ fieldRefs, destinations, name, code: '' })
+
+  if (!vault) return base
+
+  // Insert k-min info rows after aggregate wrap check
+  const kMinChecks: PolicyCheck[] = []
+  for (const tbl of vault.tables) {
+    for (const field of tbl.fields) {
+      if (field.kMin !== undefined) {
+        const ref = fieldRefs.find(
+          (r) => r.fieldName === field.name && r.tableName === tbl.name,
+        )
+        if (ref?.wrappedInAggregate) {
+          kMinChecks.push({
+            id: `kmin-${field.name}`,
+            status: 'info',
+            verb: 'k-min',
+            detail: `${field.name} · min k=${field.kMin} enforced at execution time`,
+          })
+        }
+      }
+    }
+  }
+
+  // Insert k-min checks after the aggregate-wrap check
+  const aggIdx = base.findIndex((c) => c.id === 'aggregate-wrap')
+  if (aggIdx >= 0 && kMinChecks.length > 0) {
+    base.splice(aggIdx + 1, 0, ...kMinChecks)
+  }
+
+  return base
+}
+
+// ── Companion panel ───────────────────────────────────────────────────────────
+
+type CompanionPanelProps = {
+  open: boolean
+  onToggle: () => void
+  activeTab: CompanionTab
+  onTabChange: (t: CompanionTab) => void
+  code: string
+  vault: ConsumerVault | null
+  fieldRefs: FieldRef[]
+  destinations: Destination[]
+  name: string
+}
+
+/** Status icon for a policy check row */
+function PolicyIcon({ status }: { status: PolicyCheckStatus }) {
+  if (status === 'pass')
+    return <Check className="mt-px h-3.5 w-3.5 shrink-0 text-v2-success" strokeWidth={2.25} />
+  if (status === 'fail')
+    return <X className="mt-px h-3.5 w-3.5 shrink-0 text-v2-danger" strokeWidth={2.25} />
+  if (status === 'warn')
+    return <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-v2-warning" strokeWidth={2} />
+  return <Info className="mt-px h-3.5 w-3.5 shrink-0 text-v2-muted/50" strokeWidth={2} />
+}
+
+/** Small copy-to-clipboard button. Wires navigator.clipboard when available. */
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // silently ignore in environments without clipboard access
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] text-v2-muted/60 transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+      title="Copy to clipboard"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-v2-success" strokeWidth={2} />
+      ) : (
+        <Copy className="h-3 w-3" strokeWidth={1.75} />
+      )}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
+}
+
+// ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
+
+const SAMPLE_ROWS: Record<string, string>[] = [
+  { advance_rate: '0.85', nav_usd: '425,371,892.54', eligible_par: '478,231,015.22', as_of: '2026-05-15T14:22:18Z' },
+  { advance_rate: '0.84', nav_usd: '419,205,119.18', eligible_par: '482,007,283.61', as_of: '2026-05-15T14:21:14Z' },
+]
+
+/** Numeric-looking values should be right-aligned */
+function isNumericValue(v: string): boolean {
+  return /^[\d,.\-+e]+$/.test(v.trim())
+}
+
+function CompanionPanel({
+  open,
+  onToggle,
+  activeTab,
+  onTabChange,
+  code,
+  vault,
+  fieldRefs,
+  destinations,
+  name,
+}: CompanionPanelProps) {
+  const checks = buildPolicyChecksWithKMin({ fieldRefs, destinations, name, vault })
+  const failCount = checks.filter((c) => c.status === 'fail').length
+
+  const selectColumns = parseSelectColumns(code, vault)
+  const hasFrom = hasFromClause(code)
+  const codeEmpty = code.trim().length === 0 || !hasFrom
+
+  // First on-chain destination for Integration tab
+  const firstOnchain = destinations.find((d): d is OnchainDest => d.kind === 'onchain') ?? null
+  const onchainCount = destinations.filter((d) => d.kind === 'onchain').length
+
+  const analysisSlug = name.trim() || 'analysis_name'
+  const onchainAddr = firstOnchain ? firstOnchain.address : '0x0000000000000000000000000000000000000000'
+  const onchainAddrShort = firstOnchain
+    ? `${firstOnchain.address.slice(0, 6)}...${firstOnchain.address.slice(-4)}`
+    : '0x0000...0000'
+  const onchainLabel = firstOnchain?.label ?? 'Oracle'
+
+  const solidityCode = `// Read the signed payload from your Hyve oracle.
+// Destination: ${firstOnchain?.chain?.toUpperCase() ?? 'ETH'} ${onchainAddrShort} (${onchainLabel})
+interface IHyveOracle {
+    function read(string calldata analysis) external view returns (bytes memory payload, uint64 asOf, bytes memory signature);
+}
+
+contract YourVault {
+    IHyveOracle constant ORACLE = IHyveOracle(${onchainAddr});
+
+    function getAdvanceRate() external view returns (uint256 advanceRate) {
+        (bytes memory payload, uint64 asOf, bytes memory sig) = ORACLE.read("${analysisSlug}");
+        require(block.timestamp - asOf < 1 hours, "stale");
+        // payload decodes to your output schema
+        (advanceRate, , , ) = abi.decode(payload, (uint256, uint256, uint256, uint64));
+    }
+}`
+
+  const tsCode = `import { HyveClient } from '@hyve/client'
+
+const client = new HyveClient({ orgId: 'org_gauntlet' })
+
+// Read with signature verification.
+const result = await client.read('${analysisSlug}', { verify: true })
+
+${selectColumns.length > 0
+    ? selectColumns.map((c) => `console.log(result.${c.alias})`).join('\n')
+    : `console.log(result.advance_rate)   // 0.85
+console.log(result.as_of)           // 2026-05-15T14:22:18.413Z`}
+console.log(result.signature)       // 0x...`
+
+  const providerName = vault?.provider.name ?? 'Apollo Asset Mgmt'
+  const sigKey = '0xa3b1…f04c'
+
+  // Determine if we can show sample rows: code has FROM and at least one column
+  const canShowDryRun = hasFrom && !codeEmpty
+
+  // Handle tab click — if panel closed, open it too
+  const handleTabTriggerClick = (tab: CompanionTab) => {
+    onTabChange(tab)
+    if (!open) {
+      // Panel will open because parent sets open=true on tab click
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col border-t border-v2-border/60 transition-[height] duration-200',
+        open ? 'h-[min(40vh,320px)]' : 'h-auto',
+      )}
+      style={open ? { height: 'min(40vh, 320px)' } : undefined}
+    >
+      {/* Tab strip */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          onTabChange(v as CompanionTab)
+          if (!open) onToggle()
+        }}
+        className="flex flex-col h-full"
+      >
+        <div className="flex items-center border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+          <TabsList
+            variant="line"
+            className="h-9 flex-1 w-full justify-start gap-0 rounded-none bg-transparent p-0"
+          >
+            <TabsTrigger
+              value="policy"
+              className={cn(
+                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
+                'hover:text-v2-foreground',
+                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
+              )}
+              onClick={() => handleTabTriggerClick('policy')}
+            >
+              Policy
+              {failCount > 0 && (
+                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-v2-warning/20 px-1 font-mono text-[9px] text-v2-warning">
+                  {failCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="dryrun"
+              className={cn(
+                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
+                'hover:text-v2-foreground',
+                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
+              )}
+              onClick={() => handleTabTriggerClick('dryrun')}
+            >
+              Dry-run
+            </TabsTrigger>
+            <TabsTrigger
+              value="integration"
+              className={cn(
+                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
+                'hover:text-v2-foreground',
+                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
+              )}
+              onClick={() => handleTabTriggerClick('integration')}
+            >
+              Integration
+            </TabsTrigger>
+            <TabsTrigger
+              value="lineage"
+              className={cn(
+                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
+                'hover:text-v2-foreground',
+                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
+              )}
+              onClick={() => handleTabTriggerClick('lineage')}
+            >
+              Lineage
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Chevron toggle */}
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={open ? 'Collapse companion panel' : 'Expand companion panel'}
+            className="mr-2 flex h-7 w-7 items-center justify-center rounded text-v2-muted/50 transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+          >
+            {open ? (
+              <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
+            )}
+          </button>
+        </div>
+
+        {/* Content — only rendered when open */}
+        {open && (
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {/* ── Policy tab ── */}
+            <TabsContent value="policy" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center gap-2">
+                  {failCount === 0 ? (
+                    <>
+                      <span className="h-1.5 w-1.5 rounded-full bg-v2-success" />
+                      <span className="font-mono text-[11px] text-v2-success">Ready to submit</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="h-1.5 w-1.5 rounded-full bg-v2-warning" />
+                      <span className="font-mono text-[11px] text-v2-warning">{failCount} issue{failCount !== 1 ? 's' : ''}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Check rows */}
+                <div className="space-y-2">
+                  {checks.map((check) => (
+                    <div key={check.id} className="flex items-start gap-2">
+                      <PolicyIcon status={check.status} />
+                      <div className="min-w-0">
+                        <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
+                          {check.verb}
+                        </span>
+                        <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
+                          {check.detail}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer submit button */}
+                <div className="pt-1 border-t border-v2-border/30">
+                  <button
+                    type="button"
+                    disabled={failCount > 0}
+                    className="rounded-md bg-v2-foreground px-3 py-1.5 font-mono text-[11px] font-medium text-v2-surface transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
+                    title={failCount > 0 ? 'Resolve issues before submitting' : 'Submit for review'}
+                  >
+                    Submit for review
+                  </button>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ── Dry-run tab ── */}
+            <TabsContent value="dryrun" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-4">
+                {!canShowDryRun ? (
+                  <p className="font-mono text-[11px] text-v2-muted/50">
+                    Write a SELECT statement to preview output.
+                  </p>
+                ) : (
+                  <>
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                        Output schema
+                      </span>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] text-v2-muted/60 border border-v2-border/40 transition-colors hover:border-v2-border hover:text-v2-foreground"
+                      >
+                        <Play className="h-2.5 w-2.5" strokeWidth={2} />
+                        Run dry-run
+                      </button>
+                    </div>
+
+                    {/* Output schema table */}
+                    {selectColumns.length === 0 ? (
+                      <p className="font-mono text-[11px] text-v2-muted/50">
+                        Add AS aliases to your SELECT columns for schema preview.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto rounded-lg border border-v2-border/40">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Column</th>
+                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Type</th>
+                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Source</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectColumns.map((col) => (
+                              <tr key={col.alias} className="border-b border-v2-border/20 last:border-0">
+                                <td className="px-3 py-1.5 font-mono text-[11px] text-v2-foreground">{col.alias}</td>
+                                <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/70">{col.type ?? 'computed'}</td>
+                                <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/60">{col.source}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Sample rows */}
+                    <div className="space-y-2">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                        Sample rows
+                      </span>
+                      {selectColumns.length === 0 ? null : (
+                        <div className="overflow-x-auto rounded-lg border border-v2-border/40">
+                          <table className="w-full text-left">
+                            <thead>
+                              <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+                                {selectColumns.map((col) => (
+                                  <th key={col.alias} className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                                    {col.alias}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {SAMPLE_ROWS.map((row, i) => (
+                                <tr key={i} className="border-b border-v2-border/20 last:border-0">
+                                  {selectColumns.map((col) => {
+                                    const val = row[col.alias] ?? (
+                                      col.type === 'TIMESTAMP' ? '2026-05-15T14:22:18Z' :
+                                      col.type === 'TEXT' ? 'fresh' :
+                                      col.type === 'NUMERIC' ? '—' : '—'
+                                    )
+                                    const isNum = isNumericValue(String(val))
+                                    return (
+                                      <td
+                                        key={col.alias}
+                                        className={cn(
+                                          'px-3 py-1.5 font-mono text-[11px] text-v2-foreground',
+                                          isNum ? 'text-right tabular-nums' : '',
+                                        )}
+                                      >
+                                        {val}
+                                      </td>
+                                    )
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      <p className="font-mono text-[9.5px] text-v2-muted/40">
+                        Sample rows · executed against snapshot 2026-05-15 14:22 UTC · ~340ms · 127,432 rows scanned
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* ── Integration tab ── */}
+            <TabsContent value="integration" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-4">
+                {/* On-chain */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                      On-chain (Solidity)
+                      {onchainCount > 1 && (
+                        <span className="ml-2 normal-case text-v2-muted/40">
+                          1 of {onchainCount} destinations
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {!firstOnchain ? (
+                    <p className="font-mono text-[11px] text-v2-muted/50">
+                      Add an on-chain destination in the meta panel to see Solidity integration code.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-v2-border/40 overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
+                        <span className="font-mono text-[9.5px] text-v2-muted/50">Solidity</span>
+                        <CopyButton text={solidityCode} />
+                      </div>
+                      {/* Plain mono block — no Prism Solidity highlight to avoid adding a dep */}
+                      {/* Note: skipping syntax highlight for Solidity/TS; Prism only loaded for SQL */}
+                      <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                        {solidityCode}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+
+                {/* Off-chain TypeScript */}
+                <div className="space-y-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Off-chain (TypeScript)
+                  </span>
+                  <div className="rounded-lg border border-v2-border/40 overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
+                      <span className="font-mono text-[9.5px] text-v2-muted/50">TypeScript</span>
+                      <CopyButton text={tsCode} />
+                    </div>
+                    <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                      {tsCode}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Signing key footer */}
+                <p className="font-mono text-[9.5px] text-v2-muted/40">
+                  Signed by {providerName} · key {sigKey} (secp256k1)
+                </p>
+              </div>
+            </TabsContent>
+
+            {/* ── Lineage tab ── */}
+            <TabsContent value="lineage" className="m-0 h-full">
+              <div className="px-4 py-3">
+                {codeEmpty ? (
+                  <p className="font-mono text-[11px] text-v2-muted/50">
+                    Write a SELECT statement to see field lineage.
+                  </p>
+                ) : selectColumns.length === 0 ? (
+                  <p className="font-mono text-[11px] text-v2-muted/50">
+                    Add AS aliases to your SELECT columns to see lineage.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-v2-border/40">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+                          <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50 w-1/4">Output</th>
+                          <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Derived from</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectColumns.map((col) => {
+                          // Extract field references from the expression
+                          const inputRefs = extractLineageRefs(col.expression, vault)
+                          return (
+                            <tr key={col.alias} className="border-b border-v2-border/20 last:border-0 align-top">
+                              <td className="px-3 py-2 font-mono text-[11px] text-v2-foreground whitespace-nowrap">
+                                {col.alias}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                  {inputRefs.length > 0 ? inputRefs.map((ref, i) => (
+                                    <span
+                                      key={i}
+                                      className="rounded bg-v2-foreground/[0.06] px-1.5 py-0.5 font-mono text-[10.5px] text-v2-muted/80"
+                                    >
+                                      {ref.label}
+                                    </span>
+                                  )) : (
+                                    <span className="font-mono text-[10.5px] text-v2-muted/40">computed</span>
+                                  )}
+                                  {inputRefs.some((r) => r.note) && (
+                                    <span className="font-mono text-[10px] text-v2-muted/40">
+                                      {inputRefs.find((r) => r.note)?.note}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </div>
+        )}
+      </Tabs>
+    </div>
+  )
+}
+
+/** Extract input field references from a SELECT expression for lineage display */
+function extractLineageRefs(
+  expr: string,
+  vault: ConsumerVault | null,
+): { label: string; note?: string }[] {
+  if (!vault) return []
+
+  const results: { label: string; note?: string }[] = []
+  const seen = new Set<string>()
+
+  // Match vault.<slug>.<table>.<field> patterns
+  const qualPattern = /vault\.\w+\.(\w+)\.(\w+)/g
+  let m: RegExpExecArray | null
+  while ((m = qualPattern.exec(expr)) !== null) {
+    const label = `${m[1]}.${m[2]}`
+    if (!seen.has(label)) {
+      seen.add(label)
+      results.push({ label })
+    }
+  }
+
+  // Match bare field names from vault tables (within aggregate expressions)
+  const aggMatch = /^(SUM|AVG|COUNT|MIN|MAX)\s*\(\s*([\s\S]+?)\s*\)\s*$/i.exec(expr)
+  if (aggMatch) {
+    const innerExpr = aggMatch[2]
+    // If inner expr has a dot-chain, it's already matched above
+    if (!innerExpr.includes('.')) {
+      // bare field name — find in vault
+      for (const tbl of vault.tables) {
+        const field = tbl.fields.find((f) => f.name === innerExpr)
+        if (field) {
+          const label = `${tbl.name}.${field.name}`
+          if (!seen.has(label)) {
+            seen.add(label)
+            results.push({ label })
+          }
+        }
+      }
+    }
+  }
+
+  // If nothing found, look for bare table.field references (e.g. CTE aliases
+  // like nav.current_nav, collateral.total_par). Reject pure-numeric matches
+  // so SQL literals like 0.85 don't masquerade as field refs.
+  if (results.length === 0) {
+    const dotPattern = /\b([a-zA-Z_]\w*)\.([a-zA-Z_]\w*)\b/g
+    while ((m = dotPattern.exec(expr)) !== null) {
+      const label = `${m[1]}.${m[2]}`
+      if (!seen.has(label)) {
+        seen.add(label)
+        results.push({ label })
+      }
+    }
+  }
+
+  return results
+}
+
 // ── Private field toast ───────────────────────────────────────────────────────
 
 function PrivateFieldToast({
@@ -1403,6 +2337,10 @@ FROM
   const [privateToastField, setPrivateToastField] = useState<string | null>(null)
   const privateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Companion panel state
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<CompanionTab>('policy')
+
   const version = fromVersion ?? 1
 
   const nameTaken = EXISTING_NAMES.has(name)
@@ -1569,9 +2507,25 @@ FROM
             )}
           </div>
 
-          {/* Middle: code editor */}
+          {/* Middle: code editor + companion panel */}
           <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-v2-border/40 overflow-hidden">
-            <CodeEditorPanel code={code} onChange={setCode} />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <CodeEditorPanel code={code} onChange={setCode} />
+            </div>
+            <CompanionPanel
+              open={panelOpen}
+              onToggle={() => setPanelOpen((v) => !v)}
+              activeTab={activeTab}
+              onTabChange={(t) => {
+                setActiveTab(t)
+                if (!panelOpen) setPanelOpen(true)
+              }}
+              code={code}
+              vault={vault}
+              fieldRefs={fieldRefs}
+              destinations={destinations}
+              name={name}
+            />
           </div>
 
           {/* Right: meta panel */}
