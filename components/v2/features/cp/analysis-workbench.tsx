@@ -517,20 +517,41 @@ function CodeEditorPanel({
 }) {
   const lineCount = code.split('\n').length
 
+  // Font-size and line-height MUST match between the gutter <pre> and the
+  // editor <textarea>, otherwise lines progressively drift and clicks land
+  // on the wrong line. Use absolute pixel line-height to avoid multiplier
+  // rounding mismatches.
+  const FONT_SIZE_PX = 11.5
+  const LINE_HEIGHT_PX = 19
+  const PADDING_PX = 16
+
   return (
-    <div className="relative flex h-full overflow-hidden">
-      {/* Line numbers */}
+    <div className="relative flex h-full min-h-0 overflow-hidden">
+      {/* Line numbers gutter — flex column so the border extends to full height */}
       <div
         aria-hidden="true"
-        className="select-none border-r border-v2-border/30 px-3 pt-4 text-right"
-        style={{ minWidth: '3rem' }}
+        className="flex shrink-0 flex-col select-none border-r border-v2-border/30 text-right"
+        style={{ minWidth: '3rem', paddingLeft: PADDING_PX, paddingRight: 12 }}
       >
-        <pre className="font-mono text-[11px] leading-[1.6] text-v2-muted/30">
+        <pre
+          className="m-0 font-mono text-v2-muted/40"
+          style={{
+            fontSize: `${FONT_SIZE_PX}px`,
+            lineHeight: `${LINE_HEIGHT_PX}px`,
+            paddingTop: PADDING_PX,
+          }}
+        >
           {Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')}
         </pre>
+        {/* Spacer keeps the gutter background + right border running to the
+            bottom of the editor area even when content is short. */}
+        <div className="flex-1" />
       </div>
 
-      {/* Editor */}
+      {/* Editor — `padding` MUST be passed via the prop so it lands on both
+          the textarea AND the highlighted <pre>. Setting padding via the
+          root `style` only offsets the pre (the textarea is absolutely
+          positioned inside the root), which causes a one-line cursor drift. */}
       <div className="flex-1 overflow-auto">
         <Editor
           value={code}
@@ -538,14 +559,14 @@ function CodeEditorPanel({
           highlight={highlightSQL}
           tabSize={2}
           insertSpaces
+          padding={PADDING_PX}
           className="code-editor-root min-h-full"
           textareaClassName="code-editor-textarea outline-none"
           preClassName="code-editor-pre"
           style={{
             fontFamily: 'var(--font-mono, "Geist Mono", monospace)',
-            fontSize: '11.5px',
-            lineHeight: '1.6',
-            padding: '1rem',
+            fontSize: `${FONT_SIZE_PX}px`,
+            lineHeight: `${LINE_HEIGHT_PX}px`,
             minHeight: '100%',
             background: 'transparent',
             color: 'var(--v2-foreground)',
