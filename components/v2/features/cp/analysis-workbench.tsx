@@ -365,13 +365,6 @@ function SchemaPanel({
                         </Tooltip>
                       )
                     })}
-
-                    {/* Lineage hint */}
-                    {tbl.lineageHint && (
-                      <p className="mt-3 pt-3 border-t border-v2-border/40 px-1.5 font-mono text-[11px] text-v2-muted leading-relaxed">
-                        → {tbl.lineageHint}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
