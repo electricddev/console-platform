@@ -50,6 +50,12 @@ import {
   PRIVACY_TONE,
   PRIVACY_LEVELS_ORDERED,
 } from '@/components/v2/features/vault-detail/privacy'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 // ── Prism SQL highlight ───────────────────────────────────────────────────────
 
@@ -207,18 +213,6 @@ function isWrappedInAggregate(code: string, pos: number): boolean {
   return false
 }
 
-// ── Relative time helper ──────────────────────────────────────────────────────
-
-function relativeTime(isoString: string): string {
-  const diffMs = Date.now() - new Date(isoString).getTime()
-  const diffMins = Math.floor(diffMs / 60_000)
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  return `${Math.floor(diffHours / 24)}d ago`
-}
-
 // ── Schema browser — clean room framing ──────────────────────────────────────
 
 function SchemaPanel({
@@ -276,120 +270,126 @@ function SchemaPanel({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-v2-foreground/[0.03]">
-      {/* Panel header */}
-      <div className="border-b border-v2-border px-4 py-3">
-        <p className="font-mono text-[13px] font-medium text-v2-foreground">
-          vault.{slug}
-        </p>
-        <p className="mt-0.5 text-[11px] text-v2-muted truncate">
-          {vault.provider.name} <span className="text-v2-muted/60">·</span>{' '}
-          <span className="font-mono">{relativeTime(vault.lastProviderUpdateAt)}</span>
-        </p>
-      </div>
+    <TooltipProvider delayDuration={250}>
+      <div className="flex h-full flex-col overflow-hidden bg-v2-foreground/[0.03]">
+        {/* Panel header */}
+        <div className="border-b border-v2-border px-4 py-3">
+          <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-v2-muted">
+            Tables
+          </p>
+        </div>
 
-      {/* Table list — accordion */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {vault.tables.map((tbl) => {
-          const isOpen = expanded.has(tbl.name)
-          const tblFieldCounts = countByPrivacy(tbl.fields)
-          return (
-            <div key={tbl.name}>
-              {/* Table row header */}
-              <button
-                type="button"
-                onClick={() => toggleTable(tbl.name)}
-                aria-expanded={isOpen}
-                aria-label={`${isOpen ? 'Collapse' : 'Expand'} table ${tbl.name}`}
-                className="flex w-full items-center gap-1.5 rounded px-2 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
-              >
-                {isOpen ? (
-                  <ChevronDown className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                ) : (
-                  <ChevronRight className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                )}
-                <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-v2-foreground">
-                  {tbl.name}
-                </span>
-                <span className="shrink-0 font-mono text-[11px] text-v2-muted">
-                  {tbl.fields.length} cols
-                </span>
-              </button>
-
-              {/* Expanded: privacy bar + fields + lineage */}
-              {isOpen && (
-                <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1">
-                  {/* Refresh cadence + per-table privacy bar */}
-                  <div className="px-1.5 mt-2 mb-3">
-                    <p className="mb-1.5 font-mono text-[10.5px] text-v2-muted">
-                      refreshes {tbl.refreshCadence}
-                    </p>
-                    <PrivacyBar counts={tblFieldCounts} height="h-px" />
-                  </div>
-
-                  {tbl.fields.map((field) => {
-                    const accessible = isAccessible(field.privacy)
-                    const isPrivate = field.privacy === 'private'
-                    return (
-                      <button
-                        key={field.name}
-                        type="button"
-                        title={`${field.description} — type: ${field.type}`}
-                        onClick={() => handleFieldClick(field, tbl)}
-                        className={cn(
-                          'flex w-full items-center gap-1.5 rounded px-1.5 py-2 text-left transition-colors',
-                          isPrivate
-                            ? 'cursor-not-allowed opacity-50'
-                            : accessible
-                              ? 'hover:bg-v2-foreground/[0.04]'
-                              : 'cursor-not-allowed opacity-50',
-                        )}
-                        aria-disabled={isPrivate || !accessible}
-                      >
-                        <span
-                          className={cn(
-                            'min-w-0 flex-1 truncate font-mono text-[13px]',
-                            accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
-                          )}
-                        >
-                          {field.name}
-                        </span>
-                        {field.kMin !== undefined && (
-                          <span
-                            className="shrink-0 rounded bg-v2-foreground/[0.06] px-1.5 py-px font-mono text-[10.5px] text-v2-muted"
-                            title={`Aggregates must include at least ${field.kMin} distinct identifiers.`}
-                          >
-                            min k={field.kMin}
-                          </span>
-                        )}
-                        <PrivacyChip level={field.privacy} size="sm" mode="operation" />
-                      </button>
-                    )
-                  })}
-
-                  {/* Lineage hint */}
-                  {tbl.lineageHint && (
-                    <p className="mt-3 pt-3 border-t border-v2-border/40 px-1.5 font-mono text-[11px] text-v2-muted leading-relaxed">
-                      → {tbl.lineageHint}
-                    </p>
+        {/* Table list — accordion */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {vault.tables.map((tbl) => {
+            const isOpen = expanded.has(tbl.name)
+            return (
+              <div key={tbl.name}>
+                {/* Table row header */}
+                <button
+                  type="button"
+                  onClick={() => toggleTable(tbl.name)}
+                  aria-expanded={isOpen}
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} table ${tbl.name}`}
+                  className="flex w-full items-center gap-1.5 rounded px-2 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
+                  ) : (
+                    <ChevronRight className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
                   )}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-v2-foreground">
+                    {tbl.name}
+                  </span>
+                  <span className="shrink-0 font-mono text-[11px] text-v2-muted">
+                    {tbl.fields.length} cols
+                  </span>
+                </button>
 
-      {/* Footer */}
-      <div className="border-t border-v2-border px-4 py-3">
-        <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
-          Tap a column to insert.
-        </p>
-        <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
-          Operations limited to your access grant.
-        </p>
+                {/* Expanded: fields + lineage */}
+                {isOpen && (
+                  <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1 mt-1">
+                    {tbl.fields.map((field) => {
+                      const accessible = isAccessible(field.privacy)
+                      const isPrivate = field.privacy === 'private'
+                      return (
+                        <Tooltip key={field.name}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => handleFieldClick(field, tbl)}
+                              className={cn(
+                                'flex w-full items-center gap-1.5 rounded px-1.5 py-2 text-left transition-colors',
+                                isPrivate
+                                  ? 'cursor-not-allowed opacity-50'
+                                  : accessible
+                                    ? 'hover:bg-v2-foreground/[0.04]'
+                                    : 'cursor-not-allowed opacity-50',
+                              )}
+                              aria-disabled={isPrivate || !accessible}
+                            >
+                              <span
+                                className={cn(
+                                  'min-w-0 flex-1 truncate font-mono text-[13px]',
+                                  accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
+                                )}
+                              >
+                                {field.name}
+                              </span>
+                              {field.kMin !== undefined && (
+                                <span className="shrink-0 rounded bg-v2-foreground/[0.06] px-1.5 py-px font-mono text-[10.5px] text-v2-muted">
+                                  min k={field.kMin}
+                                </span>
+                              )}
+                              <PrivacyChip level={field.privacy} size="sm" mode="operation" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8} className="max-w-[280px]">
+                            <div className="flex flex-col gap-1 py-0.5">
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-mono text-[12px] font-medium">{field.name}</span>
+                                <span className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-60">
+                                  {field.type}
+                                </span>
+                              </div>
+                              <p className="text-[11.5px] leading-snug opacity-90">
+                                {field.description}
+                              </p>
+                              {field.kMin !== undefined && (
+                                <p className="text-[10.5px] leading-snug opacity-60">
+                                  Aggregates must include at least {field.kMin} distinct identifiers.
+                                </p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    })}
+
+                    {/* Lineage hint */}
+                    {tbl.lineageHint && (
+                      <p className="mt-3 pt-3 border-t border-v2-border/40 px-1.5 font-mono text-[11px] text-v2-muted leading-relaxed">
+                        → {tbl.lineageHint}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-v2-border px-4 py-3">
+          <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
+            Tap a column to insert.
+          </p>
+          <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
+            Operations limited to your access grant.
+          </p>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
 
