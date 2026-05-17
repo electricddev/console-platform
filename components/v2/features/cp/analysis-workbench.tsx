@@ -2000,7 +2000,7 @@ function verifyHyvePayload(
         }}
         className="flex flex-col h-full"
       >
-        <div className="flex items-center border-b border-v2-border bg-v2-foreground/[0.04]">
+        <div className="flex items-center border-b border-v2-border">
           <TabsList
             variant="line"
             className="h-9 flex-1 w-full justify-start gap-0 rounded-none bg-transparent p-0"
@@ -3110,7 +3110,7 @@ FROM
           </div>
 
           {/* Middle: code editor + companion panel */}
-          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-v2-border/40 overflow-hidden">
+          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-v2-border overflow-hidden">
             <div className="flex-1 min-h-0 overflow-hidden">
               <CodeEditorPanel code={code} onChange={setCode} />
             </div>
