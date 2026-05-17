@@ -1986,7 +1986,7 @@ function verifyHyvePayload(
   return (
     <div
       className={cn(
-        'flex flex-col border-t border-v2-border/60 transition-[height] duration-200',
+        'flex flex-col border-t border-v2-border bg-v2-foreground/[0.03] transition-[height] duration-200',
         open ? 'h-[min(40vh,320px)]' : 'h-auto',
       )}
       style={open ? { height: 'min(40vh, 320px)' } : undefined}
@@ -2000,7 +2000,7 @@ function verifyHyvePayload(
         }}
         className="flex flex-col h-full"
       >
-        <div className="flex items-center border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+        <div className="flex items-center border-b border-v2-border bg-v2-foreground/[0.04]">
           <TabsList
             variant="line"
             className="h-9 flex-1 w-full justify-start gap-0 rounded-none bg-transparent p-0"
@@ -2018,7 +2018,7 @@ function verifyHyvePayload(
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                  'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted data-[state=active]:text-v2-foreground',
                   'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
                   'hover:text-v2-foreground',
                   'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
@@ -2040,7 +2040,7 @@ function verifyHyvePayload(
             type="button"
             onClick={onToggle}
             aria-label={open ? 'Collapse companion panel' : 'Expand companion panel'}
-            className="mr-2 flex h-7 w-7 items-center justify-center rounded text-v2-muted/50 transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+            className="mr-2 flex h-7 w-7 items-center justify-center rounded text-v2-muted transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
           >
             {open ? (
               <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
@@ -2073,7 +2073,7 @@ function verifyHyvePayload(
 
                 {/* ── Section 1: Code ── */}
                 <div className="space-y-2">
-                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Code
                   </p>
                   <div className="space-y-1.5">
@@ -2081,10 +2081,10 @@ function verifyHyvePayload(
                       <div key={check.id} className="flex items-start gap-2">
                         <PolicyIcon status={check.status} />
                         <div className="min-w-0">
-                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
+                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground">
                             {check.verb}
                           </span>
-                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
+                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted">
                             {check.detail}
                           </span>
                         </div>
@@ -2094,8 +2094,8 @@ function verifyHyvePayload(
                 </div>
 
                 {/* ── Section 2: Access & policy ── */}
-                <div className="space-y-2 border-t border-v2-border/30 pt-3">
-                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                <div className="space-y-2 border-t border-v2-border/60 pt-3">
+                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Access &amp; policy
                   </p>
                   <div className="space-y-1.5">
@@ -2103,10 +2103,10 @@ function verifyHyvePayload(
                       <div key={check.id} className="flex items-start gap-2">
                         <PolicyIcon status={check.status} />
                         <div className="min-w-0">
-                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
+                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground">
                             {check.verb}
                           </span>
-                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
+                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted">
                             {check.detail}
                           </span>
                         </div>
@@ -2116,7 +2116,7 @@ function verifyHyvePayload(
                 </div>
 
                 {/* Footer submit button */}
-                <div className="pt-1 border-t border-v2-border/30">
+                <div className="pt-1 border-t border-v2-border/60">
                   <button
                     type="button"
                     disabled={validateFailCount > 0}
@@ -2133,19 +2133,19 @@ function verifyHyvePayload(
             <TabsContent value="dryrun" className="m-0 h-full">
               <div className="px-4 py-3 space-y-4">
                 {!canShowDryRun ? (
-                  <p className="font-mono text-[11px] text-v2-muted/50">
+                  <p className="font-mono text-[11px] text-v2-muted">
                     Write a SELECT statement to preview output.
                   </p>
                 ) : (
                   <>
                     {/* Header */}
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                         Output schema
                       </span>
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] text-v2-muted/60 border border-v2-border/40 transition-colors hover:border-v2-border hover:text-v2-foreground"
+                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] text-v2-muted border border-v2-border/60 transition-colors hover:border-v2-border hover:text-v2-foreground"
                       >
                         <Play className="h-2.5 w-2.5" strokeWidth={2} />
                         Run dry-run
@@ -2154,33 +2154,33 @@ function verifyHyvePayload(
 
                     {/* Output schema table — lineage inline as footnote */}
                     {selectColumns.length === 0 ? (
-                      <p className="font-mono text-[11px] text-v2-muted/50">
+                      <p className="font-mono text-[11px] text-v2-muted">
                         Add AS aliases to your SELECT columns for schema preview.
                       </p>
                     ) : (
-                      <div className="overflow-x-auto rounded-lg border border-v2-border/40">
+                      <div className="overflow-x-auto rounded-lg border border-v2-border/60">
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
-                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Column</th>
-                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Type</th>
-                              <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Source</th>
+                            <tr className="border-b border-v2-border/60 bg-v2-foreground/[0.04]">
+                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Column</th>
+                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Type</th>
+                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Source</th>
                             </tr>
                           </thead>
                           <tbody>
                             {selectColumns.map((col) => {
                               const inputRefs = extractLineageRefs(col.expression, vault)
                               return (
-                                <tr key={col.alias} className="border-b border-v2-border/20 last:border-0 align-top">
+                                <tr key={col.alias} className="border-b border-v2-border/60 last:border-0 align-top">
                                   <td className="px-3 py-1.5 font-mono text-[11px] text-v2-foreground">
                                     {col.alias}
                                     {inputRefs.length > 0 && (
                                       <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                                        <span className="font-mono text-[9.5px] text-v2-muted/40">←</span>
+                                        <span className="font-mono text-[9.5px] text-v2-muted">←</span>
                                         {inputRefs.map((ref, i) => (
                                           <span
                                             key={i}
-                                            className="rounded bg-v2-foreground/[0.05] px-1 py-px font-mono text-[9.5px] text-v2-muted/50"
+                                            className="rounded bg-v2-foreground/[0.05] px-1 py-px font-mono text-[9.5px] text-v2-muted"
                                           >
                                             {ref.label}
                                           </span>
@@ -2188,8 +2188,8 @@ function verifyHyvePayload(
                                       </div>
                                     )}
                                   </td>
-                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/70">{col.type ?? 'computed'}</td>
-                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/60">{col.source}</td>
+                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted">{col.type ?? 'computed'}</td>
+                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted">{col.source}</td>
                                 </tr>
                               )
                             })}
@@ -2200,16 +2200,16 @@ function verifyHyvePayload(
 
                     {/* Sample rows */}
                     <div className="space-y-2">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                         Sample rows
                       </span>
                       {selectColumns.length === 0 ? null : (
-                        <div className="overflow-x-auto rounded-lg border border-v2-border/40">
+                        <div className="overflow-x-auto rounded-lg border border-v2-border/60">
                           <table className="w-full text-left">
                             <thead>
-                              <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
+                              <tr className="border-b border-v2-border/60 bg-v2-foreground/[0.04]">
                                 {selectColumns.map((col) => (
-                                  <th key={col.alias} className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                                  <th key={col.alias} className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                                     {col.alias}
                                   </th>
                                 ))}
@@ -2217,7 +2217,7 @@ function verifyHyvePayload(
                             </thead>
                             <tbody>
                               {SAMPLE_ROWS.map((row, i) => (
-                                <tr key={i} className="border-b border-v2-border/20 last:border-0">
+                                <tr key={i} className="border-b border-v2-border/60 last:border-0">
                                   {selectColumns.map((col) => {
                                     const val = row[col.alias] ?? (
                                       col.type === 'TIMESTAMP' ? '2026-05-15T14:22:18Z' :
@@ -2244,7 +2244,7 @@ function verifyHyvePayload(
                         </div>
                       )}
 
-                      <p className="font-mono text-[9.5px] text-v2-muted/40">
+                      <p className="font-mono text-[9.5px] text-v2-muted">
                         Sample rows · executed against snapshot 2026-05-15 14:22 UTC · ~340ms · 127,432 rows scanned
                       </p>
                     </div>
@@ -2257,7 +2257,7 @@ function verifyHyvePayload(
             <TabsContent value="tests" className="m-0 h-full">
               <div className="px-4 py-3 space-y-3">
                 {selectColumns.length === 0 ? (
-                  <p className="font-mono text-[11px] text-v2-muted/50">
+                  <p className="font-mono text-[11px] text-v2-muted">
                     Write a SELECT statement to define assertions on output columns.
                   </p>
                 ) : (
@@ -2267,20 +2267,20 @@ function verifyHyvePayload(
                       {assertions.map((a) => (
                         <div
                           key={a.id}
-                          className="flex items-center gap-2 rounded-lg border border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-2"
+                          className="flex items-center gap-2 rounded-lg border border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-2"
                         >
                           <div className="min-w-0 flex-1">
                             <span className="font-mono text-[11px] text-v2-foreground">
                               {a.label}
                             </span>
-                            <span className="ml-2 font-mono text-[10px] text-v2-muted/50">
+                            <span className="ml-2 font-mono text-[10px] text-v2-muted">
                               {a.detail}
                             </span>
                           </div>
                           <button
                             type="button"
                             title="Configure assertion"
-                            className="shrink-0 rounded p-1 text-v2-muted/40 transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+                            className="shrink-0 rounded p-1 text-v2-muted transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
                           >
                             <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                               <path fillRule="evenodd" d="M8 1.5a.5.5 0 0 1 .5.5v1.05A4.505 4.505 0 0 1 12 7.5a.5.5 0 0 1-1 0A3.5 3.5 0 0 0 7.5 4a3.5 3.5 0 0 0-3.498 3.322L4 7.5a.5.5 0 0 1-1 0 4.505 4.505 0 0 1 3.5-4.45V2a.5.5 0 0 1 .5-.5zM2.5 9a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
@@ -2290,7 +2290,7 @@ function verifyHyvePayload(
                             className={cn(
                               'shrink-0 rounded-full px-2 py-0.5 font-mono text-[9.5px]',
                               a.status === 'will-run'
-                                ? 'bg-v2-foreground/[0.06] text-v2-muted/70'
+                                ? 'bg-v2-foreground/[0.06] text-v2-muted'
                                 : a.status === 'passed'
                                   ? 'bg-v2-success/10 text-v2-success'
                                   : 'bg-v2-danger/10 text-v2-danger',
@@ -2305,13 +2305,13 @@ function verifyHyvePayload(
                     {/* Add assertion */}
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-v2-border/50 px-3 py-1.5 font-mono text-[10.5px] text-v2-muted/60 transition-colors hover:border-v2-border hover:text-v2-foreground"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-v2-border/60 px-3 py-1.5 font-mono text-[10.5px] text-v2-muted transition-colors hover:border-v2-border hover:text-v2-foreground"
                     >
                       <Plus className="h-3 w-3" strokeWidth={2} />
                       Add assertion
                     </button>
 
-                    <p className="font-mono text-[9.5px] text-v2-muted/40">
+                    <p className="font-mono text-[9.5px] text-v2-muted">
                       {assertions.length} assertion{assertions.length !== 1 ? 's' : ''} · all execute before the signed payload is published
                     </p>
                   </>
@@ -2325,15 +2325,15 @@ function verifyHyvePayload(
 
                 {/* Next executions */}
                 <div className="space-y-2">
-                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Next 5 executions
                   </p>
                   {triggerKind === 'manual' ? (
-                    <p className="font-mono text-[11px] text-v2-muted/50">
+                    <p className="font-mono text-[11px] text-v2-muted">
                       Triggered on demand only — no scheduled executions.
                     </p>
                   ) : triggerKind === 'event' ? (
-                    <p className="font-mono text-[11px] text-v2-muted/50">
+                    <p className="font-mono text-[11px] text-v2-muted">
                       On {eventSource || '(select an event source)'}
                     </p>
                   ) : nextExecutions === null ? (
@@ -2344,7 +2344,7 @@ function verifyHyvePayload(
                     <ol className="space-y-1">
                       {nextExecutions.map((d, i) => (
                         <li key={i} className="flex items-center gap-2">
-                          <span className="font-mono text-[9.5px] text-v2-muted/40 w-4 text-right tabular-nums">
+                          <span className="font-mono text-[9.5px] text-v2-muted w-4 text-right tabular-nums">
                             {i + 1}
                           </span>
                           <span className="font-mono text-[11px] text-v2-foreground tabular-nums">
@@ -2357,27 +2357,27 @@ function verifyHyvePayload(
                 </div>
 
                 {/* Cost estimate */}
-                <div className="space-y-2 border-t border-v2-border/30 pt-3">
-                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                <div className="space-y-2 border-t border-v2-border/60 pt-3">
+                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Cost estimate
                   </p>
 
                   {/* Per-execution breakdown */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10.5px] text-v2-muted/70">Compute</span>
+                      <span className="font-mono text-[10.5px] text-v2-muted">Compute</span>
                       <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
                         ${COMPUTE_COST_PER_EXEC.toFixed(4)} per execution
                       </span>
                     </div>
                     {onchainDests.length === 0 ? (
-                      <p className="font-mono text-[10.5px] text-v2-muted/50">
+                      <p className="font-mono text-[10.5px] text-v2-muted">
                         Add a destination in the meta panel to estimate gas cost.
                       </p>
                     ) : (
                       onchainDests.map((d, i) => (
                         <div key={i} className="flex items-center justify-between">
-                          <span className="font-mono text-[10.5px] text-v2-muted/70">
+                          <span className="font-mono text-[10.5px] text-v2-muted">
                             {d.chain} gas · {d.label || d.address.slice(0, 8) + '…'}
                           </span>
                           <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
@@ -2390,12 +2390,12 @@ function verifyHyvePayload(
 
                   {/* Monthly projection */}
                   {triggerKind === 'cron' && runsIn30Days > 0 && onchainDests.length > 0 && (
-                    <div className="rounded-lg border border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-2 mt-1 space-y-1">
+                    <div className="rounded-lg border border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-2 mt-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10.5px] text-v2-muted/70">Executions / 30 days</span>
+                        <span className="font-mono text-[10.5px] text-v2-muted">Executions / 30 days</span>
                         <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">{runsIn30Days.toLocaleString()}</span>
                       </div>
-                      <div className="flex items-center justify-between border-t border-v2-border/20 pt-1">
+                      <div className="flex items-center justify-between border-t border-v2-border/60 pt-1">
                         <span className="font-mono text-[10.5px] font-medium text-v2-foreground">Monthly total</span>
                         <span className="font-mono text-[11px] font-medium tabular-nums text-v2-foreground">
                           ~${monthlyCost.toFixed(2)}
@@ -2404,7 +2404,7 @@ function verifyHyvePayload(
                     </div>
                   )}
 
-                  <p className="font-mono text-[9.5px] text-v2-muted/40 leading-snug">
+                  <p className="font-mono text-[9.5px] text-v2-muted leading-snug">
                     Estimates are illustrative — actual gas varies with network conditions.
                   </p>
                 </div>
@@ -2417,26 +2417,26 @@ function verifyHyvePayload(
                 {/* On-chain */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                       On-chain (Solidity)
                       {onchainCount > 1 && (
-                        <span className="ml-2 normal-case text-v2-muted/40">
+                        <span className="ml-2 normal-case text-v2-muted">
                           1 of {onchainCount} destinations
                         </span>
                       )}
                     </span>
                   </div>
                   {!firstOnchain ? (
-                    <p className="font-mono text-[11px] text-v2-muted/50">
+                    <p className="font-mono text-[11px] text-v2-muted">
                       Add an on-chain destination in the meta panel to see Solidity integration code.
                     </p>
                   ) : (
-                    <div className="rounded-lg border border-v2-border/40 overflow-hidden">
-                      <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
-                        <span className="font-mono text-[9.5px] text-v2-muted/50">Solidity</span>
+                    <div className="rounded-lg border border-v2-border/60 overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-1.5">
+                        <span className="font-mono text-[9.5px] text-v2-muted">Solidity</span>
                         <CopyButton text={solidityCode} />
                       </div>
-                      <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                      <pre className="overflow-x-auto p-4 font-mono text-[10.5px] leading-relaxed text-v2-foreground whitespace-pre">
                         {solidityCode}
                       </pre>
                     </div>
@@ -2445,26 +2445,26 @@ function verifyHyvePayload(
 
                 {/* Off-chain TypeScript */}
                 <div className="space-y-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Off-chain (TypeScript)
                   </span>
-                  <div className="rounded-lg border border-v2-border/40 overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
-                      <span className="font-mono text-[9.5px] text-v2-muted/50">TypeScript</span>
+                  <div className="rounded-lg border border-v2-border/60 overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-1.5">
+                      <span className="font-mono text-[9.5px] text-v2-muted">TypeScript</span>
                       <CopyButton text={tsCode} />
                     </div>
-                    <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                    <pre className="overflow-x-auto p-4 font-mono text-[10.5px] leading-relaxed text-v2-foreground whitespace-pre">
                       {tsCode}
                     </pre>
                   </div>
                 </div>
 
                 {/* Signature verification */}
-                <div className="space-y-2 border-t border-v2-border/30 pt-3">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                <div className="space-y-2 border-t border-v2-border/60 pt-3">
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
                     Signature verification
                   </span>
-                  <p className="text-[11.5px] leading-relaxed text-v2-muted/70">
+                  <p className="text-[11.5px] leading-relaxed text-v2-muted">
                     Every payload published by Hyve is signed with the provider&apos;s secp256k1 key using
                     Ethereum&apos;s personal_sign convention — keccak256 over the ABI-encoded (payload, asOf) tuple.
                     Verify on-chain with Solidity&apos;s <code className="font-mono text-[10.5px]">ecrecover</code>,
@@ -2472,16 +2472,16 @@ function verifyHyvePayload(
                     The signer address for this vault is registered in the Hyve registry contract and rotated
                     quarterly with a 72-hour notice period.
                   </p>
-                  <div className="rounded-lg border border-v2-border/40 overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
-                      <span className="font-mono text-[9.5px] text-v2-muted/50">TypeScript · verify</span>
+                  <div className="rounded-lg border border-v2-border/60 overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-1.5">
+                      <span className="font-mono text-[9.5px] text-v2-muted">TypeScript · verify</span>
                       <CopyButton text={verifyTsCode} />
                     </div>
-                    <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                    <pre className="overflow-x-auto p-4 font-mono text-[10.5px] leading-relaxed text-v2-foreground whitespace-pre">
                       {verifyTsCode}
                     </pre>
                   </div>
-                  <p className="font-mono text-[9.5px] text-v2-muted/40">
+                  <p className="font-mono text-[9.5px] text-v2-muted">
                     Signed by {providerName} · key {sigKey} (secp256k1)
                   </p>
                 </div>
