@@ -1986,7 +1986,7 @@ function verifyHyvePayload(
   return (
     <div
       className={cn(
-        'flex flex-col border-t-2 border-v2-border bg-v2-foreground/[0.03] transition-[height] duration-200',
+        'flex flex-col border-t border-v2-border bg-v2-foreground/[0.03] transition-[height] duration-200',
         open ? 'h-[min(40vh,320px)]' : 'h-auto',
       )}
       style={open ? { height: 'min(40vh, 320px)' } : undefined}
@@ -3090,9 +3090,9 @@ FROM
         </div>
 
         {/* 3-column grid */}
-        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border-2 border-v2-border rounded-2xl overflow-hidden bg-v2-surface shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-12px_oklch(0_0_0/0.08)]">
+        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border border-v2-border rounded-2xl overflow-hidden bg-v2-surface shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-12px_oklch(0_0_0/0.08)]">
           {/* Left: schema browser */}
-          <div className="hidden xl:flex xl:flex-col border-r-2 border-v2-border overflow-hidden">
+          <div className="hidden xl:flex xl:flex-col border-r border-v2-border overflow-hidden">
             {vault ? (
               <SchemaPanel
                 vault={vault}
@@ -3110,7 +3110,7 @@ FROM
           </div>
 
           {/* Middle: code editor + companion panel */}
-          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b-2 xl:border-b-0 xl:border-r-2 border-v2-border overflow-hidden">
+          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-v2-border overflow-hidden">
             <div className="flex-1 min-h-0 overflow-hidden">
               <CodeEditorPanel code={code} onChange={setCode} />
             </div>
