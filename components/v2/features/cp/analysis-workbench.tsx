@@ -733,6 +733,7 @@ type SubmitDrawerProps = {
   code: string
   fieldRefs: FieldRef[]
   hasViolations: boolean
+  assertionCount: number
 }
 
 function SubmitDrawer({
@@ -749,6 +750,7 @@ function SubmitDrawer({
   code,
   fieldRefs,
   hasViolations,
+  assertionCount,
 }: SubmitDrawerProps) {
   const [note, setNote] = useState('')
 
@@ -832,6 +834,13 @@ function SubmitDrawer({
                     )}
                   </span>
                 </Row>
+                {assertionCount > 0 && (
+                  <Row label="Assertions">
+                    <span className="text-[12px] text-v2-foreground">
+                      {assertionCount} assertion{assertionCount !== 1 ? 's' : ''} configured
+                    </span>
+                  </Row>
+                )}
               </dl>
             </Surface>
           </section>
@@ -1030,7 +1039,7 @@ function VaultPicker({ open, onSelect, onCancel }: VaultPickerProps) {
 
 // ── Companion panel helpers ───────────────────────────────────────────────────
 
-type CompanionTab = 'policy' | 'dryrun' | 'integration' | 'lineage'
+type CompanionTab = 'validate' | 'dryrun' | 'tests' | 'schedule' | 'integration'
 
 /**
  * Attempt to extract SELECT-list aliases + their underlying expressions from
@@ -1384,6 +1393,406 @@ function buildPolicyChecksWithKMin({
   return base
 }
 
+// ── SQL hygiene checks (Code section of Validate tab) ────────────────────────
+
+type CodeCheck = {
+  id: string
+  status: PolicyCheckStatus
+  verb: string
+  detail: string
+}
+
+function buildCodeChecks(code: string): CodeCheck[] {
+  const checks: CodeCheck[] = []
+  const stripped = code.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim()
+
+  // 1. Empty body / no SELECT
+  const hasSelect = /\bSELECT\b/i.test(stripped)
+  if (!hasSelect) {
+    checks.push({ id: 'code-select', status: 'fail', verb: 'SELECT', detail: 'No SELECT statement found' })
+  } else {
+    checks.push({ id: 'code-select', status: 'pass', verb: 'SELECT', detail: 'SELECT statement present' })
+  }
+
+  // 2. No FROM clause
+  const hasFrom = /\bFROM\b/i.test(stripped)
+  if (hasSelect && !hasFrom) {
+    checks.push({ id: 'code-from', status: 'fail', verb: 'FROM', detail: 'No FROM clause — query needs a data source' })
+  } else if (hasFrom) {
+    checks.push({ id: 'code-from', status: 'pass', verb: 'FROM', detail: 'FROM clause present' })
+  }
+
+  // 3. Unbalanced parens
+  let parenDepth = 0
+  for (const ch of stripped) {
+    if (ch === '(') parenDepth++
+    else if (ch === ')') parenDepth--
+  }
+  if (parenDepth !== 0) {
+    checks.push({
+      id: 'code-parens',
+      status: 'fail',
+      verb: 'Parentheses',
+      detail: parenDepth > 0 ? `${parenDepth} unclosed opening paren${parenDepth !== 1 ? 's' : ''}` : `${Math.abs(parenDepth)} extra closing paren${Math.abs(parenDepth) !== 1 ? 's' : ''}`,
+    })
+  }
+
+  // 4. Trailing operator (WHERE x = at end, or dangling AND/OR/=/</>)
+  const trailingOp = /(?:=|<>|!=|>=|<=|>|<|\bAND\b|\bOR\b|\bWHERE\b)\s*$/i.test(stripped)
+  if (trailingOp) {
+    checks.push({ id: 'code-trailing-op', status: 'fail', verb: 'Trailing operator', detail: 'Expression ends with an incomplete operator — likely a partial WHERE clause' })
+  }
+
+  // 5. SELECT * (warn)
+  if (/SELECT\s+\*/i.test(stripped)) {
+    checks.push({
+      id: 'code-select-star',
+      status: 'warn',
+      verb: 'SELECT *',
+      detail: 'Wildcard detected — explicit column names recommended for deterministic signed payloads',
+    })
+  }
+
+  // 6. Implicit join (FROM A, B without JOIN … ON)
+  const fromClauseMatch = /\bFROM\b([\s\S]*?)(?:\bWHERE\b|\bGROUP\s+BY\b|\bORDER\s+BY\b|\bHAVING\b|\bLIMIT\b|;|$)/i.exec(stripped)
+  if (fromClauseMatch) {
+    const fromBody = fromClauseMatch[1]
+    // Comma-separated tables without explicit JOIN keyword
+    const hasCommaJoin = /\b\w+\b\s*,\s*\b\w+\b/.test(fromBody) && !/\bJOIN\b/i.test(fromBody)
+    if (hasCommaJoin) {
+      checks.push({
+        id: 'code-implicit-join',
+        status: 'warn',
+        verb: 'Implicit join',
+        detail: 'Comma-separated FROM tables without ON clause — use explicit JOIN … ON for clarity',
+      })
+    }
+  }
+
+  return checks
+}
+
+// ── Cron parser — next N execution times ────────────────────────────────────
+
+/**
+ * Minimal 5-field cron parser: min hr dom mo dow.
+ * Handles: * (any), n (literal), n/step, a-b (range), a,b,c (list).
+ * Does NOT handle: L, W, #, ? (Quartz extensions). Returns null on parse error.
+ */
+function parseCronField(
+  field: string,
+  min: number,
+  max: number,
+): number[] | null {
+  const values: number[] = []
+
+  for (const part of field.split(',')) {
+    if (part === '*') {
+      for (let i = min; i <= max; i++) values.push(i)
+      continue
+    }
+    const stepMatch = /^(\*|\d+(?:-\d+)?)\s*\/\s*(\d+)$/.exec(part)
+    if (stepMatch) {
+      const step = parseInt(stepMatch[2], 10)
+      if (isNaN(step) || step <= 0) return null
+      let start = min
+      let end = max
+      if (stepMatch[1] !== '*') {
+        const rangeParts = stepMatch[1].split('-')
+        start = parseInt(rangeParts[0], 10)
+        end = rangeParts[1] !== undefined ? parseInt(rangeParts[1], 10) : max
+        if (isNaN(start) || isNaN(end)) return null
+      }
+      for (let i = start; i <= end; i += step) values.push(i)
+      continue
+    }
+    const rangeMatch = /^(\d+)-(\d+)$/.exec(part)
+    if (rangeMatch) {
+      const lo = parseInt(rangeMatch[1], 10)
+      const hi = parseInt(rangeMatch[2], 10)
+      if (isNaN(lo) || isNaN(hi) || lo > hi) return null
+      for (let i = lo; i <= hi; i++) values.push(i)
+      continue
+    }
+    const literal = parseInt(part, 10)
+    if (isNaN(literal)) return null
+    if (literal < min || literal > max) return null
+    values.push(literal)
+  }
+
+  // Deduplicate and sort
+  return Array.from(new Set(values)).sort((a, b) => a - b)
+}
+
+function getNextCronExecutions(expr: string, from: Date, count: number): Date[] | null {
+  const fields = expr.trim().split(/\s+/)
+  if (fields.length !== 5) return null
+
+  const [minField, hrField, domField, moField, dowField] = fields as [string, string, string, string, string]
+
+  const minutes = parseCronField(minField, 0, 59)
+  const hours = parseCronField(hrField, 0, 23)
+  const doms = parseCronField(domField, 1, 31)
+  const months = parseCronField(moField, 1, 12)
+  const dows = parseCronField(dowField, 0, 6)
+
+  if (!minutes || !hours || !doms || !months || !dows) return null
+  if (
+    minutes.length === 0 ||
+    hours.length === 0 ||
+    doms.length === 0 ||
+    months.length === 0 ||
+    dows.length === 0
+  ) return null
+
+  const results: Date[] = []
+
+  // Start from the next minute
+  const cursor = new Date(from)
+  cursor.setSeconds(0, 0)
+  cursor.setMinutes(cursor.getMinutes() + 1)
+
+  // Safety limit: search up to 2 years out (to avoid infinite loop on bad input)
+  const limit = new Date(from)
+  limit.setFullYear(limit.getFullYear() + 2)
+
+  while (results.length < count && cursor < limit) {
+    // Check month (1-based)
+    if (!months.includes(cursor.getMonth() + 1)) {
+      // Jump to first day of next matching month
+      cursor.setMonth(cursor.getMonth() + 1, 1)
+      cursor.setHours(0, 0, 0, 0)
+      continue
+    }
+
+    // Check DOM and DOW
+    const domOk = doms.includes(cursor.getDate())
+    const dowOk = dows.includes(cursor.getDay())
+    // Standard cron: if both dom and dow are non-wildcard, either matching qualifies.
+    // If one is *, only the non-* is checked. Simplified: treat * as "match any".
+    const domIsWild = domField === '*'
+    const dowIsWild = dowField === '*'
+    let dayOk: boolean
+    if (!domIsWild && !dowIsWild) {
+      dayOk = domOk || dowOk
+    } else {
+      dayOk = domOk && dowOk
+    }
+
+    if (!dayOk) {
+      cursor.setDate(cursor.getDate() + 1)
+      cursor.setHours(0, 0, 0, 0)
+      continue
+    }
+
+    // Check hour
+    if (!hours.includes(cursor.getHours())) {
+      // Jump to next valid hour
+      const nextHour = hours.find((h) => h > cursor.getHours())
+      if (nextHour !== undefined) {
+        cursor.setHours(nextHour, 0, 0, 0)
+      } else {
+        cursor.setDate(cursor.getDate() + 1)
+        cursor.setHours(0, 0, 0, 0)
+      }
+      continue
+    }
+
+    // Check minute
+    if (!minutes.includes(cursor.getMinutes())) {
+      const nextMin = minutes.find((m) => m > cursor.getMinutes())
+      if (nextMin !== undefined) {
+        cursor.setMinutes(nextMin, 0, 0)
+      } else {
+        cursor.setHours(cursor.getHours() + 1, 0, 0, 0)
+      }
+      continue
+    }
+
+    results.push(new Date(cursor))
+    cursor.setMinutes(cursor.getMinutes() + 1, 0, 0)
+  }
+
+  if (results.length < count && cursor >= limit) return null
+  return results
+}
+
+function formatExecutionTime(d: Date): string {
+  // Format as "Mon 19 May 2026 · 14:00 UTC"
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const dow = days[d.getUTCDay()]
+  const dom = d.getUTCDate()
+  const mo = months[d.getUTCMonth()]
+  const yr = d.getUTCFullYear()
+  const hh = String(d.getUTCHours()).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  return `${dow} ${dom} ${mo} ${yr} · ${hh}:${mm} UTC`
+}
+
+// ── Cost estimate helpers ─────────────────────────────────────────────────────
+
+const GAS_PER_WRITE: Record<OnchainDest['chain'], number> = {
+  ETH: 0.42,
+  BASE: 0.008,
+  ARB: 0.04,
+  OP: 0.012,
+}
+
+const COMPUTE_COST_PER_EXEC = 0.0028
+
+/**
+ * Count how many times a cron expression fires in the next 30 days.
+ * Uses the same parser; caps at 10_000 to avoid pathological cases.
+ */
+function countCronExecutionsIn30Days(expr: string): number | null {
+  const now = new Date()
+  const horizon = new Date(now)
+  horizon.setDate(horizon.getDate() + 30)
+
+  const fields = expr.trim().split(/\s+/)
+  if (fields.length !== 5) return null
+
+  const [minField, hrField, domField, moField, dowField] = fields as [string, string, string, string, string]
+
+  const minutes = parseCronField(minField, 0, 59)
+  const hours = parseCronField(hrField, 0, 23)
+  const doms = parseCronField(domField, 1, 31)
+  const months = parseCronField(moField, 1, 12)
+  const dows = parseCronField(dowField, 0, 6)
+
+  if (!minutes || !hours || !doms || !months || !dows) return null
+
+  // Fast approximate count for common patterns
+  const APPROX_DAYS = 30
+  const minutesPerHour = minutes.length
+  const hoursPerDay = hours.length
+  const domIsWild = domField === '*'
+  const dowIsWild = dowField === '*'
+
+  if (domIsWild && dowIsWild) {
+    // Approximate: use 30 days; months constraint rarely matters for 30-day window
+    return minutesPerHour * hoursPerDay * APPROX_DAYS
+  }
+
+  // For constrained dom/dow, iterate
+  let count = 0
+  const cursor = new Date(now)
+  cursor.setMinutes(cursor.getMinutes() + 1, 0, 0)
+
+  while (cursor < horizon && count < 10000) {
+    if (!months.includes(cursor.getMonth() + 1)) {
+      cursor.setMonth(cursor.getMonth() + 1, 1)
+      cursor.setHours(0, 0, 0, 0)
+      continue
+    }
+    const domOk = doms.includes(cursor.getDate())
+    const dowOk = dows.includes(cursor.getDay())
+    let dayOk: boolean
+    if (!domIsWild && !dowIsWild) {
+      dayOk = domOk || dowOk
+    } else {
+      dayOk = domOk && dowOk
+    }
+
+    if (!dayOk) {
+      cursor.setDate(cursor.getDate() + 1)
+      cursor.setHours(0, 0, 0, 0)
+      continue
+    }
+
+    if (!hours.includes(cursor.getHours())) {
+      const nextH = hours.find((h) => h > cursor.getHours())
+      if (nextH !== undefined) cursor.setHours(nextH, 0, 0, 0)
+      else { cursor.setDate(cursor.getDate() + 1); cursor.setHours(0, 0, 0, 0) }
+      continue
+    }
+
+    if (!minutes.includes(cursor.getMinutes())) {
+      const nextM = minutes.find((m) => m > cursor.getMinutes())
+      if (nextM !== undefined) cursor.setMinutes(nextM, 0, 0)
+      else cursor.setHours(cursor.getHours() + 1, 0, 0, 0)
+      continue
+    }
+
+    count++
+    cursor.setMinutes(cursor.getMinutes() + 1, 0, 0)
+  }
+
+  return count
+}
+
+// ── Assertion types and builders ─────────────────────────────────────────────
+
+type AssertionStatus = 'will-run' | 'passed' | 'failed'
+
+type Assertion = {
+  id: string
+  label: string
+  detail: string
+  status: AssertionStatus
+}
+
+function buildAssertions(columns: SelectColumn[]): Assertion[] {
+  const assertions: Assertion[] = []
+
+  for (const col of columns) {
+    const t = (col.type ?? '').toUpperCase()
+    const isRate = /rate|ratio|coverage|ltv/i.test(col.alias)
+
+    if (t === 'NUMERIC' || t === 'INT' || t === 'FLOAT' || (!t && isRate)) {
+      // Range check: special case ratios (advance_rate, ltv, coverage etc.)
+      // are bounded; treat unknown-type columns whose names look like ratios
+      // as ratios too (covers `least(..., ...) AS advance_rate`).
+      assertions.push({
+        id: `${col.alias}-range`,
+        label: isRate ? `${col.alias} ∈ [0, 1]` : `${col.alias} ∈ [0, ∞)`,
+        detail: isRate ? 'Value must be a valid ratio between 0 and 1' : 'Value must be non-negative',
+        status: 'will-run',
+      })
+      // Null check
+      assertions.push({
+        id: `${col.alias}-notnull`,
+        label: `${col.alias} not null`,
+        detail: 'Column must not contain null values',
+        status: 'will-run',
+      })
+    } else if (t === 'TIMESTAMP' || t === 'TIMESTAMPTZ') {
+      assertions.push({
+        id: `${col.alias}-freshness`,
+        label: `${col.alias} within 1 hour of now`,
+        detail: 'Freshness check — data must be ingested within the last hour at execution time',
+        status: 'will-run',
+      })
+    } else if (t === 'TEXT' || t === 'VARCHAR') {
+      assertions.push({
+        id: `${col.alias}-notempty`,
+        label: `${col.alias} not empty`,
+        detail: 'Text column must be non-null and non-empty string',
+        status: 'will-run',
+      })
+    } else if (t === 'BOOLEAN' || t === 'BOOL') {
+      assertions.push({
+        id: `${col.alias}-notnull`,
+        label: `${col.alias} not null`,
+        detail: 'Boolean column must have a definite true/false value',
+        status: 'will-run',
+      })
+    } else {
+      // Unknown / computed type — still add a not-null check so every output
+      // column has at least one assertion.
+      assertions.push({
+        id: `${col.alias}-notnull`,
+        label: `${col.alias} not null`,
+        detail: 'Column must not be null',
+        status: 'will-run',
+      })
+    }
+  }
+
+  return assertions
+}
+
 // ── Companion panel ───────────────────────────────────────────────────────────
 
 type CompanionPanelProps = {
@@ -1396,6 +1805,9 @@ type CompanionPanelProps = {
   fieldRefs: FieldRef[]
   destinations: Destination[]
   name: string
+  triggerKind: TriggerKind
+  cronExpr: string
+  eventSource: string
 }
 
 /** Status icon for a policy check row */
@@ -1460,17 +1872,46 @@ function CompanionPanel({
   fieldRefs,
   destinations,
   name,
+  triggerKind,
+  cronExpr,
+  eventSource,
 }: CompanionPanelProps) {
-  const checks = buildPolicyChecksWithKMin({ fieldRefs, destinations, name, vault })
-  const failCount = checks.filter((c) => c.status === 'fail').length
+  // ── Access & policy checks
+  const policyChecks = buildPolicyChecksWithKMin({ fieldRefs, destinations, name, vault })
+  const policyFailCount = policyChecks.filter((c) => c.status === 'fail').length
+
+  // ── Code hygiene checks
+  const codeChecks = buildCodeChecks(code)
+  const codeFailCount = codeChecks.filter((c) => c.status === 'fail').length
+
+  // Total badge on the Validate tab
+  const validateFailCount = codeFailCount + policyFailCount
 
   const selectColumns = parseSelectColumns(code, vault)
   const hasFrom = hasFromClause(code)
   const codeEmpty = code.trim().length === 0 || !hasFrom
 
-  // First on-chain destination for Integration tab
-  const firstOnchain = destinations.find((d): d is OnchainDest => d.kind === 'onchain') ?? null
-  const onchainCount = destinations.filter((d) => d.kind === 'onchain').length
+  // ── Assertions for Tests tab
+  const assertions = buildAssertions(selectColumns)
+
+  // ── Schedule & Cost tab
+  const NOW = new Date()
+  const nextExecutions =
+    triggerKind === 'cron'
+      ? getNextCronExecutions(cronExpr, NOW, 5)
+      : null
+
+  const onchainDests = destinations.filter((d): d is OnchainDest => d.kind === 'onchain')
+  const gasPerExec = onchainDests.reduce((sum, d) => sum + (GAS_PER_WRITE[d.chain] ?? 0), 0)
+  const totalCostPerExec = COMPUTE_COST_PER_EXEC + gasPerExec
+
+  const runsIn30Days =
+    triggerKind === 'cron' ? (countCronExecutionsIn30Days(cronExpr) ?? 0) : 0
+  const monthlyCost = runsIn30Days * totalCostPerExec
+
+  // ── Integration tab
+  const firstOnchain = onchainDests[0] ?? null
+  const onchainCount = onchainDests.length
 
   const analysisSlug = name.trim() || 'analysis_name'
   const onchainAddr = firstOnchain ? firstOnchain.address : '0x0000000000000000000000000000000000000000'
@@ -1512,15 +1953,34 @@ console.log(result.signature)       // 0x...`
   const providerName = vault?.provider.name ?? 'Apollo Asset Mgmt'
   const sigKey = '0xa3b1…f04c'
 
+  const verifyTsCode = `import { ethers } from 'ethers'
+
+// Verify a Hyve signed payload off-chain.
+function verifyHyvePayload(
+  payload: Uint8Array,
+  asOf: bigint,
+  signature: string,
+  signerAddress: string,
+): boolean {
+  // The signed message is keccak256(abi.encode(payload, asOf))
+  const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
+    ['bytes', 'uint64'],
+    [payload, asOf],
+  )
+  const hash = ethers.keccak256(encoded)
+  const recovered = ethers.recoverAddress(
+    ethers.hashMessage(ethers.getBytes(hash)),
+    signature,
+  )
+  return recovered.toLowerCase() === signerAddress.toLowerCase()
+}`
+
   // Determine if we can show sample rows: code has FROM and at least one column
   const canShowDryRun = hasFrom && !codeEmpty
 
   // Handle tab click — if panel closed, open it too
   const handleTabTriggerClick = (tab: CompanionTab) => {
     onTabChange(tab)
-    if (!open) {
-      // Panel will open because parent sets open=true on tab click
-    }
   }
 
   return (
@@ -1545,59 +2005,34 @@ console.log(result.signature)       // 0x...`
             variant="line"
             className="h-9 flex-1 w-full justify-start gap-0 rounded-none bg-transparent p-0"
           >
-            <TabsTrigger
-              value="policy"
-              className={cn(
-                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
-                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
-                'hover:text-v2-foreground',
-                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              )}
-              onClick={() => handleTabTriggerClick('policy')}
-            >
-              Policy
-              {failCount > 0 && (
-                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-v2-warning/20 px-1 font-mono text-[9px] text-v2-warning">
-                  {failCount}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="dryrun"
-              className={cn(
-                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
-                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
-                'hover:text-v2-foreground',
-                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              )}
-              onClick={() => handleTabTriggerClick('dryrun')}
-            >
-              Dry-run
-            </TabsTrigger>
-            <TabsTrigger
-              value="integration"
-              className={cn(
-                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
-                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
-                'hover:text-v2-foreground',
-                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              )}
-              onClick={() => handleTabTriggerClick('integration')}
-            >
-              Integration
-            </TabsTrigger>
-            <TabsTrigger
-              value="lineage"
-              className={cn(
-                'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
-                'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
-                'hover:text-v2-foreground',
-                'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              )}
-              onClick={() => handleTabTriggerClick('lineage')}
-            >
-              Lineage
-            </TabsTrigger>
+            {(
+              [
+                { value: 'validate', label: 'Validate', badge: validateFailCount },
+                { value: 'dryrun', label: 'Dry-run', badge: 0 },
+                { value: 'tests', label: 'Tests', badge: 0 },
+                { value: 'schedule', label: 'Schedule & Cost', badge: 0 },
+                { value: 'integration', label: 'Integration', badge: 0 },
+              ] as const
+            ).map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className={cn(
+                  'relative h-9 rounded-none px-3 font-mono text-[11px] tracking-[0.04em] text-v2-muted/70 data-[state=active]:text-v2-foreground',
+                  'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-v2-foreground after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100',
+                  'hover:text-v2-foreground',
+                  'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
+                )}
+                onClick={() => handleTabTriggerClick(tab.value)}
+              >
+                {tab.label}
+                {tab.badge > 0 && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-v2-warning/20 px-1 font-mono text-[9px] text-v2-warning">
+                    {tab.badge}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Chevron toggle */}
@@ -1618,12 +2053,12 @@ console.log(result.signature)       // 0x...`
         {/* Content — only rendered when open */}
         {open && (
           <div className="flex-1 min-h-0 overflow-y-auto">
-            {/* ── Policy tab ── */}
-            <TabsContent value="policy" className="m-0 h-full">
-              <div className="px-4 py-3 space-y-3">
-                {/* Header */}
+            {/* ── Validate tab ── */}
+            <TabsContent value="validate" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-4">
+                {/* Overall status header */}
                 <div className="flex items-center gap-2">
-                  {failCount === 0 ? (
+                  {validateFailCount === 0 ? (
                     <>
                       <span className="h-1.5 w-1.5 rounded-full bg-v2-success" />
                       <span className="font-mono text-[11px] text-v2-success">Ready to submit</span>
@@ -1631,35 +2066,62 @@ console.log(result.signature)       // 0x...`
                   ) : (
                     <>
                       <span className="h-1.5 w-1.5 rounded-full bg-v2-warning" />
-                      <span className="font-mono text-[11px] text-v2-warning">{failCount} issue{failCount !== 1 ? 's' : ''}</span>
+                      <span className="font-mono text-[11px] text-v2-warning">{validateFailCount} issue{validateFailCount !== 1 ? 's' : ''}</span>
                     </>
                   )}
                 </div>
 
-                {/* Check rows */}
+                {/* ── Section 1: Code ── */}
                 <div className="space-y-2">
-                  {checks.map((check) => (
-                    <div key={check.id} className="flex items-start gap-2">
-                      <PolicyIcon status={check.status} />
-                      <div className="min-w-0">
-                        <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
-                          {check.verb}
-                        </span>
-                        <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
-                          {check.detail}
-                        </span>
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Code
+                  </p>
+                  <div className="space-y-1.5">
+                    {codeChecks.map((check) => (
+                      <div key={check.id} className="flex items-start gap-2">
+                        <PolicyIcon status={check.status} />
+                        <div className="min-w-0">
+                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
+                            {check.verb}
+                          </span>
+                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
+                            {check.detail}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Section 2: Access & policy ── */}
+                <div className="space-y-2 border-t border-v2-border/30 pt-3">
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Access &amp; policy
+                  </p>
+                  <div className="space-y-1.5">
+                    {policyChecks.map((check) => (
+                      <div key={check.id} className="flex items-start gap-2">
+                        <PolicyIcon status={check.status} />
+                        <div className="min-w-0">
+                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground/80">
+                            {check.verb}
+                          </span>
+                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted/70">
+                            {check.detail}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Footer submit button */}
                 <div className="pt-1 border-t border-v2-border/30">
                   <button
                     type="button"
-                    disabled={failCount > 0}
+                    disabled={validateFailCount > 0}
                     className="rounded-md bg-v2-foreground px-3 py-1.5 font-mono text-[11px] font-medium text-v2-surface transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
-                    title={failCount > 0 ? 'Resolve issues before submitting' : 'Submit for review'}
+                    title={validateFailCount > 0 ? 'Resolve issues before submitting' : 'Submit for review'}
                   >
                     Submit for review
                   </button>
@@ -1690,7 +2152,7 @@ console.log(result.signature)       // 0x...`
                       </button>
                     </div>
 
-                    {/* Output schema table */}
+                    {/* Output schema table — lineage inline as footnote */}
                     {selectColumns.length === 0 ? (
                       <p className="font-mono text-[11px] text-v2-muted/50">
                         Add AS aliases to your SELECT columns for schema preview.
@@ -1706,13 +2168,31 @@ console.log(result.signature)       // 0x...`
                             </tr>
                           </thead>
                           <tbody>
-                            {selectColumns.map((col) => (
-                              <tr key={col.alias} className="border-b border-v2-border/20 last:border-0">
-                                <td className="px-3 py-1.5 font-mono text-[11px] text-v2-foreground">{col.alias}</td>
-                                <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/70">{col.type ?? 'computed'}</td>
-                                <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/60">{col.source}</td>
-                              </tr>
-                            ))}
+                            {selectColumns.map((col) => {
+                              const inputRefs = extractLineageRefs(col.expression, vault)
+                              return (
+                                <tr key={col.alias} className="border-b border-v2-border/20 last:border-0 align-top">
+                                  <td className="px-3 py-1.5 font-mono text-[11px] text-v2-foreground">
+                                    {col.alias}
+                                    {inputRefs.length > 0 && (
+                                      <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                                        <span className="font-mono text-[9.5px] text-v2-muted/40">←</span>
+                                        {inputRefs.map((ref, i) => (
+                                          <span
+                                            key={i}
+                                            className="rounded bg-v2-foreground/[0.05] px-1 py-px font-mono text-[9.5px] text-v2-muted/50"
+                                          >
+                                            {ref.label}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/70">{col.type ?? 'computed'}</td>
+                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted/60">{col.source}</td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1773,6 +2253,164 @@ console.log(result.signature)       // 0x...`
               </div>
             </TabsContent>
 
+            {/* ── Tests tab ── */}
+            <TabsContent value="tests" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-3">
+                {selectColumns.length === 0 ? (
+                  <p className="font-mono text-[11px] text-v2-muted/50">
+                    Write a SELECT statement to define assertions on output columns.
+                  </p>
+                ) : (
+                  <>
+                    {/* Assertion rows */}
+                    <div className="space-y-1.5">
+                      {assertions.map((a) => (
+                        <div
+                          key={a.id}
+                          className="flex items-center gap-2 rounded-lg border border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="font-mono text-[11px] text-v2-foreground">
+                              {a.label}
+                            </span>
+                            <span className="ml-2 font-mono text-[10px] text-v2-muted/50">
+                              {a.detail}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            title="Configure assertion"
+                            className="shrink-0 rounded p-1 text-v2-muted/40 transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                              <path fillRule="evenodd" d="M8 1.5a.5.5 0 0 1 .5.5v1.05A4.505 4.505 0 0 1 12 7.5a.5.5 0 0 1-1 0A3.5 3.5 0 0 0 7.5 4a3.5 3.5 0 0 0-3.498 3.322L4 7.5a.5.5 0 0 1-1 0 4.505 4.505 0 0 1 3.5-4.45V2a.5.5 0 0 1 .5-.5zM2.5 9a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                            </svg>
+                          </button>
+                          <span
+                            className={cn(
+                              'shrink-0 rounded-full px-2 py-0.5 font-mono text-[9.5px]',
+                              a.status === 'will-run'
+                                ? 'bg-v2-foreground/[0.06] text-v2-muted/70'
+                                : a.status === 'passed'
+                                  ? 'bg-v2-success/10 text-v2-success'
+                                  : 'bg-v2-danger/10 text-v2-danger',
+                            )}
+                          >
+                            {a.status === 'will-run' ? 'Will run' : a.status === 'passed' ? 'Passed' : 'Failed'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add assertion */}
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-v2-border/50 px-3 py-1.5 font-mono text-[10.5px] text-v2-muted/60 transition-colors hover:border-v2-border hover:text-v2-foreground"
+                    >
+                      <Plus className="h-3 w-3" strokeWidth={2} />
+                      Add assertion
+                    </button>
+
+                    <p className="font-mono text-[9.5px] text-v2-muted/40">
+                      {assertions.length} assertion{assertions.length !== 1 ? 's' : ''} · all execute before the signed payload is published
+                    </p>
+                  </>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* ── Schedule & Cost tab ── */}
+            <TabsContent value="schedule" className="m-0 h-full">
+              <div className="px-4 py-3 space-y-4">
+
+                {/* Next executions */}
+                <div className="space-y-2">
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Next 5 executions
+                  </p>
+                  {triggerKind === 'manual' ? (
+                    <p className="font-mono text-[11px] text-v2-muted/50">
+                      Triggered on demand only — no scheduled executions.
+                    </p>
+                  ) : triggerKind === 'event' ? (
+                    <p className="font-mono text-[11px] text-v2-muted/50">
+                      On {eventSource || '(select an event source)'}
+                    </p>
+                  ) : nextExecutions === null ? (
+                    <p className="font-mono text-[11px] text-v2-warning/80">
+                      Could not parse cron expression — check syntax.
+                    </p>
+                  ) : (
+                    <ol className="space-y-1">
+                      {nextExecutions.map((d, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="font-mono text-[9.5px] text-v2-muted/40 w-4 text-right tabular-nums">
+                            {i + 1}
+                          </span>
+                          <span className="font-mono text-[11px] text-v2-foreground tabular-nums">
+                            {formatExecutionTime(d)}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+
+                {/* Cost estimate */}
+                <div className="space-y-2 border-t border-v2-border/30 pt-3">
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Cost estimate
+                  </p>
+
+                  {/* Per-execution breakdown */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10.5px] text-v2-muted/70">Compute</span>
+                      <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
+                        ${COMPUTE_COST_PER_EXEC.toFixed(4)} per execution
+                      </span>
+                    </div>
+                    {onchainDests.length === 0 ? (
+                      <p className="font-mono text-[10.5px] text-v2-muted/50">
+                        Add a destination in the meta panel to estimate gas cost.
+                      </p>
+                    ) : (
+                      onchainDests.map((d, i) => (
+                        <div key={i} className="flex items-center justify-between">
+                          <span className="font-mono text-[10.5px] text-v2-muted/70">
+                            {d.chain} gas · {d.label || d.address.slice(0, 8) + '…'}
+                          </span>
+                          <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
+                            ${(GAS_PER_WRITE[d.chain] ?? 0).toFixed(3)} per write
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Monthly projection */}
+                  {triggerKind === 'cron' && runsIn30Days > 0 && onchainDests.length > 0 && (
+                    <div className="rounded-lg border border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-2 mt-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10.5px] text-v2-muted/70">Executions / 30 days</span>
+                        <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">{runsIn30Days.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-v2-border/20 pt-1">
+                        <span className="font-mono text-[10.5px] font-medium text-v2-foreground">Monthly total</span>
+                        <span className="font-mono text-[11px] font-medium tabular-nums text-v2-foreground">
+                          ~${monthlyCost.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="font-mono text-[9.5px] text-v2-muted/40 leading-snug">
+                    Estimates are illustrative — actual gas varies with network conditions.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+
             {/* ── Integration tab ── */}
             <TabsContent value="integration" className="m-0 h-full">
               <div className="px-4 py-3 space-y-4">
@@ -1798,8 +2436,6 @@ console.log(result.signature)       // 0x...`
                         <span className="font-mono text-[9.5px] text-v2-muted/50">Solidity</span>
                         <CopyButton text={solidityCode} />
                       </div>
-                      {/* Plain mono block — no Prism Solidity highlight to avoid adding a dep */}
-                      {/* Note: skipping syntax highlight for Solidity/TS; Prism only loaded for SQL */}
                       <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
                         {solidityCode}
                       </pre>
@@ -1823,68 +2459,32 @@ console.log(result.signature)       // 0x...`
                   </div>
                 </div>
 
-                {/* Signing key footer */}
-                <p className="font-mono text-[9.5px] text-v2-muted/40">
-                  Signed by {providerName} · key {sigKey} (secp256k1)
-                </p>
-              </div>
-            </TabsContent>
-
-            {/* ── Lineage tab ── */}
-            <TabsContent value="lineage" className="m-0 h-full">
-              <div className="px-4 py-3">
-                {codeEmpty ? (
-                  <p className="font-mono text-[11px] text-v2-muted/50">
-                    Write a SELECT statement to see field lineage.
+                {/* Signature verification */}
+                <div className="space-y-2 border-t border-v2-border/30 pt-3">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/50">
+                    Signature verification
+                  </span>
+                  <p className="text-[11.5px] leading-relaxed text-v2-muted/70">
+                    Every payload published by Hyve is signed with the provider&apos;s secp256k1 key using
+                    Ethereum&apos;s personal_sign convention — keccak256 over the ABI-encoded (payload, asOf) tuple.
+                    Verify on-chain with Solidity&apos;s <code className="font-mono text-[10.5px]">ecrecover</code>,
+                    or off-chain with <code className="font-mono text-[10.5px]">ethers.recoverAddress</code>.
+                    The signer address for this vault is registered in the Hyve registry contract and rotated
+                    quarterly with a 72-hour notice period.
                   </p>
-                ) : selectColumns.length === 0 ? (
-                  <p className="font-mono text-[11px] text-v2-muted/50">
-                    Add AS aliases to your SELECT columns to see lineage.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto rounded-lg border border-v2-border/40">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-v2-border/40 bg-v2-foreground/[0.02]">
-                          <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50 w-1/4">Output</th>
-                          <th className="px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-v2-muted/50">Derived from</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectColumns.map((col) => {
-                          // Extract field references from the expression
-                          const inputRefs = extractLineageRefs(col.expression, vault)
-                          return (
-                            <tr key={col.alias} className="border-b border-v2-border/20 last:border-0 align-top">
-                              <td className="px-3 py-2 font-mono text-[11px] text-v2-foreground whitespace-nowrap">
-                                {col.alias}
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex flex-wrap gap-1.5 items-center">
-                                  {inputRefs.length > 0 ? inputRefs.map((ref, i) => (
-                                    <span
-                                      key={i}
-                                      className="rounded bg-v2-foreground/[0.06] px-1.5 py-0.5 font-mono text-[10.5px] text-v2-muted/80"
-                                    >
-                                      {ref.label}
-                                    </span>
-                                  )) : (
-                                    <span className="font-mono text-[10.5px] text-v2-muted/40">computed</span>
-                                  )}
-                                  {inputRefs.some((r) => r.note) && (
-                                    <span className="font-mono text-[10px] text-v2-muted/40">
-                                      {inputRefs.find((r) => r.note)?.note}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                  <div className="rounded-lg border border-v2-border/40 overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-v2-border/30 bg-v2-foreground/[0.02] px-3 py-1.5">
+                      <span className="font-mono text-[9.5px] text-v2-muted/50">TypeScript · verify</span>
+                      <CopyButton text={verifyTsCode} />
+                    </div>
+                    <pre className="overflow-x-auto p-3 font-mono text-[10.5px] leading-relaxed text-v2-muted/80 whitespace-pre">
+                      {verifyTsCode}
+                    </pre>
                   </div>
-                )}
+                  <p className="font-mono text-[9.5px] text-v2-muted/40">
+                    Signed by {providerName} · key {sigKey} (secp256k1)
+                  </p>
+                </div>
               </div>
             </TabsContent>
           </div>
@@ -2339,7 +2939,7 @@ FROM
 
   // Companion panel state
   const [panelOpen, setPanelOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<CompanionTab>('policy')
+  const [activeTab, setActiveTab] = useState<CompanionTab>('validate')
 
   const version = fromVersion ?? 1
 
@@ -2380,6 +2980,8 @@ FROM
 
   const fieldRefs = vault ? parseFieldRefs(code, vault) : []
   const violations = fieldRefs.filter((r) => r.privacy === 'private')
+  const selectColumnsForDrawer = parseSelectColumns(code, vault)
+  const assertionCount = buildAssertions(selectColumnsForDrawer).length
 
   // Update scaffold when name changes (update the first comment line)
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -2525,6 +3127,9 @@ FROM
               fieldRefs={fieldRefs}
               destinations={destinations}
               name={name}
+              triggerKind={triggerKind}
+              cronExpr={cronExpr}
+              eventSource={eventSource}
             />
           </div>
 
@@ -2571,6 +3176,7 @@ FROM
           code={code}
           fieldRefs={fieldRefs}
           hasViolations={violations.length > 0}
+          assertionCount={assertionCount}
         />
       )}
 
