@@ -30,6 +30,8 @@ test.describe('analysis authoring flow', () => {
 
   test('step 3: fill form — taken name, schema field click, cron trigger, destination', async ({ page }) => {
     await signInAsCounterparty(page)
+    // Use a wide viewport so the schema panel is visible
+    await page.setViewportSize({ width: 1600, height: 900 })
     await page.goto('/cp/analyses/new?vault=acred')
     await expect(page.getByPlaceholder('analysis_name')).toBeVisible({ timeout: 5000 })
 
@@ -42,24 +44,20 @@ test.describe('analysis authoring flow', () => {
     // Now use a unique name
     await nameInput.fill('acred_advance_rate_new')
 
-    // Click a schema field (nav_latest → current_nav visible on xl screens)
-    // The schema panel is hidden on smaller viewports; expand viewport first
-    await page.setViewportSize({ width: 1600, height: 900 })
-    await page.reload()
-    await page.goto('/cp/analyses/new?vault=acred')
-    await expect(page.getByPlaceholder('analysis_name')).toBeVisible({ timeout: 5000 })
-    await nameInput.fill('acred_advance_rate_new')
-
-    // Click on current_nav field in schema browser
+    // Click on current_nav field in schema browser (visible at 1600px width)
     const currentNavField = page.getByRole('button', { name: /current_nav/i }).first()
     if (await currentNavField.isVisible()) {
       await currentNavField.click()
     }
 
-    // Set trigger to cron "every hour" preset
+    // Trigger and destination controls live inside the Submit drawer — open it first
+    await page.getByRole('button', { name: /Submit for review/i }).click()
+    await expect(page.getByRole('dialog', { name: /Submit proposal to/i })).toBeVisible({ timeout: 3000 })
+
+    // Set trigger to cron "every hour" preset (inside the drawer)
     await page.getByRole('button', { name: /every hour/i }).click()
 
-    // Add an ETH destination
+    // Add an ETH destination (inside the drawer)
     await page.getByRole('button', { name: /Add/i }).first().click()
     // Select On-chain (should be default)
     await expect(page.getByText('On-chain')).toBeVisible()
@@ -67,6 +65,7 @@ test.describe('analysis authoring flow', () => {
     await page.getByPlaceholder('0x...').fill('0x7f268357A8c2552623316e2562D90e642bB538E5')
     await page.getByRole('button', { name: /^Add$/ }).last().click()
 
+    // Screenshot with drawer open showing filled state
     await page.screenshot({ path: path.join(SS_DIR, 'ss-3-workbench-filled.png'), fullPage: false })
   })
 
@@ -79,17 +78,18 @@ test.describe('analysis authoring flow', () => {
     // Fill a unique name
     await page.getByPlaceholder('analysis_name').fill('acred_my_new_analysis')
 
-    // Set trigger
+    // Open the drawer — trigger and destination controls live inside it
+    await page.getByRole('button', { name: /Submit for review/i }).click()
+    await expect(page.getByRole('dialog', { name: /Submit proposal to/i })).toBeVisible({ timeout: 3000 })
+
+    // Set trigger inside the drawer
     await page.getByRole('button', { name: /every hour/i }).click()
 
-    // Add a destination
+    // Add a destination inside the drawer
     await page.getByRole('button', { name: /Add/i }).first().click()
     await page.getByPlaceholder('0x...').fill('0x7f268357A8c2552623316e2562D90e642bB538E5')
     await page.getByRole('button', { name: /^Add$/ }).last().click()
 
-    // Click "Submit for review"
-    await page.getByRole('button', { name: /Submit for review/i }).click()
-    await expect(page.getByRole('dialog', { name: /Submit proposal to/i })).toBeVisible({ timeout: 3000 })
     await page.screenshot({ path: path.join(SS_DIR, 'ss-4-drawer.png'), fullPage: false })
   })
 
@@ -100,15 +100,20 @@ test.describe('analysis authoring flow', () => {
     await expect(page.getByPlaceholder('analysis_name')).toBeVisible({ timeout: 5000 })
 
     await page.getByPlaceholder('analysis_name').fill('acred_my_new_analysis')
+
+    // Open the drawer — trigger and destination controls live inside it
+    await page.getByRole('button', { name: /Submit for review/i }).click()
+    await expect(page.getByRole('dialog', { name: /Submit proposal to/i })).toBeVisible({ timeout: 3000 })
+
+    // Set trigger inside the drawer
     await page.getByRole('button', { name: /every hour/i }).click()
 
-    // Add destination
+    // Add destination inside the drawer
     await page.getByRole('button', { name: /Add/i }).first().click()
     await page.getByPlaceholder('0x...').fill('0x7f268357A8c2552623316e2562D90e642bB538E5')
     await page.getByRole('button', { name: /^Add$/ }).last().click()
 
-    // Open drawer and submit
-    await page.getByRole('button', { name: /Submit for review/i }).click()
+    // Submit the proposal
     await page.getByRole('button', { name: /Submit proposal/i }).click()
 
     // Should redirect to /cp/analyses?submitted=...

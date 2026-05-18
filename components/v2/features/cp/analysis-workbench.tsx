@@ -1,9 +1,10 @@
 'use client'
 
 /**
- * AnalysisWorkbench — full-screen 3-col authoring UI for new analyses.
+ * AnalysisWorkbench — full-screen 2-col authoring UI for new analyses.
  *
- * Layout: [260px schema | 1fr editor | 320px meta] at xl:, stacks below.
+ * Layout: [280px schema | 1fr editor] at xl:, stacks below.
+ * Trigger + destinations are configured inside the Submit drawer.
  *
  * Owns all mutable state: code, name, trigger, destinations, vault selection,
  * submit-drawer open/close. Zero server-side dependencies — pure fixtures.
@@ -12,6 +13,7 @@
 import {
   useState,
   useRef,
+  useEffect,
   useCallback,
   type ChangeEvent,
   type KeyboardEvent,
@@ -31,6 +33,7 @@ import {
   Check,
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   Copy,
   Play,
   Info,
@@ -43,7 +46,6 @@ import {
 } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { Surface } from '@/components/v2/ui/surface'
-import { StatusPill } from '@/components/v2/ui/status-pill'
 import {
   analyses,
   vaults,
@@ -55,10 +57,7 @@ import {
 } from '@/components/v2/features/cp/cp-fixtures'
 import {
   PrivacyChip,
-  PrivacyBar,
-  countByPrivacy,
   PRIVACY_TONE,
-  PRIVACY_LEVELS_ORDERED,
 } from '@/components/v2/features/vault-detail/privacy'
 import {
   Tooltip,
@@ -255,6 +254,8 @@ function SchemaPanel({
   const isAccessible = (privacy: PrivacyLevel) => vault.accessibleOperations.includes(privacy)
   const slug = vault.id.replace(/-/g, '_')
 
+  const totalFields = vault.tables.reduce((sum, t) => sum + t.fields.length, 0)
+
   const handleFieldClick = (field: VaultField, tbl: VaultTable) => {
     if (field.privacy === 'private') {
       onPrivateClick(field.name)
@@ -282,15 +283,15 @@ function SchemaPanel({
   return (
     <TooltipProvider delayDuration={250}>
       <div className="flex h-full flex-col overflow-hidden bg-v2-foreground/[0.03]">
-        {/* Panel header */}
-        <div className="border-b border-v2-border px-4 py-3">
-          <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-v2-muted">
-            Tables
+        {/* Panel header — no border-bottom, micro-copy only */}
+        <div className="px-4 pt-4 pb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-v2-muted/70">
+            {vault.tables.length} tables · {totalFields} fields
           </p>
         </div>
 
         {/* Table list — accordion */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
           {vault.tables.map((tbl) => {
             const isOpen = expanded.has(tbl.name)
             return (
@@ -301,27 +302,30 @@ function SchemaPanel({
                   onClick={() => toggleTable(tbl.name)}
                   aria-expanded={isOpen}
                   aria-label={`${isOpen ? 'Collapse' : 'Expand'} table ${tbl.name}`}
-                  className="flex w-full items-center gap-1.5 rounded px-2 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+                  className="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground/40"
                 >
-                  {isOpen ? (
-                    <ChevronDown className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                  )}
-                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-v2-foreground">
+                  <ChevronRight
+                    className={cn(
+                      'h-3 w-3 shrink-0 text-v2-muted/50 transition-transform',
+                      isOpen && 'rotate-90',
+                    )}
+                    strokeWidth={1.5}
+                  />
+                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-v2-foreground tracking-tight">
                     {tbl.name}
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] text-v2-muted">
-                    {tbl.fields.length} cols
+                  <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-v2-muted/60">
+                    {tbl.fields.length}
                   </span>
                 </button>
 
-                {/* Expanded: fields + lineage */}
+                {/* Expanded: fields */}
                 {isOpen && (
-                  <div className="ml-2 border-l border-v2-border/30 pl-2 pb-1 mt-1">
+                  <div className="ml-3 pl-1.5 mt-0.5 mb-1 space-y-0">
                     {tbl.fields.map((field) => {
                       const accessible = isAccessible(field.privacy)
                       const isPrivate = field.privacy === 'private'
+                      const isDisabled = isPrivate || !accessible
                       return (
                         <Tooltip key={field.name}>
                           <TooltipTrigger asChild>
@@ -329,29 +333,41 @@ function SchemaPanel({
                               type="button"
                               onClick={() => handleFieldClick(field, tbl)}
                               className={cn(
-                                'flex w-full items-center gap-1.5 rounded px-1.5 py-2 text-left transition-colors',
-                                isPrivate
-                                  ? 'cursor-not-allowed opacity-50'
-                                  : accessible
-                                    ? 'hover:bg-v2-foreground/[0.04]'
-                                    : 'cursor-not-allowed opacity-50',
+                                'relative flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors',
+                                isDisabled
+                                  ? 'cursor-not-allowed opacity-60'
+                                  : 'hover:bg-v2-foreground/[0.04]',
                               )}
-                              aria-disabled={isPrivate || !accessible}
+                              aria-disabled={isDisabled}
                             >
+                              {/* Colored dot — tier indicator. Private fields get a neutral
+                                  grey dot (no tier identity, ingest-blocked). Grant-locked
+                                  fields keep their tier color (you can learn the schema even
+                                  for ops you're not licensed for). */}
+                              <span
+                                aria-hidden="true"
+                                className={cn(
+                                  'h-1.5 w-1.5 shrink-0 rounded-full',
+                                  isPrivate
+                                    ? 'bg-v2-foreground/30'
+                                    : PRIVACY_TONE[field.privacy].dot,
+                                )}
+                              />
+                              {/* Field name */}
                               <span
                                 className={cn(
-                                  'min-w-0 flex-1 truncate font-mono text-[13px]',
-                                  accessible && !isPrivate ? 'text-v2-foreground' : 'text-v2-muted/50',
+                                  'min-w-0 flex-1 truncate font-mono text-[12.5px] tracking-tight',
+                                  isDisabled ? 'text-v2-muted/55' : 'text-v2-foreground',
                                 )}
                               >
                                 {field.name}
                               </span>
+                              {/* kMin annotation */}
                               {field.kMin !== undefined && (
-                                <span className="shrink-0 rounded bg-v2-foreground/[0.06] px-1.5 py-px font-mono text-[10.5px] text-v2-muted">
-                                  min k={field.kMin}
+                                <span className="shrink-0 font-mono text-[10px] tabular-nums text-v2-muted/55">
+                                  k≥{field.kMin}
                                 </span>
                               )}
-                              <PrivacyChip level={field.privacy} size="sm" mode="operation" />
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" sideOffset={8} className="max-w-[280px]">
@@ -360,6 +376,18 @@ function SchemaPanel({
                                 <span className="font-mono text-[12px] font-medium">{field.name}</span>
                                 <span className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-60">
                                   {field.type}
+                                </span>
+                              </div>
+                              {/* Tier line — replaces removed chip */}
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cn(
+                                    'h-2 w-2 rounded-full',
+                                    PRIVACY_TONE[field.privacy].dot,
+                                  )}
+                                />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.08em] opacity-80">
+                                  {PRIVACY_TONE[field.privacy].operationShort}
                                 </span>
                               </div>
                               <p className="text-[11.5px] leading-snug opacity-90">
@@ -382,13 +410,10 @@ function SchemaPanel({
           })}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-v2-border px-4 py-3">
-          <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
-            Tap a column to insert.
-          </p>
-          <p className="font-mono text-[11.5px] text-v2-muted leading-snug">
-            Operations limited to your access grant.
+        {/* Footer — single quiet line */}
+        <div className="border-t border-v2-border/40 px-4 py-3">
+          <p className="font-mono text-[11px] text-v2-muted/60">
+            Click a field to insert
           </p>
         </div>
       </div>
@@ -440,14 +465,14 @@ function TemplatePopover({
         aria-expanded={open}
         title={`${templates.length} provider-approved patterns`}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.06em] transition-colors',
+          'inline-flex items-center gap-1.5 text-[12.5px] transition-colors',
           open
-            ? 'border-v2-border bg-v2-foreground/[0.07] text-v2-foreground'
-            : 'border-v2-border/50 text-v2-muted/60 hover:border-v2-border hover:text-v2-muted',
+            ? 'text-v2-foreground'
+            : 'text-v2-muted hover:text-v2-foreground',
         )}
       >
         Start from template
-        <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} strokeWidth={2} />
+        <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} strokeWidth={1.75} />
       </button>
 
       {open && (
@@ -461,7 +486,7 @@ function TemplatePopover({
           {/* Popover */}
           <div
             role="menu"
-            className="absolute left-0 top-full z-40 mt-1.5 w-72 rounded-xl border border-v2-border/60 bg-v2-surface shadow-lg overflow-hidden"
+            className="absolute right-0 top-full z-40 mt-1.5 w-72 rounded-xl border border-v2-border/60 bg-v2-surface shadow-lg overflow-hidden"
           >
             {templates.map((tmpl) => {
               const isConfirming = confirmId === tmpl.id
@@ -633,6 +658,7 @@ function AddDestForm({ onSave, onCancel }: AddDestFormProps) {
             onClick={() => setKind(k)}
             className={cn(
               'rounded px-2.5 py-1 font-mono text-[11px] transition-colors',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground',
               kind === k
                 ? 'bg-v2-foreground text-v2-surface'
                 : 'bg-v2-foreground/[0.06] text-v2-muted hover:bg-v2-foreground/[0.1] hover:text-v2-foreground',
@@ -654,6 +680,7 @@ function AddDestForm({ onSave, onCancel }: AddDestFormProps) {
                 onClick={() => setChain(c)}
                 className={cn(
                   'rounded px-2 py-0.5 font-mono text-[10px] transition-colors',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground',
                   chain === c
                     ? 'bg-v2-foreground text-v2-surface'
                     : 'bg-v2-foreground/[0.06] text-v2-muted hover:text-v2-foreground',
@@ -701,14 +728,14 @@ function AddDestForm({ onSave, onCancel }: AddDestFormProps) {
           type="button"
           onClick={save}
           disabled={!canSave}
-          className="rounded-md bg-v2-foreground px-3 py-1.5 font-mono text-[11px] text-v2-surface disabled:opacity-40 transition-opacity"
+          className="rounded-md bg-v2-foreground px-3 py-1.5 font-mono text-[11px] text-v2-surface disabled:opacity-40 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
         >
           Add
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-v2-border/60 px-3 py-1.5 font-mono text-[11px] text-v2-muted transition-colors hover:text-v2-foreground"
+          className="rounded-md border border-v2-border/60 px-3 py-1.5 font-mono text-[11px] text-v2-muted transition-colors hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
         >
           Cancel
         </button>
@@ -719,6 +746,10 @@ function AddDestForm({ onSave, onCancel }: AddDestFormProps) {
 
 // ── Submit drawer ─────────────────────────────────────────────────────────────
 
+// TODO(a11y): drawer-wide upgrades pending — focus trap (inert / conditional render),
+// migrate trigger buttons to role=radio + arrow-key nav, raise muted text contrast,
+// enlarge cron preset chips to 24px touch target.
+
 type SubmitDrawerProps = {
   open: boolean
   onClose: () => void
@@ -727,13 +758,36 @@ type SubmitDrawerProps = {
   vault: ConsumerVault
   version: number
   triggerKind: TriggerKind
+  onTriggerKindChange: (k: TriggerKind) => void
   cronExpr: string
+  onCronExprChange: (v: string) => void
   eventSource: string
+  onEventSourceChange: (v: string) => void
   destinations: Destination[]
+  onAddDest: (d: Destination) => void
+  onRemoveDest: (i: number) => void
   code: string
   fieldRefs: FieldRef[]
   hasViolations: boolean
   assertionCount: number
+  /** Ref to the element that triggered the drawer — focus returns here on close */
+  returnFocusRef: React.RefObject<HTMLButtonElement | null>
+}
+
+// Vault event catalogue — keyed by vault id
+const VAULT_EVENTS: Record<string, string[]> = {
+  'acred': [
+    'ACRED redemption queue',
+    'ACRED NAV publication',
+    'ACRED position event',
+  ],
+  'maple-tf-revolver': [
+    'MAPLE-TF loan event',
+    'MAPLE-TF pool rebalance',
+  ],
+  'buidl-treasury': [
+    'BUIDL NAV publication',
+  ],
 }
 
 function SubmitDrawer({
@@ -744,15 +798,55 @@ function SubmitDrawer({
   vault,
   version,
   triggerKind,
+  onTriggerKindChange,
   cronExpr,
+  onCronExprChange,
   eventSource,
+  onEventSourceChange,
   destinations,
+  onAddDest,
+  onRemoveDest,
   code,
   fieldRefs,
   hasViolations,
   assertionCount,
+  returnFocusRef,
 }: SubmitDrawerProps) {
   const [note, setNote] = useState('')
+  const [showAddDest, setShowAddDest] = useState(false)
+
+  // B1: ref for the close button — receives focus when the drawer opens
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+
+  // B1: move focus to close button on open
+  useEffect(() => {
+    if (open) {
+      closeBtnRef.current?.focus()
+    }
+  }, [open])
+
+  // B2: return focus to the trigger button when the drawer closes (not on initial mount)
+  const wasOpenRef = useRef(false)
+  useEffect(() => {
+    if (wasOpenRef.current && !open) {
+      returnFocusRef.current?.focus()
+    }
+    wasOpenRef.current = open
+  }, [open, returnFocusRef])
+
+  // B3: Escape closes the drawer
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onClose])
+
+  const events = VAULT_EVENTS[vault.id] ?? []
 
   const canSubmit =
     analysisName.trim().length > 0 &&
@@ -798,9 +892,10 @@ function SubmitDrawer({
             <p className="mt-0.5 text-[12.5px] text-v2-muted">{vault.label}</p>
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             onClick={onClose}
-            className="ml-4 rounded-md p-1.5 text-v2-muted transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
+            className="ml-4 rounded-md p-1.5 text-v2-muted transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
             aria-label="Close"
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -883,7 +978,160 @@ function SubmitDrawer({
             )}
           </section>
 
-          {/* 3. Privacy guarantee */}
+          {/* 3. Trigger */}
+          <section className="space-y-2">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
+              Trigger
+            </h3>
+            <Surface padding="sm" radius="xl">
+              <div className="space-y-3">
+                {/* Radio group */}
+                <div className="flex gap-1.5">
+                  {(['cron', 'event', 'manual'] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => onTriggerKindChange(k)}
+                      className={cn(
+                        'rounded px-2.5 py-1 font-mono text-[11px] transition-colors capitalize',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground',
+                        triggerKind === k
+                          ? 'bg-v2-foreground text-v2-surface'
+                          : 'bg-v2-foreground/[0.06] text-v2-muted hover:bg-v2-foreground/[0.1] hover:text-v2-foreground',
+                      )}
+                      aria-pressed={triggerKind === k}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+
+                {triggerKind === 'cron' && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={cronExpr}
+                      onChange={(e) => onCronExprChange(e.target.value)}
+                      placeholder="* * * * *"
+                      className="w-full rounded-md border border-v2-border/60 bg-v2-surface px-2.5 py-1.5 font-mono text-[11.5px] text-v2-foreground placeholder:text-v2-muted/40 focus:border-v2-foreground/30 focus:outline-none focus:ring-1 focus:ring-v2-foreground/20"
+                    />
+                    {/* Presets */}
+                    <div className="flex flex-wrap gap-1">
+                      {CRON_PRESETS.map((p) => (
+                        <button
+                          key={p.expr}
+                          type="button"
+                          onClick={() => onCronExprChange(p.expr)}
+                          className={cn(
+                            'rounded px-2 py-0.5 font-mono text-[9.5px] transition-colors',
+                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground',
+                            cronExpr === p.expr
+                              ? 'bg-v2-foreground text-v2-surface'
+                              : 'bg-v2-foreground/[0.05] text-v2-muted/70 hover:bg-v2-foreground/[0.1] hover:text-v2-foreground',
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    {cronExpr && (
+                      <p className="font-mono text-[10.5px] text-v2-muted/50">
+                        {humanizeCron(cronExpr)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {triggerKind === 'event' && (
+                  <select
+                    value={eventSource}
+                    onChange={(e) => onEventSourceChange(e.target.value)}
+                    className="w-full rounded-md border border-v2-border/60 bg-v2-surface px-2.5 py-1.5 text-[12px] text-v2-foreground focus:border-v2-foreground/30 focus:outline-none focus:ring-1 focus:ring-v2-foreground/20"
+                  >
+                    <option value="">Select event source…</option>
+                    {events.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </Surface>
+          </section>
+
+          {/* 4. Destinations */}
+          <section className="space-y-2">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
+              Destinations
+            </h3>
+            <Surface padding="none" radius="xl">
+              <div className="flex items-center justify-between border-b border-v2-border/40 px-4 py-2.5">
+                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
+                  {destinations.length === 0 ? 'None configured' : `${destinations.length} configured`}
+                </span>
+                {!showAddDest && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDest(true)}
+                    className="inline-flex items-center gap-1 font-mono text-[10.5px] text-v2-muted transition-colors hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+                  >
+                    <Plus className="h-3 w-3" strokeWidth={2} />
+                    Add
+                  </button>
+                )}
+              </div>
+              <div className="px-3 py-3 space-y-2">
+                {showAddDest && (
+                  <AddDestForm
+                    onSave={(d) => {
+                      onAddDest(d)
+                      setShowAddDest(false)
+                    }}
+                    onCancel={() => setShowAddDest(false)}
+                  />
+                )}
+
+                {destinations.length === 0 && !showAddDest ? (
+                  <p className="font-mono text-[11px] text-v2-muted/50">
+                    No destinations yet. Add at least one before submitting.
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {destinations.map((d, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 rounded-lg border border-v2-border/40 bg-v2-foreground/[0.02] px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-mono text-[11px] text-v2-foreground">
+                            {d.kind === 'onchain' ? `${d.chain}: ${d.address.slice(0, 10)}…` : d.url}
+                          </p>
+                          {d.label && (
+                            <p className="truncate text-[10.5px] text-v2-muted/50">{d.label}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveDest(i)}
+                          className="shrink-0 text-v2-muted/40 transition-colors hover:text-v2-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+                          aria-label={
+                            d.kind === 'onchain'
+                              ? `Remove destination: ${d.chain} ${d.address.slice(0, 10)}`
+                              : `Remove destination: ${d.url}`
+                          }
+                        >
+                          <X className="h-3 w-3" strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Surface>
+          </section>
+
+          {/* 5. Privacy guarantee */}
           <section className="space-y-2">
             <h3 className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
               Privacy guarantee
@@ -895,7 +1143,7 @@ function SubmitDrawer({
             </p>
           </section>
 
-          {/* 4. Note to reviewer */}
+          {/* 6. Note to reviewer */}
           <section className="space-y-2">
             <h3 className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
               Note to reviewer <span className="normal-case">(optional)</span>
@@ -941,7 +1189,7 @@ function SubmitDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-v2-border/60 px-4 py-2 text-[13px] text-v2-muted transition-colors hover:border-v2-border hover:text-v2-foreground"
+            className="rounded-md border border-v2-border/60 px-4 py-2 text-[13px] text-v2-muted transition-colors hover:border-v2-border hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
           >
             Cancel
           </button>
@@ -949,7 +1197,7 @@ function SubmitDrawer({
             type="button"
             onClick={onSubmit}
             disabled={!canSubmit}
-            className="rounded-md bg-v2-foreground px-5 py-2 text-[13px] font-medium text-v2-surface transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
+            className="rounded-md bg-v2-foreground px-5 py-2 text-[13px] font-medium text-v2-surface transition-opacity disabled:opacity-40 enabled:hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
           >
             Submit proposal
           </button>
@@ -2585,299 +2833,6 @@ function PrivateFieldToast({
   )
 }
 
-// ── Meta panel ────────────────────────────────────────────────────────────────
-
-type MetaPanelProps = {
-  vault: ConsumerVault
-  triggerKind: TriggerKind
-  onTriggerKindChange: (k: TriggerKind) => void
-  cronExpr: string
-  onCronExprChange: (v: string) => void
-  eventSource: string
-  onEventSourceChange: (v: string) => void
-  destinations: Destination[]
-  onAddDest: (d: Destination) => void
-  onRemoveDest: (i: number) => void
-  code: string
-}
-
-function MetaPanel({
-  vault,
-  triggerKind,
-  onTriggerKindChange,
-  cronExpr,
-  onCronExprChange,
-  eventSource,
-  onEventSourceChange,
-  destinations,
-  onAddDest,
-  onRemoveDest,
-  code,
-}: MetaPanelProps) {
-  const [showAddDest, setShowAddDest] = useState(false)
-  const fieldRefs = parseFieldRefs(code, vault)
-  const privateRefs = fieldRefs.filter((r) => r.privacy === 'private')
-  const joinRefsUsedAsColumn = fieldRefs.filter(
-    (r) => r.privacy === 'join' && !r.inGroupBy && !r.wrappedInAggregate
-  )
-  const aggregateUsedRaw = fieldRefs.filter(
-    (r) => r.privacy === 'aggregate' && !r.wrappedInAggregate
-  )
-  const violations = privateRefs  // private refs = true violations
-  const okRefs = fieldRefs.filter((r) => r.privacy !== 'private')
-
-  const VAULT_EVENTS: Record<string, string[]> = {
-    'acred': [
-      'ACRED redemption queue',
-      'ACRED NAV publication',
-      'ACRED position event',
-    ],
-    'maple-tf-revolver': [
-      'MAPLE-TF loan event',
-      'MAPLE-TF pool rebalance',
-    ],
-    'buidl-treasury': [
-      'BUIDL NAV publication',
-    ],
-  }
-
-  const events = VAULT_EVENTS[vault.id] ?? []
-
-  return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto px-3 py-3">
-      {/* Trigger */}
-      <Surface padding="none" radius="xl" className="overflow-visible">
-        <div className="border-b border-v2-border/40 px-4 py-2.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
-            Trigger
-          </span>
-        </div>
-        <div className="px-4 py-3 space-y-3">
-          {/* Radio group */}
-          <div className="flex gap-1.5">
-            {(['cron', 'event', 'manual'] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => onTriggerKindChange(k)}
-                className={cn(
-                  'rounded px-2.5 py-1 font-mono text-[11px] transition-colors capitalize',
-                  triggerKind === k
-                    ? 'bg-v2-foreground text-v2-surface'
-                    : 'bg-v2-foreground/[0.06] text-v2-muted hover:bg-v2-foreground/[0.1] hover:text-v2-foreground',
-                )}
-                aria-pressed={triggerKind === k}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-
-          {triggerKind === 'cron' && (
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={cronExpr}
-                onChange={(e) => onCronExprChange(e.target.value)}
-                placeholder="* * * * *"
-                className="w-full rounded-md border border-v2-border/60 bg-v2-surface px-2.5 py-1.5 font-mono text-[11.5px] text-v2-foreground placeholder:text-v2-muted/40 focus:border-v2-foreground/30 focus:outline-none focus:ring-1 focus:ring-v2-foreground/20"
-              />
-              {/* Presets */}
-              <div className="flex flex-wrap gap-1">
-                {CRON_PRESETS.map((p) => (
-                  <button
-                    key={p.expr}
-                    type="button"
-                    onClick={() => onCronExprChange(p.expr)}
-                    className={cn(
-                      'rounded px-2 py-0.5 font-mono text-[9.5px] transition-colors',
-                      cronExpr === p.expr
-                        ? 'bg-v2-foreground text-v2-surface'
-                        : 'bg-v2-foreground/[0.05] text-v2-muted/70 hover:bg-v2-foreground/[0.1] hover:text-v2-foreground',
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              {cronExpr && (
-                <p className="font-mono text-[10.5px] text-v2-muted/50">
-                  {humanizeCron(cronExpr)}
-                </p>
-              )}
-            </div>
-          )}
-
-          {triggerKind === 'event' && (
-            <select
-              value={eventSource}
-              onChange={(e) => onEventSourceChange(e.target.value)}
-              className="w-full rounded-md border border-v2-border/60 bg-v2-surface px-2.5 py-1.5 text-[12px] text-v2-foreground focus:border-v2-foreground/30 focus:outline-none focus:ring-1 focus:ring-v2-foreground/20"
-            >
-              <option value="">Select event source…</option>
-              {events.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      </Surface>
-
-      {/* Destinations */}
-      <Surface padding="none" radius="xl">
-        <div className="flex items-center justify-between border-b border-v2-border/40 px-4 py-2.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
-            Destinations
-          </span>
-          {!showAddDest && (
-            <button
-              type="button"
-              onClick={() => setShowAddDest(true)}
-              className="inline-flex items-center gap-1 font-mono text-[10.5px] text-v2-muted transition-colors hover:text-v2-foreground"
-            >
-              <Plus className="h-3 w-3" strokeWidth={2} />
-              Add
-            </button>
-          )}
-        </div>
-        <div className="px-3 py-3 space-y-2">
-          {showAddDest && (
-            <AddDestForm
-              onSave={(d) => {
-                onAddDest(d)
-                setShowAddDest(false)
-              }}
-              onCancel={() => setShowAddDest(false)}
-            />
-          )}
-
-          {destinations.length === 0 && !showAddDest ? (
-            <p className="font-mono text-[11px] text-v2-muted/50">
-              No destinations yet. Add at least one before submitting.
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {destinations.map((d, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 rounded-lg border border-v2-border/40 bg-v2-surface-2/40 px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-mono text-[11px] text-v2-foreground">
-                      {d.kind === 'onchain' ? `${d.chain}: ${d.address.slice(0, 10)}…` : d.url}
-                    </p>
-                    {d.label && (
-                      <p className="truncate text-[10.5px] text-v2-muted/50">{d.label}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveDest(i)}
-                    className="shrink-0 text-v2-muted/40 transition-colors hover:text-v2-muted"
-                    aria-label="Remove destination"
-                  >
-                    <X className="h-3 w-3" strokeWidth={2} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Surface>
-
-      {/* Privacy summary */}
-      <Surface padding="none" radius="xl">
-        <div className="border-b border-v2-border/40 px-4 py-2.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/60">
-            Privacy summary
-          </span>
-        </div>
-        <div className="px-4 py-3 space-y-2.5">
-          {fieldRefs.length === 0 ? (
-            <p className="font-mono text-[11px] text-v2-muted/50">
-              No vault fields detected yet.
-            </p>
-          ) : (
-            <>
-              {/* Per-tier counts + bar */}
-              {(() => {
-                const refCounts = countByPrivacy(fieldRefs)
-                const tierSummaryParts: string[] = []
-                for (const lvl of PRIVACY_LEVELS_ORDERED) {
-                  if (refCounts[lvl] > 0 && lvl !== 'private') {
-                    tierSummaryParts.push(`${refCounts[lvl]} ${PRIVACY_TONE[lvl].operationShort}`)
-                  }
-                }
-                if (refCounts.private > 0) tierSummaryParts.push(`${refCounts.private} Blocked`)
-                return (
-                  <div className="space-y-1">
-                    <p className="font-mono text-[10.5px] text-v2-muted/70">
-                      {tierSummaryParts.join(' · ')}
-                    </p>
-                    <PrivacyBar counts={refCounts} height="h-1" />
-                  </div>
-                )
-              })()}
-
-              {/* Field list */}
-              <div>
-                <span className="font-mono text-[10px] text-v2-muted/50">Reading: </span>
-                <span className="font-mono text-[10px] text-v2-muted/80">
-                  {okRefs.map((r) => `${r.tableName}.${r.fieldName}`).join(', ')}
-                </span>
-              </div>
-
-              {/* Status line */}
-              {violations.length === 0 && aggregateUsedRaw.length === 0 && joinRefsUsedAsColumn.length === 0 ? (
-                <div className="flex items-start gap-1.5">
-                  <Check className="mt-px h-3.5 w-3.5 shrink-0 text-v2-success" strokeWidth={2} />
-                  <p className="font-mono text-[10.5px] text-v2-foreground">
-                    All operations within your access grant.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {violations.length > 0 && (
-                    <div className="flex items-start gap-1.5">
-                      <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-v2-muted/60" strokeWidth={2} />
-                      <p className="font-mono text-[10.5px] text-v2-muted">
-                        Cannot reference private fields:{' '}
-                        <span className="text-v2-foreground">
-                          {violations.map((r) => r.fieldName).join(', ')}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                  {joinRefsUsedAsColumn.length > 0 && (
-                    <div className="flex items-start gap-1.5">
-                      <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                      <p className="font-mono text-[10.5px] text-v2-muted/80">
-                        Join field referenced — ensure you use it as a match key, not a return column.
-                      </p>
-                    </div>
-                  )}
-                  {aggregateUsedRaw.length > 0 && (
-                    <div className="flex items-start gap-1.5">
-                      <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-v2-muted/50" strokeWidth={2} />
-                      <p className="font-mono text-[10.5px] text-v2-muted/80">
-                        aggregate field{' '}
-                        <span className="text-v2-foreground">{aggregateUsedRaw.map((r) => r.fieldName).join(', ')}</span>{' '}
-                        used outside an aggregate function — must be wrapped in SUM/AVG/COUNT/etc.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </Surface>
-    </div>
-  )
-}
-
 // ── Main workbench ────────────────────────────────────────────────────────────
 
 export function AnalysisWorkbench({
@@ -2940,6 +2895,9 @@ FROM
   // Companion panel state
   const [panelOpen, setPanelOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<CompanionTab>('validate')
+
+  // B2: ref to "Submit for review" button so focus returns there when drawer closes
+  const submitTriggerRef = useRef<HTMLButtonElement>(null)
 
   const version = fromVersion ?? 1
 
@@ -3008,89 +2966,107 @@ FROM
       />
 
       {/* Workbench — full viewport height minus shell chrome */}
-      <div className="flex h-full flex-col px-4 py-4 md:px-6 md:py-4">
+      <div className="flex h-full flex-col px-4 md:px-8">
         {/* Header strip */}
-        <div className="mb-3 flex flex-wrap items-end gap-3 md:flex-nowrap">
-          {/* Eyebrow + name input */}
-          <div className="flex-1 min-w-0">
-            <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-v2-muted/60">
-              // NEW ANALYSIS
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              <div className="min-w-0">
-                <input
-                  type="text"
-                  value={name}
-                  onChange={handleNameChange}
-                  placeholder="analysis_name"
-                  autoFocus
-                  className="rounded-md border border-v2-border/60 bg-transparent px-2.5 py-1 font-mono text-[15px] font-semibold text-v2-foreground placeholder:text-v2-muted/30 focus:border-v2-foreground/30 focus:outline-none focus:ring-1 focus:ring-v2-foreground/20 w-64"
-                  aria-label="Analysis name"
-                />
-                {name && nameTaken && (
-                  <p className="mt-0.5 font-mono text-[10.5px] text-v2-muted/60">
-                    taken —{' '}
-                    <button
-                      type="button"
-                      onClick={() => setName(suggestName(name))}
-                      className="underline underline-offset-2 hover:text-v2-foreground"
-                    >
-                      try {suggestName(name)}
-                    </button>
-                  </p>
-                )}
-              </div>
+        <header className="pt-6 md:pt-7 pb-5 md:pb-6 mb-2">
+          {/* Back link */}
+          <Link
+            href="/cp/analyses"
+            className="inline-flex items-center gap-1.5 text-[12px] text-v2-muted transition-colors hover:text-v2-foreground mb-5 md:mb-6"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Analyses
+          </Link>
 
-              {vault && (
-                <div className="flex flex-wrap items-center gap-3 text-[12.5px] text-v2-muted">
-                  <div className="flex items-center gap-2">
-                    <span>Authoring against</span>
-                    <span className="font-semibold text-v2-foreground">{vault.label}</span>
-                    {!pinnedVaultId && (
-                      <button
-                        type="button"
-                        onClick={() => setPickerOpen(true)}
-                        className="font-mono text-[11px] text-v2-muted/60 underline underline-offset-2 transition-colors hover:text-v2-foreground"
-                      >
-                        change vault
-                      </button>
-                    )}
-                  </div>
-                  {/* Template popover — visible next to vault line until code is authored */}
-                  <TemplatePopover
-                    templates={vault.templates}
-                    currentCode={code}
-                    onInsert={handleInsert}
-                  />
-                </div>
+          {/* Main row: name input (dominant) + submit (right-aligned) */}
+          <div className="flex items-end justify-between gap-6 flex-wrap">
+            {/* Analysis name — document-title pattern */}
+            <div className="flex-1 min-w-0">
+              <input
+                type="text"
+                value={name}
+                onChange={handleNameChange}
+                placeholder="analysis_name"
+                autoFocus
+                aria-label="Analysis name"
+                className={cn(
+                  'w-full max-w-3xl bg-transparent px-0 py-1.5',
+                  'font-mono font-semibold text-[26px] md:text-[28px] tracking-tight text-v2-foreground',
+                  'border-0 border-b border-v2-border/50 outline-none',
+                  'placeholder:text-v2-muted/30 placeholder:font-normal',
+                  'transition-colors focus:border-v2-foreground/60',
+                )}
+              />
+              {name && nameTaken && (
+                <p className="mt-1.5 font-mono text-[11px] text-v2-muted/70">
+                  taken —{' '}
+                  <button
+                    type="button"
+                    onClick={() => setName(suggestName(name))}
+                    className="transition-colors hover:text-v2-foreground hover:underline underline-offset-4"
+                  >
+                    try {suggestName(name)}
+                  </button>
+                </p>
               )}
             </div>
-          </div>
 
-          {/* Right side: status + submit */}
-          <div className="flex items-center gap-3 shrink-0">
-            <StatusPill tone="neutral" size="xs">
-              Draft
-            </StatusPill>
+            {/* Submit for review — primary pill */}
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="rounded-md bg-v2-foreground px-4 py-2 font-mono text-[12px] font-medium text-v2-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
+              ref={submitTriggerRef}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-v2-foreground px-5 py-3 font-mono text-[13px] font-medium text-v2-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
             >
               Submit for review
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
-            <Link
-              href="/cp/analyses"
-              className="inline-flex items-center gap-1 rounded-md border border-v2-border/60 px-3 py-1.5 font-mono text-[11.5px] text-v2-muted transition-colors hover:border-v2-border hover:text-v2-foreground"
-            >
-              <ArrowLeft className="h-3 w-3" strokeWidth={2} />
-              Back
-            </Link>
           </div>
-        </div>
 
-        {/* 3-column grid */}
-        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr_320px] border border-v2-border rounded-2xl overflow-hidden bg-v2-surface shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-12px_oklch(0_0_0/0.08)]">
+          {/* Meta row: vault context (left) + template trigger (right) */}
+          {vault && (
+            <div className="mt-4 md:mt-5 flex items-center justify-between gap-4 flex-wrap">
+              {/* Left: vault chip + long name + provider + change vault */}
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                {/* Vault ID chip */}
+                <span className="inline-flex items-center rounded-md border border-v2-border bg-v2-foreground/[0.06] px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.1em] uppercase text-v2-foreground/85">
+                  {vault.label.split(' · ')[0] ?? vault.id.toUpperCase()}
+                </span>
+                {/* Long name */}
+                <span className="text-[13px] text-v2-foreground/80">
+                  {vault.label.split(' · ').slice(1).join(' · ')}
+                </span>
+                {/* Separator */}
+                <span aria-hidden className="text-v2-muted/50">·</span>
+                {/* Provider firm */}
+                <span className="text-[13px] text-v2-muted">{vault.provider.name}</span>
+                {/* Change vault — only when vault is not pinned */}
+                {!pinnedVaultId && (
+                  <>
+                    <span aria-hidden className="text-v2-muted/50">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(true)}
+                      className="text-[12.5px] text-v2-muted transition-colors hover:text-v2-foreground underline-offset-4 hover:underline"
+                    >
+                      Change vault
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Right: template trigger */}
+              <TemplatePopover
+                templates={vault.templates}
+                currentCode={code}
+                onInsert={handleInsert}
+              />
+            </div>
+          )}
+        </header>
+
+        {/* 2-column grid */}
+        <div className="min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[280px_1fr] border border-v2-border rounded-2xl overflow-hidden bg-v2-surface shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-12px_oklch(0_0_0/0.08)]">
           {/* Left: schema browser */}
           <div className="hidden xl:flex xl:flex-col border-r border-v2-border overflow-hidden">
             {vault ? (
@@ -3109,8 +3085,8 @@ FROM
             )}
           </div>
 
-          {/* Middle: code editor + companion panel */}
-          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-v2-border overflow-hidden">
+          {/* Middle (rightmost at xl): code editor + companion panel */}
+          <div className="flex flex-col min-h-[400px] xl:min-h-0 border-b xl:border-b-0 overflow-hidden">
             <div className="flex-1 min-h-0 overflow-hidden">
               <CodeEditorPanel code={code} onChange={setCode} />
             </div>
@@ -3132,31 +3108,6 @@ FROM
               eventSource={eventSource}
             />
           </div>
-
-          {/* Right: meta panel */}
-          <div className="overflow-hidden">
-            {vault ? (
-              <MetaPanel
-                vault={vault}
-                triggerKind={triggerKind}
-                onTriggerKindChange={setTriggerKind}
-                cronExpr={cronExpr}
-                onCronExprChange={setCronExpr}
-                eventSource={eventSource}
-                onEventSourceChange={setEventSource}
-                destinations={destinations}
-                onAddDest={(d) => setDestinations((prev) => [...prev, d])}
-                onRemoveDest={(i) => setDestinations((prev) => prev.filter((_, idx) => idx !== i))}
-                code={code}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center p-4">
-                <p className="font-mono text-[11px] text-v2-muted/40">
-                  Select a vault
-                </p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -3170,13 +3121,19 @@ FROM
           vault={vault}
           version={version}
           triggerKind={triggerKind}
+          onTriggerKindChange={setTriggerKind}
           cronExpr={cronExpr}
+          onCronExprChange={setCronExpr}
           eventSource={eventSource}
+          onEventSourceChange={setEventSource}
           destinations={destinations}
+          onAddDest={(d) => setDestinations((prev) => [...prev, d])}
+          onRemoveDest={(i) => setDestinations((prev) => prev.filter((_, idx) => idx !== i))}
           code={code}
           fieldRefs={fieldRefs}
           hasViolations={violations.length > 0}
           assertionCount={assertionCount}
+          returnFocusRef={submitTriggerRef}
         />
       )}
 
