@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",
+    "apache-arrow": "^17.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-table": "^8.21.3",
