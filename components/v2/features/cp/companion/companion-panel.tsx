@@ -7,7 +7,6 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Plus,
 } from 'lucide-react'
 import {
   Tabs,
@@ -23,7 +22,6 @@ import {
   hasFromClause,
   getNextCronExecutions,
   countCronExecutionsIn30Days,
-  buildAssertions,
   formatExecutionTime,
   COMPUTE_COST_PER_EXEC,
   GAS_PER_WRITE,
@@ -35,6 +33,7 @@ import { useCompanionContext } from './companion-context'
 import { usePanelResize } from './use-panel-resize'
 import { ValidateTab } from './validate-tab'
 import { DryRunTab } from './dryrun-tab'
+import { TestsTab } from './tests-tab'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -90,9 +89,6 @@ export function CompanionPanel({
   const selectColumns = parseSelectColumns(code, vault)
   const hasFrom = hasFromClause(code)
   const codeEmpty = code.trim().length === 0 || !hasFrom
-
-  // ── Assertions for Tests tab
-  const assertions = buildAssertions(selectColumns)
 
   // ── Schedule & Cost tab
   const NOW = new Date()
@@ -284,68 +280,7 @@ function verifyHyvePayload(
 
             {/* ── Tests tab ── */}
             <TabsContent value="tests" className="m-0 h-full">
-              <div className="px-4 py-3 space-y-3">
-                {selectColumns.length === 0 ? (
-                  <p className="font-mono text-[11px] text-v2-muted">
-                    Write a SELECT statement to define assertions on output columns.
-                  </p>
-                ) : (
-                  <>
-                    {/* Assertion rows */}
-                    <div className="space-y-1.5">
-                      {assertions.map((a) => (
-                        <div
-                          key={a.id}
-                          className="flex items-center gap-2 rounded-lg border border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-2"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <span className="font-mono text-[11px] text-v2-foreground">
-                              {a.label}
-                            </span>
-                            <span className="ml-2 font-mono text-[10px] text-v2-muted">
-                              {a.detail}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            title="Configure assertion"
-                            className="shrink-0 rounded p-1 text-v2-muted transition-colors hover:bg-v2-foreground/[0.06] hover:text-v2-foreground"
-                          >
-                            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                              <path fillRule="evenodd" d="M8 1.5a.5.5 0 0 1 .5.5v1.05A4.505 4.505 0 0 1 12 7.5a.5.5 0 0 1-1 0A3.5 3.5 0 0 0 7.5 4a3.5 3.5 0 0 0-3.498 3.322L4 7.5a.5.5 0 0 1-1 0 4.505 4.505 0 0 1 3.5-4.45V2a.5.5 0 0 1 .5-.5zM2.5 9a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0 2.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                            </svg>
-                          </button>
-                          <span
-                            className={cn(
-                              'shrink-0 rounded-full px-2 py-0.5 font-mono text-[9.5px]',
-                              a.status === 'will-run'
-                                ? 'bg-v2-foreground/[0.06] text-v2-muted'
-                                : a.status === 'passed'
-                                  ? 'bg-v2-success/10 text-v2-success'
-                                  : 'bg-v2-danger/10 text-v2-danger',
-                            )}
-                          >
-                            {a.status === 'will-run' ? 'Will run' : a.status === 'passed' ? 'Passed' : 'Failed'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add assertion */}
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-v2-border/60 px-3 py-1.5 font-mono text-[10.5px] text-v2-muted transition-colors hover:border-v2-border hover:text-v2-foreground"
-                    >
-                      <Plus className="h-3 w-3" strokeWidth={2} />
-                      Add assertion
-                    </button>
-
-                    <p className="font-mono text-[9.5px] text-v2-muted">
-                      {assertions.length} assertion{assertions.length !== 1 ? 's' : ''} · all execute before the signed payload is published
-                    </p>
-                  </>
-                )}
-              </div>
+              <TestsTab />
             </TabsContent>
 
             {/* ── Schedule & Cost tab ── */}
