@@ -7,7 +7,6 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Play,
   Plus,
 } from 'lucide-react'
 import {
@@ -22,7 +21,6 @@ import {
   buildCodeChecks,
   parseSelectColumns,
   hasFromClause,
-  extractLineageRefs,
   getNextCronExecutions,
   countCronExecutionsIn30Days,
   buildAssertions,
@@ -36,16 +34,17 @@ import type { CompanionTab, CompanionPanelProps } from './companion-panel.types'
 import { useCompanionContext } from './companion-context'
 import { usePanelResize } from './use-panel-resize'
 import { ValidateTab } from './validate-tab'
+import { DryRunTab } from './dryrun-tab'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
-const SAMPLE_ROWS: Record<string, string>[] = [
+export const SAMPLE_ROWS: Record<string, string>[] = [
   { advance_rate: '0.85', nav_usd: '425,371,892.54', eligible_par: '478,231,015.22', as_of: '2026-05-15T14:22:18Z' },
   { advance_rate: '0.84', nav_usd: '419,205,119.18', eligible_par: '482,007,283.61', as_of: '2026-05-15T14:21:14Z' },
 ]
 
 /** Numeric-looking values should be right-aligned */
-function isNumericValue(v: string): boolean {
+export function isNumericValue(v: string): boolean {
   return /^[\d,.\-+e]+$/.test(v.trim())
 }
 
@@ -174,9 +173,6 @@ function verifyHyvePayload(
   return recovered.toLowerCase() === signerAddress.toLowerCase()
 }`
 
-  // Determine if we can show sample rows: code has FROM and at least one column
-  const canShowDryRun = hasFrom && !codeEmpty
-
   // Handle tab click — if panel closed, open it too
   const handleTabTriggerClick = (tab: CompanionTab) => {
     onTabChange(tab)
@@ -283,126 +279,7 @@ function verifyHyvePayload(
 
             {/* ── Dry-run tab ── */}
             <TabsContent value="dryrun" className="m-0 h-full">
-              <div className="px-4 py-3 space-y-4">
-                {!canShowDryRun ? (
-                  <p className="font-mono text-[11px] text-v2-muted">
-                    Write a SELECT statement to preview output.
-                  </p>
-                ) : (
-                  <>
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                        Output schema
-                      </span>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] text-v2-muted border border-v2-border/60 transition-colors hover:border-v2-border hover:text-v2-foreground"
-                      >
-                        <Play className="h-2.5 w-2.5" strokeWidth={2} />
-                        Run dry-run
-                      </button>
-                    </div>
-
-                    {/* Output schema table — lineage inline as footnote */}
-                    {selectColumns.length === 0 ? (
-                      <p className="font-mono text-[11px] text-v2-muted">
-                        Add AS aliases to your SELECT columns for schema preview.
-                      </p>
-                    ) : (
-                      <div className="overflow-x-auto rounded-lg border border-v2-border/60">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="border-b border-v2-border/60 bg-v2-foreground/[0.04]">
-                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Column</th>
-                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Type</th>
-                              <th className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">Source</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectColumns.map((col) => {
-                              const inputRefs = extractLineageRefs(col.expression, vault)
-                              return (
-                                <tr key={col.alias} className="border-b border-v2-border/60 last:border-0 align-top">
-                                  <td className="px-3 py-1.5 font-mono text-[11px] text-v2-foreground">
-                                    {col.alias}
-                                    {inputRefs.length > 0 && (
-                                      <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                                        <span className="font-mono text-[9.5px] text-v2-muted">←</span>
-                                        {inputRefs.map((ref, i) => (
-                                          <span
-                                            key={i}
-                                            className="rounded bg-v2-foreground/[0.05] px-1 py-px font-mono text-[9.5px] text-v2-muted"
-                                          >
-                                            {ref.label}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted">{col.type ?? 'computed'}</td>
-                                  <td className="px-3 py-1.5 font-mono text-[10px] text-v2-muted">{col.source}</td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {/* Sample rows */}
-                    <div className="space-y-2">
-                      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                        Sample rows
-                      </span>
-                      {selectColumns.length === 0 ? null : (
-                        <div className="overflow-x-auto rounded-lg border border-v2-border/60">
-                          <table className="w-full text-left">
-                            <thead>
-                              <tr className="border-b border-v2-border/60 bg-v2-foreground/[0.04]">
-                                {selectColumns.map((col) => (
-                                  <th key={col.alias} className="px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                                    {col.alias}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {SAMPLE_ROWS.map((row, i) => (
-                                <tr key={i} className="border-b border-v2-border/60 last:border-0">
-                                  {selectColumns.map((col) => {
-                                    const val = row[col.alias] ?? (
-                                      col.type === 'TIMESTAMP' ? '2026-05-15T14:22:18Z' :
-                                      col.type === 'TEXT' ? 'fresh' :
-                                      col.type === 'NUMERIC' ? '—' : '—'
-                                    )
-                                    const isNum = isNumericValue(String(val))
-                                    return (
-                                      <td
-                                        key={col.alias}
-                                        className={cn(
-                                          'px-3 py-1.5 font-mono text-[11px] text-v2-foreground',
-                                          isNum ? 'text-right tabular-nums' : '',
-                                        )}
-                                      >
-                                        {val}
-                                      </td>
-                                    )
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      <p className="font-mono text-[9.5px] text-v2-muted">
-                        Sample rows · executed against snapshot 2026-05-15 14:22 UTC · ~340ms · 127,432 rows scanned
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
+              <DryRunTab />
             </TabsContent>
 
             {/* ── Tests tab ── */}
