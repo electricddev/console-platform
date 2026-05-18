@@ -52,6 +52,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { CompanionPanel } from './companion/companion-panel'
+import { CompanionContextProvider } from './companion/companion-context'
 import type { CompanionTab } from './companion/companion-panel.types'
 
 // ── Prism SQL highlight ───────────────────────────────────────────────────────
@@ -2375,23 +2376,29 @@ FROM
             <div className="flex-1 min-h-0 overflow-hidden">
               <CodeEditorPanel code={code} onChange={setCode} />
             </div>
-            <CompanionPanel
-              open={panelOpen}
-              onToggle={() => setPanelOpen((v) => !v)}
-              activeTab={activeTab}
-              onTabChange={(t) => {
-                setActiveTab(t)
-                if (!panelOpen) setPanelOpen(true)
+            <CompanionContextProvider
+              value={{
+                code,
+                vault,
+                fieldRefs,
+                destinations,
+                name,
+                triggerKind,
+                cronExpr,
+                eventSource,
+                onchainDests: destinations.filter((d): d is OnchainDest => d.kind === 'onchain'),
               }}
-              code={code}
-              vault={vault}
-              fieldRefs={fieldRefs}
-              destinations={destinations}
-              name={name}
-              triggerKind={triggerKind}
-              cronExpr={cronExpr}
-              eventSource={eventSource}
-            />
+            >
+              <CompanionPanel
+                open={panelOpen}
+                onToggle={() => setPanelOpen((v) => !v)}
+                activeTab={activeTab}
+                onTabChange={(t) => {
+                  setActiveTab(t)
+                  if (!panelOpen) setPanelOpen(true)
+                }}
+              />
+            </CompanionContextProvider>
           </div>
         </div>
       </div>

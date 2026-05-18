@@ -30,14 +30,10 @@ import {
   COMPUTE_COST_PER_EXEC,
   GAS_PER_WRITE,
   type PolicyCheckStatus,
-  type TriggerKind,
-  type OnchainDest,
-  type FieldRef,
-  type Destination,
 } from '@/components/v2/features/cp/analysis-workbench'
-import type { ConsumerVault } from '@/components/v2/features/cp/cp-fixtures'
 import { CopyButton } from './copy-button'
 import type { CompanionTab, CompanionPanelProps } from './companion-panel.types'
+import { useCompanionContext } from './companion-context'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -69,15 +65,9 @@ export function CompanionPanel({
   onToggle,
   activeTab,
   onTabChange,
-  code,
-  vault,
-  fieldRefs,
-  destinations,
-  name,
-  triggerKind,
-  cronExpr,
-  eventSource,
 }: CompanionPanelProps) {
+  const { code, vault, fieldRefs, destinations, name, triggerKind, cronExpr, eventSource, onchainDests } = useCompanionContext()
+
   // ── Access & policy checks
   const policyChecks = buildPolicyChecksWithKMin({ fieldRefs, destinations, name, vault })
   const policyFailCount = policyChecks.filter((c) => c.status === 'fail').length
@@ -102,8 +92,6 @@ export function CompanionPanel({
     triggerKind === 'cron'
       ? getNextCronExecutions(cronExpr, NOW, 5)
       : null
-
-  const onchainDests = destinations.filter((d): d is OnchainDest => d.kind === 'onchain')
   const gasPerExec = onchainDests.reduce((sum, d) => sum + (GAS_PER_WRITE[d.chain] ?? 0), 0)
   const totalCostPerExec = COMPUTE_COST_PER_EXEC + gasPerExec
 

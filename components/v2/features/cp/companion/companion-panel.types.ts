@@ -21,14 +21,6 @@ export type CompanionPanelProps = {
   onToggle: () => void
   activeTab: CompanionTab
   onTabChange: (t: CompanionTab) => void
-  code: string
-  vault: ConsumerVault | null
-  fieldRefs: FieldRef[]
-  destinations: Destination[]
-  name: string
-  triggerKind: TriggerKind
-  cronExpr: string
-  eventSource: string
 }
 
 export type CompanionContextValue = {
