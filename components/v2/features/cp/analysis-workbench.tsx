@@ -41,6 +41,7 @@ import {
   type VaultField,
   type PrivacyLevel,
   type VaultTemplate,
+  type TemplateCategory,
 } from '@/components/v2/features/cp/cp-fixtures'
 import {
   PRIVACY_TONE,
@@ -412,6 +413,52 @@ function SchemaPanel({
 
 // ── Template popover ──────────────────────────────────────────────────────────
 
+// Maps the fixture ChainId ('base', 'ethereum', 'arbitrum', 'optimism') to the
+// workbench OnchainDest chain union ('BASE', 'ETH', 'ARB', 'OP').
+function mapChainId(chain: string): OnchainDest['chain'] {
+  const MAP: Record<string, OnchainDest['chain']> = {
+    base: 'BASE',
+    ethereum: 'ETH',
+    arbitrum: 'ARB',
+    optimism: 'OP',
+  }
+  return MAP[chain] ?? 'ETH'
+}
+
+/** Labels + styles for each TemplateOutput kind pill. */
+function OutputPill({ tmpl }: { tmpl: VaultTemplate }) {
+  const isTrigger = tmpl.category === 'trigger'
+  const label =
+    tmpl.output.kind === 'pass_fail'
+      ? 'GATE'
+      : tmpl.output.kind === 'drift_score'
+        ? 'DRIFT'
+        : tmpl.output.kind === 'match_mismatch'
+          ? 'RECONCILE'
+          : 'TRIGGER'
+
+  return (
+    <span
+      className={cn(
+        'shrink-0 rounded px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.08em]',
+        isTrigger
+          ? 'bg-v2-warning/15 text-v2-warning'
+          : 'bg-v2-foreground/[0.08] text-v2-muted',
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
+const CATEGORY_ORDER: TemplateCategory[] = ['entry', 'monitoring', 'trigger']
+
+const CATEGORY_LABELS: Record<TemplateCategory, string> = {
+  entry: 'Entry decision',
+  monitoring: 'Ongoing monitoring',
+  trigger: 'On-chain triggers',
+}
+
 function TemplatePopover({
   templates,
   currentCode,
@@ -419,7 +466,7 @@ function TemplatePopover({
 }: {
   templates: VaultTemplate[]
   currentCode: string
-  onInsert: (snippet: string) => void
+  onInsert: (snippet: string, destinations?: Destination[]) => void
 }) {
   const [open, setOpen] = useState(false)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -428,17 +475,41 @@ function TemplatePopover({
     .split('\n')
     .some((line) => line.trim().length > 0 && !line.trim().startsWith('--'))
 
+  // Group templates by category, preserving narrative order.
+  const grouped = CATEGORY_ORDER.reduce<Record<TemplateCategory, VaultTemplate[]>>(
+    (acc, cat) => {
+      acc[cat] = templates.filter((t) => t.category === cat)
+      return acc
+    },
+    { entry: [], monitoring: [], trigger: [] },
+  )
+
+  const resolveDestinations = (tmpl: VaultTemplate): Destination[] | undefined => {
+    if (!tmpl.suggestedDestinations || tmpl.suggestedDestinations.length === 0) return undefined
+    return tmpl.suggestedDestinations.map((d) => {
+      if (d.kind === 'onchain') {
+        return {
+          kind: 'onchain' as const,
+          chain: mapChainId(d.chain),
+          address: d.address,
+          label: d.label ?? '',
+        }
+      }
+      return { kind: 'http' as const, url: d.url, label: d.label ?? '' }
+    })
+  }
+
   const handleSelect = (tmpl: VaultTemplate) => {
     if (hasContent) {
       setConfirmId(tmpl.id)
     } else {
-      onInsert(tmpl.code)
+      onInsert(tmpl.code, resolveDestinations(tmpl))
       setOpen(false)
     }
   }
 
   const confirmReplace = (tmpl: VaultTemplate) => {
-    onInsert(tmpl.code)
+    onInsert(tmpl.code, resolveDestinations(tmpl))
     setOpen(false)
     setConfirmId(null)
   }
@@ -475,51 +546,73 @@ function TemplatePopover({
           {/* Popover */}
           <div
             role="menu"
-            className="absolute right-0 top-full z-40 mt-1.5 w-72 rounded-xl border border-v2-border/60 bg-v2-surface shadow-lg overflow-hidden"
+            className="absolute right-0 top-full z-40 mt-1.5 w-80 rounded-xl border border-v2-border/60 bg-v2-surface shadow-lg overflow-hidden max-h-[70vh] overflow-y-auto"
           >
-            {templates.map((tmpl) => {
-              const isConfirming = confirmId === tmpl.id
+            {CATEGORY_ORDER.map((cat) => {
+              const group = grouped[cat]
+              if (group.length === 0) return null
               return (
-                <div key={tmpl.id} className="border-b border-v2-border/30 last:border-b-0">
-                  {isConfirming ? (
-                    <div className="flex items-center gap-2 px-3 py-2.5">
-                      <span className="flex-1 font-mono text-[10px] text-v2-muted/70">
-                        Replace current code?
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => confirmReplace(tmpl)}
-                        className="rounded bg-v2-foreground px-2 py-0.5 font-mono text-[9.5px] text-v2-surface"
-                      >
-                        Insert
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmId(null)}
-                        className="rounded border border-v2-border/50 px-2 py-0.5 font-mono text-[9.5px] text-v2-muted"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      title={tmpl.description}
-                      onClick={() => handleSelect(tmpl)}
-                      className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block font-mono text-[11px] text-v2-foreground">
-                          {tmpl.name}
-                        </span>
-                        <span className="block text-[10px] text-v2-muted/60 leading-snug mt-0.5">
-                          {tmpl.description}
-                        </span>
+                <div key={cat}>
+                  {/* Section header */}
+                  <div className="sticky top-0 z-10 border-b border-v2-border/30 bg-v2-surface px-3 py-1.5">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-v2-muted/50">
+                      {CATEGORY_LABELS[cat]}
+                    </span>
+                  </div>
+                  {group.map((tmpl) => {
+                    const isConfirming = confirmId === tmpl.id
+                    return (
+                      <div key={tmpl.id} className="border-b border-v2-border/20 last:border-b-0">
+                        {isConfirming ? (
+                          <div className="flex items-center gap-2 px-3 py-2.5">
+                            <span className="flex-1 font-mono text-[10px] text-v2-muted/70">
+                              Replace current code?
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => confirmReplace(tmpl)}
+                              className="rounded bg-v2-foreground px-2 py-0.5 font-mono text-[9.5px] text-v2-surface"
+                            >
+                              Insert
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmId(null)}
+                              className="rounded border border-v2-border/50 px-2 py-0.5 font-mono text-[9.5px] text-v2-muted"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            title={tmpl.description}
+                            onClick={() => handleSelect(tmpl)}
+                            className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-v2-foreground/[0.04]"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="font-mono text-[11px] text-v2-foreground leading-tight">
+                                  {tmpl.name}
+                                </span>
+                                <OutputPill tmpl={tmpl} />
+                              </div>
+                              <span className="block text-[10px] text-v2-muted/60 leading-snug">
+                                {tmpl.description}
+                              </span>
+                              {tmpl.category === 'trigger' && tmpl.onChainAction && (
+                                <span className="mt-1 block text-[9.5px] text-v2-muted/50 leading-snug">
+                                  → {tmpl.onChainAction.target}: {tmpl.onChainAction.effect}
+                                </span>
+                              )}
+                            </div>
+                            <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-v2-muted/30" strokeWidth={1.75} />
+                          </button>
+                        )}
                       </div>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-v2-muted/30" strokeWidth={1.75} />
-                    </button>
-                  )}
+                    )
+                  })}
                 </div>
               )
             })}
@@ -2199,8 +2292,9 @@ FROM
   }
 
   // Insert snippet: if the snippet looks like a full SQL template (starts with --), replace;
-  // otherwise append at end of current code.
-  const handleInsert = useCallback((snippet: string) => {
+  // otherwise append at end of current code. When destinations are provided they
+  // replace the current destinations state (trigger template pre-fill).
+  const handleInsert = useCallback((snippet: string, destinations?: Destination[]) => {
     setCode((prev) => {
       // Templates start with '-- ' on the first line; append field refs otherwise
       if (snippet.trimStart().startsWith('-- ') && snippet.includes('\n')) {
@@ -2209,6 +2303,9 @@ FROM
       const trimmed = prev.trimEnd()
       return `${trimmed}\n  ${snippet}`
     })
+    if (destinations && destinations.length > 0) {
+      setDestinations(destinations)
+    }
   }, [])
 
   const showPrivateToast = useCallback((fieldName: string) => {

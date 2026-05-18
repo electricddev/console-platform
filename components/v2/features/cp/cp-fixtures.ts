@@ -31,12 +31,48 @@ export type VaultField = {
   kMin?: number
 }
 
+/**
+ * Templates are organised by the decision the counterparty has to make:
+ *
+ *   entry      — "should I allocate?" pass/fail gates run pre-deposit.
+ *   monitoring — "should I stay allocated?" drift / reconcile / breach scans.
+ *   trigger    — "the smart contract reacts when the gate trips." The output
+ *                of these templates is wired to an on-chain destination so a
+ *                threshold breach automatically actuates capital. This is the
+ *                product — the analytical templates are just supporting cast.
+ */
+export type TemplateCategory = 'entry' | 'monitoring' | 'trigger'
+
+/** What the template's output represents to the consumer. */
+export type TemplateOutput =
+  | { kind: 'pass_fail'; gate: string }
+  | { kind: 'drift_score'; threshold: number; unit: 'pct' | 'score' }
+  | { kind: 'match_mismatch'; tolerance?: number }
+  | { kind: 'threshold_trigger'; field: string; threshold: number; comparator: 'gt' | 'lt' | 'eq' }
+
+/** The on-chain consequence when a trigger template's threshold trips. */
+export type OnChainAction = {
+  /** Free-form label for the smart contract or market. */
+  target: string
+  /** What the contract does, plain-English. */
+  effect: string
+  /** Severity of the automated response. */
+  severity: 'auto' | 'manual_review' | 'wind_down'
+}
+
 export type VaultTemplate = {
   id: string
   name: string
   description: string
+  category: TemplateCategory
   privacyMix: PrivacyLevel[]
   code: string
+  /** What the template's output means once it runs. */
+  output: TemplateOutput
+  /** Set only for `category: 'trigger'` templates — the on-chain wire-up. */
+  onChainAction?: OnChainAction
+  /** Destinations the consumer can pre-fill with one click when picking this template. */
+  suggestedDestinations?: Destination[]
 }
 
 export type VaultTable = {
@@ -987,7 +1023,9 @@ const ACRED_TEMPLATES: VaultTemplate[] = [
     id: 'acred_tmpl_advance_rate',
     name: 'Advance rate (basic)',
     description: 'NAV × collateral coverage ratio with a 0.85 cap.',
+    category: 'monitoring',
     privacyMix: ['select', 'aggregate'],
+    output: { kind: 'drift_score', threshold: 0.05, unit: 'pct' },
     code: `-- Advance rate (basic)
 -- NAV-weighted advance rate with 0.85 cap
 WITH nav AS (
@@ -1010,7 +1048,9 @@ FROM nav, collateral;`,
     id: 'acred_tmpl_nav_freshness',
     name: 'NAV freshness guard',
     description: 'Alerts if as_of falls behind expected cadence.',
+    category: 'monitoring',
     privacyMix: ['select'],
+    output: { kind: 'pass_fail', gate: 'NAV strike is fresh (<24h)' },
     code: `-- NAV freshness guard
 -- Raises freshness flag if the most recent strike is stale
 WITH latest AS (
@@ -1033,7 +1073,9 @@ FROM latest;`,
     id: 'acred_tmpl_concentration_vintage',
     name: 'Concentration by vintage',
     description: 'GROUP BY vintage_year, SUM par for performing positions.',
+    category: 'monitoring',
     privacyMix: ['dimension', 'aggregate'],
+    output: { kind: 'drift_score', threshold: 0.10, unit: 'pct' },
     code: `-- Concentration by vintage
 -- Groups performing positions by origination year
 SELECT
@@ -1049,7 +1091,9 @@ ORDER BY vintage_year DESC;`,
     id: 'acred_tmpl_ltv_band',
     name: 'LTV band distribution',
     description: 'GROUP BY ltv_band, count and sum par value.',
+    category: 'monitoring',
     privacyMix: ['dimension', 'aggregate'],
+    output: { kind: 'drift_score', threshold: 0.10, unit: 'pct' },
     code: `-- LTV band distribution
 -- Counts and par exposure by LTV tier bucket
 SELECT
@@ -1065,7 +1109,9 @@ ORDER BY ltv_band;`,
     id: 'acred_tmpl_default_rate_30d',
     name: 'Default-rate rolling 30d',
     description: 'Vintage default rates over a rolling 30-day window.',
+    category: 'monitoring',
     privacyMix: ['select'],
+    output: { kind: 'drift_score', threshold: 0.02, unit: 'pct' },
     code: `-- Default-rate rolling 30d
 -- Vintage-level default rates from the risk_pack vintage_cohort rows
 SELECT
@@ -1089,7 +1135,9 @@ ORDER BY default_rate_ytd DESC;`,
     id: 'acred_tmpl_top_borrower_concentration',
     name: 'Top-N borrower concentration',
     description: 'Reads the pre-aggregated risk_pack portfolio row; flags single-name cap breach.',
+    category: 'entry',
     privacyMix: ['select', 'aggregate'],
+    output: { kind: 'pass_fail', gate: 'Top-1 borrower exposure < 5% of NAV' },
     code: `-- Top-N borrower concentration  (Morpho single-name cap input)
 -- Pulls pre-aggregated top_N exposure from the risk_pack and pairs
 -- with the latest NAV strike to compute nominal $ exposures.
@@ -1121,7 +1169,9 @@ FROM risk, nav;`,
     id: 'acred_tmpl_industry_hhi_breach',
     name: 'Industry / geographic HHI breach',
     description: 'Herfindahl regime classification — alerts when sector or geo concentration crosses thresholds.',
+    category: 'monitoring',
     privacyMix: ['select'],
+    output: { kind: 'pass_fail', gate: 'Industry HHI < 2,500 (not concentrated)' },
     code: `-- Industry & geographic Herfindahl-Hirschman regime
 -- Bands match DOJ HHI guidance: <1500 diversified, 1500-2500 moderate, >2500 concentrated.
 SELECT
@@ -1147,7 +1197,9 @@ ORDER BY as_of DESC LIMIT 1;`,
     id: 'acred_tmpl_collateral_quality_score',
     name: 'Collateral quality score',
     description: 'Par-weighted share of non-accrual, restructured, and cov-lite positions across the book.',
+    category: 'monitoring',
     privacyMix: ['aggregate'],
+    output: { kind: 'drift_score', threshold: 0.02, unit: 'pct' },
     code: `-- Collateral quality score  (composite quality KPI for the fund)
 -- Higher = lower quality. Each share is kMin-protected.
 SELECT
@@ -1163,7 +1215,9 @@ WHERE status IN ('performing', 'watch');`,
     id: 'acred_tmpl_stress_lltv',
     name: 'Stress-test LLTV (Morpho)',
     description: 'Liquidation-LTV recommendation with a 5% NAV haircut and senior-eligible collateral filter.',
+    category: 'entry',
     privacyMix: ['select', 'aggregate'],
+    output: { kind: 'pass_fail', gate: 'Stressed LLTV recommendation ≤ 0.70' },
     code: `-- Stress-test LLTV  (Morpho market parameter setter)
 -- Applies a 5% NAV haircut and restricts collateral to senior-secured / first-lien
 -- performing positions, then caps the recommended LLTV at 0.70.
@@ -1197,7 +1251,9 @@ FROM nav, collateral, stressed;`,
     id: 'acred_tmpl_redemption_pressure',
     name: 'Redemption pressure vs cash',
     description: 'Pending redemption queue compared against operating-cash buffer; classifies liquidity regime.',
+    category: 'monitoring',
     privacyMix: ['aggregate', 'dimension'],
+    output: { kind: 'pass_fail', gate: 'Operating cash covers pending redemptions' },
     code: `-- Redemption pressure  (gating-risk early warning)
 -- A high ratio means redemption requests are approaching the operating
 -- cash buffer — fund may need to draw subscription line or gate exits.
@@ -1233,7 +1289,9 @@ FROM pending, cash;`,
     id: 'acred_tmpl_dscr_coverage',
     name: 'DSCR coverage trend',
     description: 'Debt-service coverage ratio over trailing quarters with regime classification.',
+    category: 'monitoring',
     privacyMix: ['aggregate', 'dimension'],
+    output: { kind: 'pass_fail', gate: 'Trailing DSCR ≥ 1.1' },
     code: `-- Debt-service coverage ratio  (trailing 4 quarters)
 -- DSCR < 1.0 means net interest income won't cover obligations — covenant trigger.
 SELECT
@@ -1255,7 +1313,9 @@ ORDER BY period DESC;`,
     id: 'acred_tmpl_pik_creep',
     name: 'PIK creep by vintage',
     description: 'Weighted PIK share by vintage cohort — early-warning signal of borrower distress.',
+    category: 'monitoring',
     privacyMix: ['dimension', 'aggregate'],
+    output: { kind: 'drift_score', threshold: 0.05, unit: 'pct' },
     code: `-- PIK creep  (cash-pay → in-kind drift, vintage cohort view)
 -- Rising weighted_pik_share in newer vintages signals adverse selection.
 SELECT
@@ -1273,7 +1333,9 @@ ORDER BY vintage_year DESC;`,
     id: 'acred_tmpl_attestation_freshness',
     name: 'TSSO attestation freshness',
     description: 'Confirms the most recent NAV strike is signed and chained; classifies freshness regime.',
+    category: 'monitoring',
     privacyMix: ['select', 'join'],
+    output: { kind: 'pass_fail', gate: 'Latest NAV strike signed and fresh' },
     code: `-- TSSO attestation freshness  (oracle integrity check)
 -- Each row must have a non-null attestation_id chained to its predecessor.
 -- A null id or > 24h staleness should fail the oracle gate.
@@ -1292,6 +1354,317 @@ SELECT
 FROM vault.acred.nav_history
 ORDER BY as_of DESC
 LIMIT 5;`,
+  },
+
+  // ── Entry decision (3 new) ────────────────────────────────────────────────
+  {
+    id: 'acred_tmpl_non_accrual_gate',
+    name: 'Non-accrual rate gate',
+    description: 'Pass/fail allocation gate: non-accrual share of par must be below 5%.',
+    category: 'entry',
+    privacyMix: ['aggregate'],
+    output: { kind: 'pass_fail', gate: 'Non-accrual share < 5% of par' },
+    code: `-- Non-accrual rate gate  (entry decision)
+-- Total par must be performing enough to clear the 5% allocation gate.
+WITH book AS (
+  SELECT
+    SUM(par_value)                                                            AS total_par,
+    SUM(par_value) FILTER (WHERE non_accrual = true) / SUM(par_value)         AS non_accrual_share
+  FROM vault.acred.loan_tape
+  WHERE status IN ('performing', 'watch')
+)
+SELECT
+  total_par,
+  non_accrual_share,
+  non_accrual_share < 0.05            AS passes_gate,
+  CASE
+    WHEN non_accrual_share < 0.05 THEN 'pass'
+    ELSE 'fail'
+  END                                  AS gate_status
+FROM book;`,
+  },
+  {
+    id: 'acred_tmpl_weighted_rating_gate',
+    name: 'Weighted average rating gate',
+    description: 'Pass/fail allocation gate: par-weighted internal rating must meet minimum threshold (≤ 2.5 on the 1–5 scale).',
+    category: 'entry',
+    privacyMix: ['select'],
+    output: { kind: 'pass_fail', gate: 'Par-weighted internal rating ≤ 2.5' },
+    code: `-- Weighted average rating gate  (entry decision)
+-- Reads the pre-computed par-weighted internal rating from risk_pack.
+-- Lower number = stronger credit. Gate at 2.5 = upper-half of 1–5 scale.
+SELECT
+  as_of,
+  weighted_internal_rating,
+  weighted_internal_rating <= 2.5      AS passes_gate,
+  CASE
+    WHEN weighted_internal_rating <= 2.5 THEN 'pass'
+    ELSE 'fail'
+  END                                  AS gate_status
+FROM vault.acred.risk_pack
+WHERE record_type = 'portfolio'
+ORDER BY as_of DESC
+LIMIT 1;`,
+  },
+  {
+    id: 'acred_tmpl_ltv_band_policy_gate',
+    name: 'LTV distribution policy gate',
+    description: 'Pass/fail allocation gate: no more than 15% of par may sit in the >85% LTV band.',
+    category: 'entry',
+    privacyMix: ['dimension', 'aggregate'],
+    output: { kind: 'pass_fail', gate: 'High-LTV (>85%) par share ≤ 15%' },
+    code: `-- LTV distribution policy gate  (entry decision)
+-- Buckets par by ltv_band and checks that the highest-risk band is contained.
+WITH bands AS (
+  SELECT
+    ltv_band,
+    SUM(par_value) AS band_par
+  FROM vault.acred.loan_tape
+  WHERE status = 'performing'
+  GROUP BY ltv_band
+),
+totals AS (
+  SELECT SUM(band_par) AS total_par FROM bands
+)
+SELECT
+  bands.ltv_band,
+  bands.band_par,
+  bands.band_par / totals.total_par                    AS band_share,
+  (SELECT band_par / totals.total_par
+     FROM bands WHERE ltv_band = '>85%') <= 0.15       AS passes_gate
+FROM bands, totals
+ORDER BY ltv_band;`,
+  },
+
+  // ── Ongoing monitoring (3 new) ─────────────────────────────────────────────
+  {
+    id: 'acred_tmpl_breach_scanner',
+    name: 'Threshold breach scanner',
+    description: 'Single-row scan returning a boolean for each watched KPI — any true cell means a covenant trigger fired since the last run.',
+    category: 'monitoring',
+    privacyMix: ['select'],
+    output: { kind: 'pass_fail', gate: 'No watched KPI has crossed its threshold' },
+    code: `-- Threshold breach scanner  (cross-KPI single-row check)
+-- Boolean cells; ANY true means a covenant or policy threshold tripped.
+WITH risk AS (
+  SELECT
+    top_1_borrower_pct,
+    industry_hhi,
+    non_accrual_pct,
+    pct_default_or_watchlist,
+    weighted_internal_rating
+  FROM vault.acred.risk_pack
+  WHERE record_type = 'portfolio'
+  ORDER BY as_of DESC LIMIT 1
+)
+SELECT
+  top_1_borrower_pct       > 0.10           AS breach_single_name_10pct,
+  industry_hhi             > 2500           AS breach_industry_concentrated,
+  non_accrual_pct          > 0.05           AS breach_non_accrual_5pct,
+  pct_default_or_watchlist > 0.10           AS breach_watchlist_10pct,
+  weighted_internal_rating > 2.5            AS breach_rating_below_min,
+  (top_1_borrower_pct > 0.10
+    OR industry_hhi > 2500
+    OR non_accrual_pct > 0.05
+    OR pct_default_or_watchlist > 0.10
+    OR weighted_internal_rating > 2.5)      AS any_breach
+FROM risk;`,
+  },
+  {
+    id: 'acred_tmpl_composition_drift',
+    name: 'Composition drift vs snapshot',
+    description: 'Drift score: how far the current portfolio mix has moved from the snapshot at allocation time. Higher = more drift.',
+    category: 'monitoring',
+    privacyMix: ['select'],
+    output: { kind: 'drift_score', threshold: 0.10, unit: 'score' },
+    code: `-- Composition drift vs snapshot  (ongoing monitoring)
+-- Replace :allocation_as_of with the as_of date captured when you allocated.
+-- Drift score = L1 distance across watched concentration KPIs (0 = identical).
+WITH now_row AS (
+  SELECT
+    as_of,
+    top_1_borrower_pct,
+    industry_hhi,
+    geographic_hhi,
+    non_accrual_pct,
+    pik_pct,
+    cov_lite_pct
+  FROM vault.acred.risk_pack
+  WHERE record_type = 'portfolio'
+  ORDER BY as_of DESC LIMIT 1
+),
+snap AS (
+  SELECT
+    as_of,
+    top_1_borrower_pct,
+    industry_hhi,
+    geographic_hhi,
+    non_accrual_pct,
+    pik_pct,
+    cov_lite_pct
+  FROM vault.acred.risk_pack
+  WHERE record_type = 'portfolio'
+    AND as_of <= COALESCE(:allocation_as_of, now() - interval '30 days')
+  ORDER BY as_of DESC LIMIT 1
+)
+SELECT
+  snap.as_of                                            AS snapshot_as_of,
+  now_row.as_of                                         AS current_as_of,
+  abs(now_row.top_1_borrower_pct - snap.top_1_borrower_pct)
+    + abs(now_row.industry_hhi    - snap.industry_hhi) / 10000.0
+    + abs(now_row.geographic_hhi  - snap.geographic_hhi) / 10000.0
+    + abs(now_row.non_accrual_pct - snap.non_accrual_pct)
+    + abs(now_row.pik_pct         - snap.pik_pct)
+    + abs(now_row.cov_lite_pct    - snap.cov_lite_pct)  AS drift_score
+FROM now_row, snap;`,
+  },
+  {
+    id: 'acred_tmpl_nav_reconciliation',
+    name: 'NAV reconciliation',
+    description: 'Match/mismatch: reported NAV vs sum of underlying loan fair value plus operating cash. Tolerance: 1%.',
+    category: 'monitoring',
+    privacyMix: ['aggregate'],
+    output: { kind: 'match_mismatch', tolerance: 0.01 },
+    code: `-- NAV reconciliation  (match/mismatch)
+-- Reported NAV must agree with SUM(loan fair_value) + operating cash, within 1%.
+WITH reported AS (
+  SELECT aum_usd, as_of
+  FROM vault.acred.nav_history
+  ORDER BY as_of DESC LIMIT 1
+),
+underlying_loans AS (
+  SELECT SUM(fair_value) AS loan_fv
+  FROM vault.acred.loan_tape
+),
+operating_cash AS (
+  SELECT SUM(balance_usd_equiv) AS cash_usd
+  FROM vault.acred.cash_positions
+  WHERE record_type  = 'cash_balance'
+    AND account_type = 'operating'
+)
+SELECT
+  reported.as_of,
+  reported.aum_usd                                      AS reported_nav,
+  underlying_loans.loan_fv + operating_cash.cash_usd    AS underlying_nav,
+  abs(reported.aum_usd
+      - (underlying_loans.loan_fv + operating_cash.cash_usd))
+    / reported.aum_usd                                  AS abs_pct_diff,
+  abs(reported.aum_usd
+      - (underlying_loans.loan_fv + operating_cash.cash_usd))
+    / reported.aum_usd <= 0.01                          AS matches
+FROM reported, underlying_loans, operating_cash;`,
+  },
+
+  // ── On-chain automation triggers (3 new) ──────────────────────────────────
+  {
+    id: 'acred_tmpl_trigger_non_accrual_buffer',
+    name: 'Trigger · Non-accrual breach → buffer up',
+    description: 'When non-accrual share crosses 5%, the Morpho market contract auto-increases the required collateral buffer.',
+    category: 'trigger',
+    privacyMix: ['aggregate'],
+    output: { kind: 'threshold_trigger', field: 'non_accrual_share', threshold: 0.05, comparator: 'gt' },
+    onChainAction: {
+      target: 'Morpho · sACRED market',
+      effect: 'Increase required collateral buffer to 130% of par',
+      severity: 'auto',
+    },
+    suggestedDestinations: [
+      { kind: 'onchain', chain: 'base', address: '0x4B0d3F8B0F8a9D9d4e2a9C1b1D9bF1C2d3E4F5A6', label: 'Morpho sACRED · buffer hook' },
+    ],
+    code: `-- Trigger: non-accrual > 5% → collateral buffer up  (on-chain automation)
+-- Output is consumed by the Morpho sACRED market hook on chain. When
+-- non_accrual_share > 5%, the contract raises the required buffer.
+WITH book AS (
+  SELECT
+    SUM(par_value) FILTER (WHERE non_accrual = true) / SUM(par_value) AS non_accrual_share
+  FROM vault.acred.loan_tape
+  WHERE status IN ('performing', 'watch')
+)
+SELECT
+  non_accrual_share,
+  0.05                                  AS threshold,
+  non_accrual_share > 0.05              AS trigger_fires,
+  CASE
+    WHEN non_accrual_share > 0.05 THEN 'buffer_up'
+    ELSE 'no_op'
+  END                                   AS on_chain_action
+FROM book;`,
+  },
+  {
+    id: 'acred_tmpl_trigger_single_name_pause',
+    name: 'Trigger · Single-name > 10% → pause deposits',
+    description: 'When top-1 borrower exposure crosses 10% of NAV, the vault adapter pauses new deposits and flags the position for manual review.',
+    category: 'trigger',
+    privacyMix: ['select'],
+    output: { kind: 'threshold_trigger', field: 'top_1_borrower_pct', threshold: 0.10, comparator: 'gt' },
+    onChainAction: {
+      target: 'sACRED vault adapter',
+      effect: 'Pause new deposits; emit ReviewRequested event for the risk multisig',
+      severity: 'manual_review',
+    },
+    suggestedDestinations: [
+      { kind: 'onchain', chain: 'base', address: '0x7A8b3C4d5E6f1234aBcD9012EfAb3456CdEf7890', label: 'sACRED adapter · pause hook' },
+    ],
+    code: `-- Trigger: single-name > 10% → pause deposits  (on-chain automation)
+-- The vault adapter calls pauseDeposits() and emits ReviewRequested when fired.
+WITH risk AS (
+  SELECT top_1_borrower_pct
+  FROM vault.acred.risk_pack
+  WHERE record_type = 'portfolio'
+  ORDER BY as_of DESC LIMIT 1
+)
+SELECT
+  top_1_borrower_pct,
+  0.10                                  AS threshold,
+  top_1_borrower_pct > 0.10             AS trigger_fires,
+  CASE
+    WHEN top_1_borrower_pct > 0.10 THEN 'pause_and_review'
+    ELSE 'no_op'
+  END                                   AS on_chain_action
+FROM risk;`,
+  },
+  {
+    id: 'acred_tmpl_trigger_oc_test_winddown',
+    name: 'Trigger · OC test fail → capital call',
+    description: 'When over-collateralization (par / obligations) falls below 1.05, the senior tranche contract issues a capital call and begins wind-down sequencing.',
+    category: 'trigger',
+    privacyMix: ['aggregate'],
+    output: { kind: 'threshold_trigger', field: 'oc_ratio', threshold: 1.05, comparator: 'lt' },
+    onChainAction: {
+      target: 'sACRED senior tranche',
+      effect: 'Issue capital call; transition adapter into wind-down mode',
+      severity: 'wind_down',
+    },
+    suggestedDestinations: [
+      { kind: 'onchain', chain: 'base', address: '0xC4D5e6F7A8b9012345aBcDeF6789012345CdEf78', label: 'sACRED senior · capital-call hook' },
+    ],
+    code: `-- Trigger: OC test fail → capital call / wind-down  (on-chain automation)
+-- OC ratio = total performing par / total obligations. Below 1.05 fires the
+-- senior tranche capital-call sequence.
+WITH par_total AS (
+  SELECT SUM(par_value) AS total_par
+  FROM vault.acred.loan_tape
+  WHERE status = 'performing'
+),
+obligations AS (
+  SELECT total_obligations
+  FROM vault.acred.accounting_ledger
+  WHERE record_type = 'cash_flow_summary'
+  ORDER BY period DESC LIMIT 1
+)
+SELECT
+  par_total.total_par,
+  obligations.total_obligations,
+  par_total.total_par / nullif(obligations.total_obligations, 0) AS oc_ratio,
+  1.05                                                            AS threshold,
+  par_total.total_par / nullif(obligations.total_obligations, 0) < 1.05
+                                                                  AS trigger_fires,
+  CASE
+    WHEN par_total.total_par / nullif(obligations.total_obligations, 0) < 1.05
+      THEN 'capital_call_winddown'
+    ELSE 'no_op'
+  END                                                             AS on_chain_action
+FROM par_total, obligations;`,
   },
 ]
 
