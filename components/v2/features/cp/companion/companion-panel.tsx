@@ -34,6 +34,7 @@ import {
 import { CopyButton } from './copy-button'
 import type { CompanionTab, CompanionPanelProps } from './companion-panel.types'
 import { useCompanionContext } from './companion-context'
+import { usePanelResize } from './use-panel-resize'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -66,6 +67,13 @@ export function CompanionPanel({
   activeTab,
   onTabChange,
 }: CompanionPanelProps) {
+  const { height, setHeight, startDrag } = usePanelResize({
+    initial: 320,
+    min: 40,
+    maxRatio: 0.75,
+    storageKey: 'analysis-workbench:panel-height',
+  })
+
   const { code, vault, fieldRefs, destinations, name, triggerKind, cronExpr, eventSource, onchainDests } = useCompanionContext()
 
   // ── Access & policy checks
@@ -175,12 +183,35 @@ function verifyHyvePayload(
 
   return (
     <div
+      data-companion-panel
       className={cn(
-        'flex flex-col border-t border-v2-border bg-v2-foreground/[0.03] transition-[height] duration-200',
-        open ? 'h-[min(40vh,320px)]' : 'h-auto',
+        'flex flex-col border-t border-v2-border bg-v2-foreground/[0.03]',
+        open ? '' : 'h-9',
       )}
-      style={open ? { height: 'min(40vh, 320px)' } : undefined}
+      style={open ? { height } : undefined}
     >
+      {/* Drag handle — only visible/active when open */}
+      {open && (
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-valuemin={40}
+          aria-valuemax={Math.round((typeof window !== 'undefined' ? window.innerHeight : 800) * 0.75)}
+          aria-valuenow={height}
+          aria-label="Resize companion panel"
+          tabIndex={0}
+          onPointerDown={startDrag}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowUp') { e.preventDefault(); setHeight(height + 24) }
+            else if (e.key === 'ArrowDown') { e.preventDefault(); setHeight(height - 24) }
+            else if (e.key === 'PageUp') { e.preventDefault(); setHeight(height + 100) }
+            else if (e.key === 'PageDown') { e.preventDefault(); setHeight(height - 100) }
+            else if (e.key === 'Home') { e.preventDefault(); setHeight(40) }
+            else if (e.key === 'End') { e.preventDefault(); setHeight(99999) }
+          }}
+          className="h-1.5 cursor-row-resize touch-none select-none border-b border-v2-border/40 transition-colors hover:bg-v2-foreground/[0.08] focus-visible:bg-v2-foreground/[0.12] focus-visible:outline-none"
+        />
+      )}
       {/* Tab strip */}
       <Tabs
         value={activeTab}
@@ -202,6 +233,7 @@ function verifyHyvePayload(
                 { value: 'tests', label: 'Tests', badge: 0 },
                 { value: 'schedule', label: 'Schedule & Cost', badge: 0 },
                 { value: 'integration', label: 'Integration', badge: 0 },
+                { value: 'terminal', label: 'Terminal', badge: 0 },
               ] as const
             ).map((tab) => (
               <TabsTrigger
@@ -675,6 +707,13 @@ function verifyHyvePayload(
                     Signed by {providerName} · key {sigKey} (secp256k1)
                   </p>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* ── Terminal tab ── */}
+            <TabsContent value="terminal" className="m-0 h-full">
+              <div className="px-4 py-3">
+                <p className="font-mono text-[11px] text-v2-muted">Terminal coming online…</p>
               </div>
             </TabsContent>
           </div>
