@@ -20,11 +20,6 @@ import {
   buildCodeChecks,
   parseSelectColumns,
   hasFromClause,
-  getNextCronExecutions,
-  countCronExecutionsIn30Days,
-  formatExecutionTime,
-  COMPUTE_COST_PER_EXEC,
-  GAS_PER_WRITE,
   type PolicyCheckStatus,
 } from '@/components/v2/features/cp/analysis-workbench'
 import { CopyButton } from './copy-button'
@@ -34,6 +29,7 @@ import { usePanelResize } from './use-panel-resize'
 import { ValidateTab } from './validate-tab'
 import { DryRunTab } from './dryrun-tab'
 import { TestsTab } from './tests-tab'
+import { ScheduleTab } from './schedule-tab'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -73,7 +69,7 @@ export function CompanionPanel({
     storageKey: 'analysis-workbench:panel-height',
   })
 
-  const { code, vault, fieldRefs, destinations, name, triggerKind, cronExpr, eventSource, onchainDests } = useCompanionContext()
+  const { code, vault, fieldRefs, destinations, name, onchainDests } = useCompanionContext()
 
   // ── Access & policy checks
   const policyChecks = buildPolicyChecksWithKMin({ fieldRefs, destinations, name, vault })
@@ -89,19 +85,6 @@ export function CompanionPanel({
   const selectColumns = parseSelectColumns(code, vault)
   const hasFrom = hasFromClause(code)
   const codeEmpty = code.trim().length === 0 || !hasFrom
-
-  // ── Schedule & Cost tab
-  const NOW = new Date()
-  const nextExecutions =
-    triggerKind === 'cron'
-      ? getNextCronExecutions(cronExpr, NOW, 5)
-      : null
-  const gasPerExec = onchainDests.reduce((sum, d) => sum + (GAS_PER_WRITE[d.chain] ?? 0), 0)
-  const totalCostPerExec = COMPUTE_COST_PER_EXEC + gasPerExec
-
-  const runsIn30Days =
-    triggerKind === 'cron' ? (countCronExecutionsIn30Days(cronExpr) ?? 0) : 0
-  const monthlyCost = runsIn30Days * totalCostPerExec
 
   // ── Integration tab
   const firstOnchain = onchainDests[0] ?? null
@@ -285,94 +268,7 @@ function verifyHyvePayload(
 
             {/* ── Schedule & Cost tab ── */}
             <TabsContent value="schedule" className="m-0 h-full">
-              <div className="px-4 py-3 space-y-4">
-
-                {/* Next executions */}
-                <div className="space-y-2">
-                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                    Next 5 executions
-                  </p>
-                  {triggerKind === 'manual' ? (
-                    <p className="font-mono text-[11px] text-v2-muted">
-                      Triggered on demand only — no scheduled executions.
-                    </p>
-                  ) : triggerKind === 'event' ? (
-                    <p className="font-mono text-[11px] text-v2-muted">
-                      On {eventSource || '(select an event source)'}
-                    </p>
-                  ) : nextExecutions === null ? (
-                    <p className="font-mono text-[11px] text-v2-warning/80">
-                      Could not parse cron expression — check syntax.
-                    </p>
-                  ) : (
-                    <ol className="space-y-1">
-                      {nextExecutions.map((d, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="font-mono text-[9.5px] text-v2-muted w-4 text-right tabular-nums">
-                            {i + 1}
-                          </span>
-                          <span className="font-mono text-[11px] text-v2-foreground tabular-nums">
-                            {formatExecutionTime(d)}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-
-                {/* Cost estimate */}
-                <div className="space-y-2 border-t border-v2-border/60 pt-3">
-                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                    Cost estimate
-                  </p>
-
-                  {/* Per-execution breakdown */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10.5px] text-v2-muted">Compute</span>
-                      <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
-                        ${COMPUTE_COST_PER_EXEC.toFixed(4)} per execution
-                      </span>
-                    </div>
-                    {onchainDests.length === 0 ? (
-                      <p className="font-mono text-[10.5px] text-v2-muted">
-                        Add a destination in the meta panel to estimate gas cost.
-                      </p>
-                    ) : (
-                      onchainDests.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="font-mono text-[10.5px] text-v2-muted">
-                            {d.chain} gas · {d.label || d.address.slice(0, 8) + '…'}
-                          </span>
-                          <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">
-                            ${(GAS_PER_WRITE[d.chain] ?? 0).toFixed(3)} per write
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Monthly projection */}
-                  {triggerKind === 'cron' && runsIn30Days > 0 && onchainDests.length > 0 && (
-                    <div className="rounded-lg border border-v2-border/60 bg-v2-foreground/[0.04] px-3 py-2 mt-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10.5px] text-v2-muted">Executions / 30 days</span>
-                        <span className="font-mono text-[10.5px] tabular-nums text-v2-foreground">{runsIn30Days.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-v2-border/60 pt-1">
-                        <span className="font-mono text-[10.5px] font-medium text-v2-foreground">Monthly total</span>
-                        <span className="font-mono text-[11px] font-medium tabular-nums text-v2-foreground">
-                          ~${monthlyCost.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <p className="font-mono text-[9.5px] text-v2-muted leading-snug">
-                    Estimates are illustrative — actual gas varies with network conditions.
-                  </p>
-                </div>
-              </div>
+              <ScheduleTab />
             </TabsContent>
 
             {/* ── Integration tab ── */}
