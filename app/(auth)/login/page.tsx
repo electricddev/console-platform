@@ -23,12 +23,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <CardContent className="grid gap-2">
         <form action={async () => { 'use server'; await signInAs('counterparty', next) }}>
           <Button type="submit" size="lg" className="w-full justify-start">
-            Demo Counterparty &middot; <span className="text-muted-foreground ml-2">Maya at Gauntlet</span>
+            Demo Counterparty &middot; <span className="text-muted-foreground ml-2">Kirk at InfiniFi</span>
           </Button>
         </form>
         <form action={async () => { 'use server'; await signInAs('originator', next) }}>
           <Button type="submit" size="lg" variant="outline" className="w-full justify-start">
-            Demo Originator &middot; <span className="text-muted-foreground ml-2">Tom at Maple Trade Finance</span>
+            Demo Originator &middot; <span className="text-muted-foreground ml-2">John at Securitize</span>
           </Button>
         </form>
         <form action={async () => { 'use server'; await signInAs('admin', next) }}>

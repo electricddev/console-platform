@@ -33,7 +33,7 @@ export const notificationFixtures: Notification[] = [
     createdAt: ts(180),
     read: true,
     kind: 'approval-requested',
-    title: 'Gauntlet requested a new template',
+    title: 'InfiniFi requested a new template',
     body: '"Concentration breaches by sector" is awaiting your review.',
     severity: 'info',
     resourceType: 'approval',

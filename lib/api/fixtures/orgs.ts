@@ -45,6 +45,14 @@ export const orgFixtures: Org[] = [
     verified: true,
   },
   {
+    id: 'org_securitize',
+    name: 'Securitize',
+    websiteUrl: 'https://securitize.io',
+    description: 'Tokenization platform and fund services for private market assets.',
+    assetClasses: ['private-credit', 'multi-asset'],
+    verified: true,
+  },
+  {
     id: 'org_janus',
     name: 'Janus Henderson',
     description: 'Janus Henderson Investors (mocked demo issuer).',

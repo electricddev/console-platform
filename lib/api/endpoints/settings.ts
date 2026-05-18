@@ -17,9 +17,9 @@ const webhookState: Webhook[] = fixtures.webhooks.map((w) => ({ ...w }))
 const sessionState: ActiveSession[] = fixtures.sessions.map((s) => ({ ...s }))
 
 const orgState: { name: string; description: string; websiteUrl?: string } = {
-  name: 'Gauntlet',
-  description: 'Risk modeling and curation for on-chain credit.',
-  websiteUrl: 'https://gauntlet.xyz',
+  name: 'InfiniFi',
+  description: 'Yield infrastructure allocating depositor capital to RWAs.',
+  websiteUrl: 'https://infinifi.io',
 }
 
 const securityState = {
