@@ -15,8 +15,6 @@ import {
   Download,
   Globe,
   Plus,
-  Shield,
-  ShieldCheck,
   Trash2,
   Upload,
   Webhook,
@@ -496,18 +494,16 @@ function PrivacyPosture({
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
           {(['private', 'join', 'aggregate', 'dimension', 'select'] as const).map((level) => {
             const tone = PRIVACY_TONE[level]
-            const Icon = tone.Icon
             const count = mix[level]
             const pct = totalFields > 0 ? Math.round((count / totalFields) * 100) : 0
             return (
               <div key={level} className="flex flex-col gap-1">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.1em]',
+                    'text-[10.5px] font-medium uppercase tracking-[0.1em]',
                     tone.chipText,
                   )}
                 >
-                  <Icon className="h-3 w-3" strokeWidth={2.25} aria-hidden="true" />
                   {tone.short}
                 </span>
                 <p className="font-mono text-[22px] font-normal leading-none tracking-tight tabular-nums text-v2-foreground">
@@ -523,27 +519,18 @@ function PrivacyPosture({
       {/* PII screening */}
       <div className="relative flex flex-col gap-3 border-t border-v2-border/30 pt-6">
         <div className="flex items-baseline justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Shield
-              className="h-3.5 w-3.5 text-v2-foreground/70"
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-            <h3 className="text-[13.5px] font-medium tracking-tight text-v2-foreground">
-              PII screening
-            </h3>
-          </div>
+          <h3 className="text-[13.5px] font-medium tracking-tight text-v2-foreground">
+            PII screening
+          </h3>
           {detected.length === 0 ? (
             <span className="text-[12px] text-v2-muted">No PII patterns detected</span>
           ) : exposed.length > 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-[12px] text-v2-warning">
-              <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            <span className="text-[12px] text-v2-warning/90">
               <span className="font-mono tabular-nums">{exposed.length}</span>{' '}
               {exposed.length === 1 ? 'column exposed' : 'columns exposed'}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[12px] text-v2-success">
-              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            <span className="text-[12px] text-v2-muted">
               <span className="font-mono tabular-nums">{detected.length}</span> protected
             </span>
           )}
@@ -559,7 +546,7 @@ function PrivacyPosture({
                   className={cn(
                     'flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5',
                     isExposed
-                      ? 'border-v2-warning/30 bg-v2-warning/[0.04]'
+                      ? 'border-v2-warning/15 bg-v2-foreground/[0.015]'
                       : 'border-v2-border/40 bg-v2-foreground/[0.015]',
                   )}
                 >
@@ -584,8 +571,7 @@ function PrivacyPosture({
                       Make private
                     </button>
                   ) : (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-v2-success/90">
-                      <ShieldCheck className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
+                    <span className="shrink-0 text-[11px] text-v2-muted">
                       Protected
                     </span>
                   )}

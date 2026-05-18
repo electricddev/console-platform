@@ -139,8 +139,21 @@ export const PRIVACY_LEVELS_ORDERED: PrivacyLevel[] = [
 ]
 
 /**
- * PrivacyBar — horizontal stacked bar showing the proportion of fields in
- * each tier. Rendered in canonical order: private | join | aggregate | dimension | select.
+ * Muted OKLCH colors for the gradient bar — dimmed ~0.05 chroma from the
+ * dot token values so adjacent tiers interpolate into a calm watercolor strip.
+ */
+const TIER_COLOR_VAR: Record<PrivacyLevel, string> = {
+  private:   'oklch(0.55 0.02 250)', // cool gray
+  join:      'oklch(0.62 0.08 240)', // muted info-blue
+  aggregate: 'oklch(0.62 0.08 160)', // muted success-green
+  dimension: 'oklch(0.72 0.09 80)',  // muted warning-amber
+  select:    'oklch(0.70 0.02 250)', // pale cool gray
+}
+
+/**
+ * PrivacyBar — single `<div>` with a proportional `linear-gradient` whose
+ * color stops sit at the cumulative midpoint of each tier's share. Adjacent
+ * tiers naturally interpolate instead of hard-cutting at segment boundaries.
  */
 export function PrivacyBar({
   counts,
@@ -155,28 +168,45 @@ export function PrivacyBar({
     PRIVACY_LEVELS_ORDERED.reduce((sum, k) => sum + counts[k], 0),
     1,
   )
+
+  // Build cumulative midpoint stops so colors interpolate between tiers.
+  let cumulative = 0
+  const stops: string[] = []
+  for (let i = 0; i < PRIVACY_LEVELS_ORDERED.length; i++) {
+    const k = PRIVACY_LEVELS_ORDERED[i]
+    const w = counts[k] / total
+    const mid = cumulative + w / 2
+    cumulative += w
+    if (w > 0) {
+      stops.push(`var(--privacy-${k}) ${(mid * 100).toFixed(2)}%`)
+    }
+  }
+
+  // Anchor edges so the leftmost tier color owns 0% and rightmost owns 100%.
+  const firstActive = PRIVACY_LEVELS_ORDERED.find((k) => counts[k] > 0) ?? 'private'
+  const lastActive = [...PRIVACY_LEVELS_ORDERED].reverse().find((k) => counts[k] > 0) ?? 'select'
+  const allStops = [
+    `var(--privacy-${firstActive}) 0%`,
+    ...stops,
+    `var(--privacy-${lastActive}) 100%`,
+  ].join(', ')
+
   const summary = PRIVACY_LEVELS_ORDERED.map((k) => `${counts[k]} ${k}`).join(', ')
+
   return (
     <div
-      className={cn(
-        'flex w-full overflow-hidden bg-v2-foreground/4',
-        rounded && 'rounded-full',
-        height
-      )}
+      className={cn('w-full', rounded && 'rounded-full', height)}
+      style={{
+        backgroundImage: `linear-gradient(to right, ${allStops})`,
+        '--privacy-private': TIER_COLOR_VAR.private,
+        '--privacy-join': TIER_COLOR_VAR.join,
+        '--privacy-aggregate': TIER_COLOR_VAR.aggregate,
+        '--privacy-dimension': TIER_COLOR_VAR.dimension,
+        '--privacy-select': TIER_COLOR_VAR.select,
+      } as React.CSSProperties}
       role="img"
       aria-label={`Privacy mix: ${summary}`}
-    >
-      {PRIVACY_LEVELS_ORDERED.map((k) => {
-        const w = counts[k] / total
-        return w > 0 ? (
-          <span
-            key={k}
-            className={cn(PRIVACY_TONE[k].dot, 'h-full')}
-            style={{ width: `${w * 100}%` }}
-          />
-        ) : null
-      })}
-    </div>
+    />
   )
 }
 
