@@ -33,4 +33,6 @@ export type CompanionContextValue = {
   cronExpr: string
   eventSource: string
   onchainDests: OnchainDest[]
+  /** Optional setter so Terminal Assistant mode can Apply a proposed SQL diff. */
+  onCodeChange?: (next: string) => void
 }

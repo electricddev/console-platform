@@ -2387,6 +2387,7 @@ FROM
                 cronExpr,
                 eventSource,
                 onchainDests: destinations.filter((d): d is OnchainDest => d.kind === 'onchain'),
+                onCodeChange: setCode,
               }}
             >
               <CompanionPanel
