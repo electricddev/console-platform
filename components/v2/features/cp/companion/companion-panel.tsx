@@ -35,6 +35,7 @@ import { CopyButton } from './copy-button'
 import type { CompanionTab, CompanionPanelProps } from './companion-panel.types'
 import { useCompanionContext } from './companion-context'
 import { usePanelResize } from './use-panel-resize'
+import { ValidateTab } from './validate-tab'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -277,78 +278,7 @@ function verifyHyvePayload(
           <div className="flex-1 min-h-0 overflow-y-auto">
             {/* ── Validate tab ── */}
             <TabsContent value="validate" className="m-0 h-full">
-              <div className="px-4 py-3 space-y-4">
-                {/* Overall status header */}
-                <div className="flex items-center gap-2">
-                  {validateFailCount === 0 ? (
-                    <>
-                      <span className="h-1.5 w-1.5 rounded-full bg-v2-success" />
-                      <span className="font-mono text-[11px] text-v2-success">Ready to submit</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="h-1.5 w-1.5 rounded-full bg-v2-warning" />
-                      <span className="font-mono text-[11px] text-v2-warning">{validateFailCount} issue{validateFailCount !== 1 ? 's' : ''}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* ── Section 1: Code ── */}
-                <div className="space-y-2">
-                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                    Code
-                  </p>
-                  <div className="space-y-1.5">
-                    {codeChecks.map((check) => (
-                      <div key={check.id} className="flex items-start gap-2">
-                        <PolicyIcon status={check.status} />
-                        <div className="min-w-0">
-                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground">
-                            {check.verb}
-                          </span>
-                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted">
-                            {check.detail}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ── Section 2: Access & policy ── */}
-                <div className="space-y-2 border-t border-v2-border/60 pt-3">
-                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-v2-muted">
-                    Access &amp; policy
-                  </p>
-                  <div className="space-y-1.5">
-                    {policyChecks.map((check) => (
-                      <div key={check.id} className="flex items-start gap-2">
-                        <PolicyIcon status={check.status} />
-                        <div className="min-w-0">
-                          <span className="font-mono text-[10.5px] font-medium text-v2-foreground">
-                            {check.verb}
-                          </span>
-                          <span className="ml-1.5 font-mono text-[10.5px] text-v2-muted">
-                            {check.detail}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Footer submit button */}
-                <div className="pt-1 border-t border-v2-border/60">
-                  <button
-                    type="button"
-                    disabled={validateFailCount > 0}
-                    className="rounded-md bg-v2-foreground px-3 py-1.5 font-mono text-[11px] font-medium text-v2-surface transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
-                    title={validateFailCount > 0 ? 'Resolve issues before submitting' : 'Submit for review'}
-                  >
-                    Submit for review
-                  </button>
-                </div>
-              </div>
+              <ValidateTab onTabChange={onTabChange} />
             </TabsContent>
 
             {/* ── Dry-run tab ── */}
