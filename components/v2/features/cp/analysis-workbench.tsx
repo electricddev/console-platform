@@ -16,7 +16,6 @@ import {
   useEffect,
   useCallback,
   type ChangeEvent,
-  type KeyboardEvent,
 } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -26,24 +25,12 @@ import 'prismjs/components/prism-sql'
 import {
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   Lock,
   Plus,
   X,
-  Check,
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Copy,
-  Play,
-  Info,
 } from 'lucide-react'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { Surface } from '@/components/v2/ui/surface'
 import {
@@ -56,7 +43,6 @@ import {
   type VaultTemplate,
 } from '@/components/v2/features/cp/cp-fixtures'
 import {
-  PrivacyChip,
   PRIVACY_TONE,
 } from '@/components/v2/features/vault-detail/privacy'
 import {
