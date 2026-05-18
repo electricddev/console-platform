@@ -23,6 +23,7 @@ import { DryRunTab } from './dryrun-tab'
 import { TestsTab } from './tests-tab'
 import { ScheduleTab } from './schedule-tab'
 import { IntegrationTab } from './integration-tab'
+import { TerminalTab } from './terminal/terminal-tab'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
@@ -190,9 +191,7 @@ export function CompanionPanel({
 
             {/* ── Terminal tab ── */}
             <TabsContent value="terminal" className="m-0 h-full">
-              <div className="px-4 py-3">
-                <p className="font-mono text-[11px] text-v2-muted">Terminal coming online…</p>
-              </div>
+              <TerminalTab />
             </TabsContent>
           </div>
         )}
