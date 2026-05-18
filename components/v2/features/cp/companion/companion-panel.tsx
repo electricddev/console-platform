@@ -37,24 +37,7 @@ import {
 } from '@/components/v2/features/cp/analysis-workbench'
 import type { ConsumerVault } from '@/components/v2/features/cp/cp-fixtures'
 import { CopyButton } from './copy-button'
-import type { CompanionTab } from './companion-panel.types'
-
-// ── Companion panel props ─────────────────────────────────────────────────────
-
-type CompanionPanelProps = {
-  open: boolean
-  onToggle: () => void
-  activeTab: CompanionTab
-  onTabChange: (t: CompanionTab) => void
-  code: string
-  vault: ConsumerVault | null
-  fieldRefs: FieldRef[]
-  destinations: Destination[]
-  name: string
-  triggerKind: TriggerKind
-  cronExpr: string
-  eventSource: string
-}
+import type { CompanionTab, CompanionPanelProps } from './companion-panel.types'
 
 // ── Fixture sample rows (ACRED canonical) ─────────────────────────────────────
 
