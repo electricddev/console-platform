@@ -116,7 +116,7 @@ export function CpSidebar({ collapsed, onToggle }: SidebarProps) {
           collapsed ? 'px-2' : 'px-3'
         )}
       >
-        <UserMenu collapsed={collapsed} settingsHref="/cp/settings" />
+        <UserMenu collapsed={collapsed} settingsHref="/cp/settings" role="counterparty" />
       </div>
       <div className={cn('pb-3 pt-1', collapsed ? 'px-2' : 'px-3')}>
         <ThemeToggle collapsed={collapsed} />

@@ -25,14 +25,22 @@ import { cn } from '@/lib/utils'
 
 type Workspace = { id: string; name: string; plan: string; kind: 'org' | 'personal' }
 
-const USER = { name: 'Douwe', email: 'douwe@thehyve.xyz', initials: 'DF' }
+export type UserMenuRole = 'originator' | 'counterparty'
+
+const USER_BY_ROLE: Record<UserMenuRole, { name: string; email: string; initials: string }> = {
+  originator: { name: 'John Marshall', email: 'john@securitize.io', initials: 'JM' },
+  counterparty: { name: 'Kirk Patel', email: 'kirk@infinifi.io', initials: 'KP' },
+}
 
 const WORKSPACES: Workspace[] = [
-  { id: 'hyve', name: 'Hyve', plan: 'Team plan · Primary owner', kind: 'org' },
-  { id: 'personal', name: 'Personal', plan: 'Free plan', kind: 'personal' },
+  { id: 'securitize', name: 'Securitize', plan: 'Team plan · Originator', kind: 'org' },
+  { id: 'infinifi', name: 'InfiniFi', plan: 'Team plan · Counterparty', kind: 'org' },
 ]
 
-const ACTIVE_WORKSPACE_ID = 'hyve'
+const ACTIVE_WORKSPACE_BY_ROLE: Record<UserMenuRole, string> = {
+  originator: 'securitize',
+  counterparty: 'infinifi',
+}
 
 type Language = { code: string; label: string }
 
@@ -114,7 +122,15 @@ function OrgMark() {
 // double-render. The sr-only span gives AT users a clear "Active workspace" cue.
 // ---------------------------------------------------------------------------
 
-function WorkspaceRow({ workspace, isActive }: { workspace: Workspace; isActive: boolean }) {
+function WorkspaceRow({
+  workspace,
+  isActive,
+  userInitials,
+}: {
+  workspace: Workspace
+  isActive: boolean
+  userInitials: string
+}) {
   return (
     // Wrapper class hides Radix's built-in indicator via globals.css; our
     // custom right-aligned Check provides the visual affordance while Radix
@@ -126,7 +142,7 @@ function WorkspaceRow({ workspace, isActive }: { workspace: Workspace; isActive:
       {workspace.kind === 'org' ? (
         <OrgMark />
       ) : (
-        <Avatar initials={USER.initials} size="sm" />
+        <Avatar initials={userInitials} size="sm" />
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[13px] font-medium leading-snug">{workspace.name}</span>
@@ -171,10 +187,14 @@ function LanguageRow({ lang, isActive }: { lang: Language; isActive: boolean }) 
 export function UserMenu({
   collapsed,
   settingsHref = '/settings',
+  role = 'originator',
 }: {
   collapsed: boolean
   settingsHref?: string
+  role?: UserMenuRole
 }) {
+  const USER = USER_BY_ROLE[role]
+  const ACTIVE_WORKSPACE_ID = ACTIVE_WORKSPACE_BY_ROLE[role]
   const activeWorkspace = WORKSPACES.find((w) => w.id === ACTIVE_WORKSPACE_ID) ?? WORKSPACES[0]
 
   return (
@@ -257,6 +277,7 @@ export function UserMenu({
               key={workspace.id}
               workspace={workspace}
               isActive={workspace.id === ACTIVE_WORKSPACE_ID}
+              userInitials={USER.initials}
             />
           ))}
         </DropdownMenuRadioGroup>
