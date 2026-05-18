@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Building2, Check, ChevronsUpDown, Globe, HelpCircle, LogOut, Settings, Wrench } from 'lucide-react'
-import { signOut } from '@/app/(auth)/login/actions'
+import { signInAs, signOut } from '@/app/(auth)/login/actions'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +40,12 @@ const WORKSPACES: Workspace[] = [
 const ACTIVE_WORKSPACE_BY_ROLE: Record<UserMenuRole, string> = {
   originator: 'securitize',
   counterparty: 'infinifi',
+}
+
+/** Workspace id → demo persona, for the workspace switcher. */
+const PERSONA_BY_WORKSPACE: Record<string, 'originator' | 'counterparty'> = {
+  securitize: 'originator',
+  infinifi: 'counterparty',
 }
 
 type Language = { code: string; label: string }
@@ -271,7 +277,13 @@ export function UserMenu({
 
         {/* Workspace switcher — RadioGroup gives role="radiogroup" on the
             container and role="menuitemradio" + aria-checked on each item. */}
-        <DropdownMenuRadioGroup value={ACTIVE_WORKSPACE_ID}>
+        <DropdownMenuRadioGroup
+          value={ACTIVE_WORKSPACE_ID}
+          onValueChange={(next) => {
+            const persona = PERSONA_BY_WORKSPACE[next]
+            if (persona) void signInAs(persona)
+          }}
+        >
           {WORKSPACES.map((workspace) => (
             <WorkspaceRow
               key={workspace.id}
