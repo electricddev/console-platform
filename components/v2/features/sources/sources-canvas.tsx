@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer, useEffect } from 'react'
+import { useReducer, useEffect, useState } from 'react'
 import { useCanvasLayout } from './hooks/use-canvas-layout'
 import { SourceTile } from './source-tile'
 import { SourceTileExpanded } from './source-tile-expanded'
@@ -37,6 +37,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   const layout = useCanvasLayout({ connections, datasets, vaults })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
   const { open: catalogOpen, openSheet, closeSheet } = useCatalogSheet()
+  const [pendingConnectorId, setPendingConnectorId] = useState<string | null>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -82,16 +83,16 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
       {/* Canvas */}
       <div
         className="relative mt-6 overflow-hidden rounded-2xl border border-v2-border/60 bg-v2-surface/40"
-        style={{ height: isEmpty ? 'auto' : layout.height, width: '100%' }}
+        style={{ height: isEmpty && !pendingConnectorId ? 'auto' : layout.height || 420, width: '100%' }}
         aria-label="Connections canvas"
         role="region"
         onClick={(e) => {
           if (e.target === e.currentTarget) dispatch({ type: 'deselect' })
         }}
       >
-        {isEmpty ? (
+        {isEmpty && !pendingConnectorId ? (
           <EmptyState
-            onPick={(id) => { console.info('quick pick (stub):', id) }}
+            onPick={(id) => setPendingConnectorId(id)}
             onBrowse={openSheet}
           />
         ) : (
@@ -107,13 +108,15 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
               }}
             />
 
-            <CanvasEdges
-              edges={layout.edges}
-              items={layout.items}
-              width={layout.width}
-              height={layout.height}
-              highlightedTileId={state.selectedTileId}
-            />
+            {!isEmpty && (
+              <CanvasEdges
+                edges={layout.edges}
+                items={layout.items}
+                width={layout.width}
+                height={layout.height}
+                highlightedTileId={state.selectedTileId}
+              />
+            )}
 
             {/* Items */}
             {layout.items.map((item) => {
@@ -137,6 +140,10 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
                         connection={conn}
                         datasets={datasets.filter((d) => d.connectionId === conn.id)}
                         onClose={() => dispatch({ type: 'deselect' })}
+                        onReconnect={() => {
+                          dispatch({ type: 'deselect' })
+                          setPendingConnectorId(conn.connectorId)
+                        }}
                       />
                     </div>
                   )
@@ -173,8 +180,26 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
               return null
             })}
 
-            <FloatingActionBar onAddClick={openSheet} onFindClick={openSheet} />
-            <Legend />
+            {pendingConnectorId ? (
+              <div
+                className="absolute z-30"
+                style={{ left: 36, top: Math.max(60, (layout.height || 420) - 380), width: 480 }}
+              >
+                <SourceTileExpanded
+                  mode="setup"
+                  connectorId={pendingConnectorId}
+                  onClose={() => setPendingConnectorId(null)}
+                  onDone={() => setPendingConnectorId(null)}
+                />
+              </div>
+            ) : null}
+
+            {!isEmpty && (
+              <>
+                <FloatingActionBar onAddClick={openSheet} onFindClick={openSheet} />
+                <Legend />
+              </>
+            )}
           </>
         )}
       </div>
@@ -184,7 +209,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
         onClose={closeSheet}
         onPick={(id) => {
           closeSheet()
-          console.info('catalog pick (stub):', id)
+          setPendingConnectorId(id)
         }}
       />
     </div>

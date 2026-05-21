@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { connectorById, WORDMARK_TONES } from './catalog-data'
+import { SetupShell } from './setup/setup-shell'
 import { InspectorContent } from './inspector/inspector-content'
 import { ActionsRow } from './inspector/actions-row'
 import { removeConnection } from '@/app/(originator)/sources/actions'
@@ -37,7 +38,7 @@ export function SourceTileExpanded(props: Props) {
   if (props.mode === 'inspect') {
     return <InspectMode {...props} />
   }
-  return <SetupPlaceholder {...props} />
+  return <SetupMode {...props} />
 }
 
 function InspectMode({
@@ -108,7 +109,7 @@ function InspectMode({
   )
 }
 
-function SetupPlaceholder({ connectorId, onClose }: Extract<Props, { mode: 'setup' }>) {
+function SetupMode({ connectorId, onClose, onDone }: Extract<Props, { mode: 'setup' }>) {
   const def = connectorById(connectorId)
   return (
     <motion.div
@@ -119,9 +120,22 @@ function SetupPlaceholder({ connectorId, onClose }: Extract<Props, { mode: 'setu
       className="rounded-xl border border-v2-foreground/30 bg-v2-surface p-4 shadow-xl shadow-black/[0.08]"
     >
       <header className="flex items-start justify-between gap-3 pb-3">
-        <div>
-          <h2 className="text-[14px] font-semibold tracking-tight text-v2-foreground">Add {def?.name}</h2>
-          <p className="mt-0.5 text-[10.5px] text-v2-muted">Setup is wired in Phase F.</p>
+        <div className="flex items-center gap-2.5">
+          {def?.logo.kind === 'wordmark' ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                'flex size-8 items-center justify-center rounded-md font-mono text-[11px] font-semibold',
+                WORDMARK_TONES[def.logo.tone],
+              )}
+            >
+              {def.logo.label}
+            </span>
+          ) : null}
+          <div>
+            <h2 className="text-[14px] font-semibold tracking-tight text-v2-foreground">Add {def?.name}</h2>
+            <p className="mt-0.5 text-[10.5px] text-v2-muted">{def?.tagline}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -132,6 +146,7 @@ function SetupPlaceholder({ connectorId, onClose }: Extract<Props, { mode: 'setu
           <X className="size-4" strokeWidth={1.75} />
         </button>
       </header>
+      <SetupShell connectorId={connectorId} onCancel={onClose} onDone={onDone} />
     </motion.div>
   )
 }
