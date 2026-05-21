@@ -1,7 +1,8 @@
 'use client'
 
-import { useReducer, useEffect, useState } from 'react'
+import { useReducer, useEffect } from 'react'
 import { useCanvasLayout } from './hooks/use-canvas-layout'
+import { useSetupFlow } from './hooks/use-setup-flow'
 import { SourceTile } from './source-tile'
 import { SourceTileExpanded } from './source-tile-expanded'
 import { DatasetTile } from './dataset-tile'
@@ -37,7 +38,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   const layout = useCanvasLayout({ connections, datasets, vaults })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
   const { open: catalogOpen, openSheet, closeSheet } = useCatalogSheet()
-  const [pendingConnectorId, setPendingConnectorId] = useState<string | null>(null)
+  const { pendingConnectorId, start: startSetup, end: endSetup } = useSetupFlow()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -92,7 +93,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
       >
         {isEmpty && !pendingConnectorId ? (
           <EmptyState
-            onPick={(id) => setPendingConnectorId(id)}
+            onPick={(id) => startSetup(id)}
             onBrowse={openSheet}
           />
         ) : (
@@ -142,7 +143,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
                         onClose={() => dispatch({ type: 'deselect' })}
                         onReconnect={() => {
                           dispatch({ type: 'deselect' })
-                          setPendingConnectorId(conn.connectorId)
+                          startSetup(conn.connectorId)
                         }}
                       />
                     </div>
@@ -183,13 +184,13 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
             {pendingConnectorId ? (
               <div
                 className="absolute z-30"
-                style={{ left: 36, top: Math.max(60, (layout.height || 420) - 380), width: 480 }}
+                style={{ left: 36, top: Math.max(60, layout.height - 380), width: 480 }}
               >
                 <SourceTileExpanded
                   mode="setup"
                   connectorId={pendingConnectorId}
-                  onClose={() => setPendingConnectorId(null)}
-                  onDone={() => setPendingConnectorId(null)}
+                  onClose={endSetup}
+                  onDone={endSetup}
                 />
               </div>
             ) : null}
@@ -209,7 +210,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
         onClose={closeSheet}
         onPick={(id) => {
           closeSheet()
-          setPendingConnectorId(id)
+          startSetup(id)
         }}
       />
     </div>
