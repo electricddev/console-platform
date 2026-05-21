@@ -10,6 +10,8 @@ import { CanvasEdges } from './canvas-edges'
 import { FloatingActionBar } from './floating-action-bar'
 import { Legend } from './legend'
 import { EmptyState } from './empty-state'
+import { CatalogSheet } from './catalog-sheet'
+import { useCatalogSheet } from './hooks/use-catalog-sheet'
 import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api/schemas'
 
 type CanvasState = { selectedTileId: string | null }
@@ -33,6 +35,7 @@ type Props = {
 export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   const layout = useCanvasLayout({ connections, datasets, vaults })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
+  const { open: catalogOpen, openSheet, closeSheet } = useCatalogSheet()
 
   const isEmpty = connections.length === 0
 
@@ -60,6 +63,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
         </div>
         <button
           type="button"
+          onClick={openSheet}
           className="rounded-md bg-v2-foreground px-4 py-2 text-sm font-medium text-v2-background hover:bg-v2-foreground/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
         >
           + Add connector
@@ -78,8 +82,8 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
       >
         {isEmpty ? (
           <EmptyState
-            onPick={(_id) => { /* wired in Phase F */ }}
-            onBrowse={() => { /* wired in Task D1 */ }}
+            onPick={(id) => { console.info('quick pick (stub):', id) }}
+            onBrowse={openSheet}
           />
         ) : (
           <>
@@ -143,14 +147,20 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
               return null
             })}
 
-            <FloatingActionBar
-              onAddClick={() => { /* wired in Task D1 */ }}
-              onFindClick={() => { /* wired in Task D1 */ }}
-            />
+            <FloatingActionBar onAddClick={openSheet} onFindClick={openSheet} />
             <Legend />
           </>
         )}
       </div>
+
+      <CatalogSheet
+        open={catalogOpen}
+        onClose={closeSheet}
+        onPick={(id) => {
+          closeSheet()
+          console.info('catalog pick (stub):', id)
+        }}
+      />
     </div>
   )
 }
