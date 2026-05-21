@@ -25,7 +25,7 @@ export function FloatingActionBar({ onAddClick, onFindClick }: Props) {
       <button
         type="button"
         onClick={onFindClick}
-        className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11.5px] text-v2-muted transition-colors hover:bg-v2-foreground/[0.05] hover:text-v2-foreground"
+        className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11.5px] text-v2-muted transition-colors hover:bg-v2-foreground/[0.05] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
       >
         <span>Find</span>
         <kbd className="rounded border border-v2-border/80 px-1 text-[9px] font-mono text-v2-muted">⌘K</kbd>

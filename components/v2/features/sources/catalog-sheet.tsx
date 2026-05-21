@@ -1,7 +1,7 @@
 'use client'
 
-import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
   CATALOG,
@@ -19,6 +19,24 @@ type Props = {
 
 export function CatalogSheet({ open, onClose, onPick }: Props) {
   const [activeCategory, setActiveCategory] = useState(CATEGORY_ORDER[0])
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (open) {
+      const id = requestAnimationFrame(() => {
+        closeButtonRef.current?.focus()
+      })
+      return () => cancelAnimationFrame(id)
+    }
+  }, [open])
+
+  const sheetInitial = reducedMotion ? { opacity: 0 } : { y: '100%' }
+  const sheetAnimate = reducedMotion ? { opacity: 1 } : { y: 0 }
+  const sheetExit = reducedMotion ? { opacity: 0 } : { y: '100%' }
+  const sheetTransition = reducedMotion
+    ? { duration: 0.15 }
+    : { duration: 0.32, ease: [0.25, 0.1, 0.25, 1] as const }
 
   return (
     <AnimatePresence>
@@ -39,10 +57,11 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label="Add a connector"
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
+            initial={sheetInitial}
+            animate={sheetAnimate}
+            exit={sheetExit}
+            transition={sheetTransition}
+            onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
             className="fixed inset-x-0 bottom-0 z-50 max-h-[55vh] overflow-hidden rounded-t-3xl border-t border-v2-border bg-v2-surface shadow-2xl shadow-black/20"
           >
             <header className="flex items-end justify-between gap-4 border-b border-v2-border/60 px-6 pb-4 pt-5">
@@ -53,10 +72,11 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
                 </h2>
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
-                className="rounded-md px-2 py-1 text-xs text-v2-muted hover:text-v2-foreground"
                 aria-label="Close catalog"
+                className="rounded-md px-2 py-1 text-xs text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
               >
                 Esc
               </button>
@@ -68,8 +88,10 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
                   key={cat}
                   type="button"
                   onClick={() => setActiveCategory(cat)}
+                  aria-pressed={activeCategory === cat}
                   className={cn(
                     'shrink-0 rounded-md px-3 py-1.5 text-[12px] transition-colors',
+                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground',
                     activeCategory === cat
                       ? 'bg-v2-foreground/[0.08] text-v2-foreground'
                       : 'text-v2-muted hover:text-v2-foreground',

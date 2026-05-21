@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import type { CanvasEdge, CanvasItem } from './hooks/use-canvas-layout'
 
 const EDGE_GUTTER = 30  // horizontal "C" curve gutter
@@ -14,6 +15,7 @@ type Props = {
 }
 
 export function CanvasEdges({ edges, items, width, height, highlightedTileId }: Props) {
+  const reducedMotion = useReducedMotion()
   const paths = useMemo(() => {
     const itemById = new Map<string, CanvasItem>()
     for (const i of items) itemById.set(i.id, i)
@@ -71,7 +73,7 @@ export function CanvasEdges({ edges, items, width, height, highlightedTileId }: 
           strokeWidth={p.strokeWidth}
           fill="none"
           opacity={p.opacity}
-          style={{ transition: 'opacity 180ms, stroke-width 180ms' }}
+          style={{ transition: reducedMotion ? 'none' : 'opacity 180ms, stroke-width 180ms' }}
         />
       ))}
     </svg>

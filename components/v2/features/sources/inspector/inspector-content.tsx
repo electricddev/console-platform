@@ -48,7 +48,7 @@ export function InspectorContent({ connection, datasets }: Props) {
             <li key={d.id}>
               <Link
                 href={`/datasets/${d.id}`}
-                className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-[12px] text-v2-foreground transition-colors hover:bg-v2-foreground/[0.04]"
+                className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-[12px] text-v2-foreground transition-colors hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
               >
                 <span className="font-medium">{d.name}</span>
                 <span className="font-mono text-[10.5px] tabular-nums text-v2-muted">

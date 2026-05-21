@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,13 +49,14 @@ function InspectMode({
 }: Extract<Props, { mode: 'inspect' }>) {
   const def = connectorById(connection.connectorId)
   const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const reducedMotion = useReducedMotion()
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.96 }}
+      initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+      exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
+      transition={{ duration: reducedMotion ? 0.1 : 0.28, ease: [0.25, 0.1, 0.25, 1] }}
       className="rounded-xl border border-v2-foreground/30 bg-v2-surface p-4 shadow-xl shadow-black/[0.08]"
     >
       <header className="flex items-start justify-between gap-3 pb-3">
@@ -111,12 +112,13 @@ function InspectMode({
 
 function SetupMode({ connectorId, onClose, onDone }: Extract<Props, { mode: 'setup' }>) {
   const def = connectorById(connectorId)
+  const reducedMotion = useReducedMotion()
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
+      initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+      exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
+      transition={{ duration: reducedMotion ? 0.1 : 0.28, ease: [0.25, 0.1, 0.25, 1] }}
       className="rounded-xl border border-v2-foreground/30 bg-v2-surface p-4 shadow-xl shadow-black/[0.08]"
     >
       <header className="flex items-start justify-between gap-3 pb-3">
@@ -141,7 +143,7 @@ function SetupMode({ connectorId, onClose, onDone }: Extract<Props, { mode: 'set
           type="button"
           onClick={onClose}
           aria-label="Cancel setup"
-          className="rounded-md p-1 text-v2-muted hover:text-v2-foreground"
+          className="rounded-md p-1 text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-v2-foreground"
         >
           <X className="size-4" strokeWidth={1.75} />
         </button>
@@ -165,7 +167,7 @@ function RemoveConfirm({
   return (
     <div className="rounded-md border border-v2-border/80 bg-v2-surface-2/50 p-3">
       <p className="text-[12.5px] text-v2-foreground">Remove {connection.name}?</p>
-      <p className="mt-1 text-[11px] text-v2-muted">
+      <p id="remove-confirm-desc" className="mt-1 text-[11px] text-v2-muted">
         Datasets and their bindings will be dropped. Type the connection name to confirm.
       </p>
       <input
@@ -175,6 +177,7 @@ function RemoveConfirm({
         placeholder={connection.name}
         className="mt-2 w-full rounded-md border border-v2-border bg-v2-surface px-2 py-1.5 text-[12px] text-v2-foreground placeholder:text-v2-muted/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
         aria-label="Connection name to confirm removal"
+        aria-describedby="remove-confirm-desc"
       />
       <div className="mt-2 flex gap-2">
         <button

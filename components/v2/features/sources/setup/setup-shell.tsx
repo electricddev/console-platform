@@ -2,7 +2,7 @@
 
 import { useReducer, useTransition } from 'react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { setupReducer, type SetupAction, type SetupState } from './setup-reducer'
 import { AuthStep } from './auth-step'
@@ -28,6 +28,7 @@ export function SetupShell({ connectorId, onDone, onCancel }: Props) {
   const initial: SetupState = { step: 'auth', connectorId, authPayload: {} }
   const [state, dispatch] = useReducer(setupReducer, initial)
   const [, startTransition] = useTransition()
+  const reducedMotion = useReducedMotion()
 
   function submitSave(s: SetupState) {
     if (s.step !== 'select') return
@@ -56,9 +57,9 @@ export function SetupShell({ connectorId, onDone, onCancel }: Props) {
 
       <motion.div
         key={state.step}
-        initial={{ opacity: 0, y: 4 }}
+        initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18 }}
+        transition={{ duration: reducedMotion ? 0.1 : 0.18 }}
         className="min-h-[160px]"
       >
         {state.step === 'auth' && (
