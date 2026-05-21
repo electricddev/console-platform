@@ -1,0 +1,113 @@
+import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api/schemas'
+
+const ts = (offsetMin: number) => new Date(Date.now() - offsetMin * 60_000).toISOString()
+
+export const connectorConnections: ConnectorConnection[] = [
+  {
+    id: 'conn_sfs_apollo',
+    connectorId: 'sfs',
+    category: 'fund-admin',
+    name: 'Securitize Fund Services',
+    subtitle: 'NAV · fund admin',
+    status: 'ok',
+    lastSyncAt: ts(2),
+    cadence: '5min poll',
+    datasetIds: ['ds_nav_daily', 'ds_positions_snapshot', 'ds_flows_subscriptions'],
+  },
+  {
+    id: 'conn_securitize_platform',
+    connectorId: 'securitize-platform',
+    category: 'fund-admin',
+    name: 'Securitize Platform',
+    subtitle: 'Transfer agent',
+    status: 'ok',
+    lastSyncAt: ts(5),
+    cadence: 'event-driven',
+    datasetIds: ['ds_holders_register', 'ds_cap_table_lots'],
+  },
+  {
+    id: 'conn_sec_edgar',
+    connectorId: 'sec-edgar',
+    category: 'regulator',
+    name: 'SEC EDGAR',
+    subtitle: 'Regulator',
+    status: 'ok',
+    lastSyncAt: ts(60),
+    cadence: 'continuous',
+    datasetIds: ['ds_form_n_port', 'ds_form_n_csr', 'ds_xbrl_financials'],
+  },
+  {
+    id: 'conn_acred_archive_s3',
+    connectorId: 's3',
+    category: 'storage',
+    name: 'acred-archive',
+    subtitle: 'S3 bucket · borrower packets',
+    status: 'attention',
+    lastSyncAt: ts(540),
+    cadence: '1h poll',
+    datasetIds: ['ds_borrower_packets_raw', 'ds_covenant_attestations'],
+    credentialsExpireAt: new Date(Date.now() + 4 * 24 * 60 * 60_000).toISOString(),
+  },
+  {
+    id: 'conn_wormhole',
+    connectorId: 'wormhole',
+    category: 'on-chain',
+    name: 'Wormhole Bridge',
+    subtitle: 'Cross-chain',
+    status: 'ok',
+    lastSyncAt: ts(0.6),
+    cadence: 'event-driven',
+    datasetIds: ['ds_bridge_transfers'],
+  },
+  {
+    id: 'conn_pyth',
+    connectorId: 'pyth',
+    category: 'on-chain',
+    name: 'Pyth Network',
+    subtitle: 'Pull oracle',
+    status: 'ok',
+    lastSyncAt: ts(0.4),
+    cadence: 'continuous',
+    datasetIds: ['ds_price_feeds_usd'],
+  },
+]
+
+export const connectionDatasets: ConnectionDataset[] = [
+  { id: 'ds_nav_daily', connectionId: 'conn_sfs_apollo', name: 'nav.daily',
+    rowCount: 38_400, rowUnit: 'rows', lastSyncAt: ts(2), vaultIds: ['vault_acred'] },
+  { id: 'ds_positions_snapshot', connectionId: 'conn_sfs_apollo', name: 'positions.snapshot',
+    rowCount: 412_000, rowUnit: 'rows', lastSyncAt: ts(2), vaultIds: ['vault_acred'] },
+  { id: 'ds_flows_subscriptions', connectionId: 'conn_sfs_apollo', name: 'flows.subscriptions',
+    rowCount: 2_100, rowUnit: 'rows', lastSyncAt: ts(2), vaultIds: ['vault_acred'] },
+  { id: 'ds_holders_register', connectionId: 'conn_securitize_platform', name: 'holders.register',
+    rowCount: 187, rowUnit: 'rows', lastSyncAt: ts(5), vaultIds: ['vault_acred'] },
+  { id: 'ds_cap_table_lots', connectionId: 'conn_securitize_platform', name: 'cap_table.lots',
+    rowCount: 893, rowUnit: 'rows', lastSyncAt: ts(5), vaultIds: ['vault_tvf'] },
+  { id: 'ds_form_n_port', connectionId: 'conn_sec_edgar', name: 'form_n_port',
+    rowCount: 284_000, rowUnit: 'filings', lastSyncAt: ts(60), vaultIds: ['vault_acred'] },
+  { id: 'ds_form_n_csr', connectionId: 'conn_sec_edgar', name: 'form_n_csr',
+    rowCount: 412_000, rowUnit: 'filings', lastSyncAt: ts(60), vaultIds: ['vault_acred'] },
+  { id: 'ds_xbrl_financials', connectionId: 'conn_sec_edgar', name: 'xbrl.financials',
+    rowCount: 2_300_000, rowUnit: 'tags', lastSyncAt: ts(60), vaultIds: ['vault_tvf'] },
+  { id: 'ds_borrower_packets_raw', connectionId: 'conn_acred_archive_s3', name: 'borrower_packets.raw',
+    rowCount: 187_000, rowUnit: 'objects', lastSyncAt: ts(540), vaultIds: ['vault_acred'] },
+  { id: 'ds_covenant_attestations', connectionId: 'conn_acred_archive_s3', name: 'covenant_attestations',
+    rowCount: 1_400, rowUnit: 'objects', lastSyncAt: ts(540), vaultIds: ['vault_acred'] },
+  { id: 'ds_bridge_transfers', connectionId: 'conn_wormhole', name: 'bridge.transfers',
+    rowCount: 3_400, rowUnit: 'events', lastSyncAt: ts(0.6), vaultIds: ['vault_tvf'] },
+  { id: 'ds_price_feeds_usd', connectionId: 'conn_pyth', name: 'price_feeds.usd',
+    rowCount: 8_200_000, rowUnit: 'ticks', lastSyncAt: ts(0.4), vaultIds: ['vault_tvf'] },
+]
+
+export const vaultRefs: VaultRef[] = [
+  { id: 'vault_acred', symbol: 'ACRED', sponsor: 'Securitize · Apollo · production',
+    palette: 'forest', datasetCount: 8, consumerCount: 3 },
+  { id: 'vault_tvf', symbol: 'TVF', sponsor: 'Maple · TradFi Vintage Fund',
+    palette: 'periwinkle', datasetCount: 4, consumerCount: 1 },
+]
+
+export const connectorCanvasFixtures = {
+  connections: connectorConnections,
+  datasets: connectionDatasets,
+  vaults: vaultRefs,
+}

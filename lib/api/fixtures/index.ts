@@ -8,6 +8,7 @@ import { templateFixtures } from './templates'
 import { runFixtures } from './runs'
 import { insightFixtures } from './insights'
 import { sourceFixtures } from './sources'
+import { connectorCanvasFixtures } from './connector-canvas'
 import { ingestionFixtures } from './ingestion'
 import { approvalFixtures } from './approvals'
 import { accessFixtures } from './access'
@@ -33,6 +34,7 @@ export const fixtures = {
   runs: runFixtures,
   insights: insightFixtures,
   sources: sourceFixtures,
+  connectorCanvas: connectorCanvasFixtures,
   ingestionEvents: ingestionFixtures,
   approvals: approvalFixtures,
   accessGrants: accessFixtures,
