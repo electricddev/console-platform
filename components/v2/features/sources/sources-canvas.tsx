@@ -1,8 +1,9 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useReducer, useEffect } from 'react'
 import { useCanvasLayout } from './hooks/use-canvas-layout'
 import { SourceTile } from './source-tile'
+import { SourceTileExpanded } from './source-tile-expanded'
 import { DatasetTile } from './dataset-tile'
 import { VaultPeripheralTile } from './vault-peripheral-tile'
 import { CategoryLabel } from './category-lane'
@@ -36,6 +37,14 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   const layout = useCanvasLayout({ connections, datasets, vaults })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
   const { open: catalogOpen, openSheet, closeSheet } = useCatalogSheet()
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dispatch({ type: 'deselect' })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const isEmpty = connections.length === 0
 
@@ -115,12 +124,29 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
               if (item.kind === 'source-tile') {
                 const conn = connectionById.get(item.id)
                 if (!conn) return null
+                const isSelected = state.selectedTileId === conn.id
+                if (isSelected) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="absolute z-20"
+                      style={{ left: item.x, top: item.y, width: 480 }}
+                    >
+                      <SourceTileExpanded
+                        mode="inspect"
+                        connection={conn}
+                        datasets={datasets.filter((d) => d.connectionId === conn.id)}
+                        onClose={() => dispatch({ type: 'deselect' })}
+                      />
+                    </div>
+                  )
+                }
                 return (
-                  <div key={item.id} className="absolute" style={style}>
+                  <div key={item.id} className="absolute" style={{ left: item.x, top: item.y, width: item.w, height: item.h }}>
                     <SourceTile
                       connection={conn}
                       datasetCount={datasetCountByConn.get(conn.id) ?? 0}
-                      selected={state.selectedTileId === conn.id}
+                      selected={false}
                       onSelect={() => dispatch({ type: 'select', id: conn.id })}
                     />
                   </div>
