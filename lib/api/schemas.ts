@@ -834,3 +834,58 @@ export const StatusReportSchema = z.object({
   updatedAt: z.string().datetime(),
 })
 export type StatusReport = z.infer<typeof StatusReportSchema>
+
+// ---------- Connector canvas (v2 /sources) ----------
+
+export const ConnectorCategorySchema = z.enum([
+  'fund-admin',
+  'regulator',
+  'storage',
+  'warehouse',
+  'on-chain',
+  'market-data',
+  'rating-agency',
+  'agent-bank',
+  'analytics',
+  'custom',
+])
+export type ConnectorCategory = z.infer<typeof ConnectorCategorySchema>
+
+export const ConnectionStatusSchema = z.enum(['ok', 'attention', 'error', 'paused'])
+export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>
+
+export const ConnectorConnectionSchema = z.object({
+  id: z.string(),
+  connectorId: z.string(),         // e.g. 'sec-edgar', 's3', 'file-upload'
+  category: ConnectorCategorySchema,
+  name: z.string(),
+  subtitle: z.string().optional(), // "NAV · fund admin", "Regulator", etc.
+  status: ConnectionStatusSchema,
+  lastSyncAt: z.string().datetime(),
+  cadence: z.string(),             // human-readable: "5min poll", "event-driven"
+  datasetIds: z.array(z.string()),
+  credentialsExpireAt: z.string().datetime().optional(),
+  errorMessage: z.string().optional(),
+})
+export type ConnectorConnection = z.infer<typeof ConnectorConnectionSchema>
+
+export const ConnectionDatasetSchema = z.object({
+  id: z.string(),
+  connectionId: z.string(),
+  name: z.string(),                // "nav.daily", "form_n_port"
+  rowCount: z.number().int().nonnegative(),
+  rowUnit: z.enum(['rows', 'filings', 'objects', 'events', 'ticks', 'tags']),
+  lastSyncAt: z.string().datetime(),
+  vaultIds: z.array(z.string()),   // which vaults consume this dataset
+})
+export type ConnectionDataset = z.infer<typeof ConnectionDatasetSchema>
+
+export const VaultRefSchema = z.object({
+  id: z.string(),
+  symbol: z.string(),
+  sponsor: z.string(),
+  palette: z.enum(['forest', 'periwinkle', 'amber', 'rose', 'sky', 'mauve', 'teal']),
+  datasetCount: z.number().int().nonnegative(),
+  consumerCount: z.number().int().nonnegative(),
+})
+export type VaultRef = z.infer<typeof VaultRefSchema>
