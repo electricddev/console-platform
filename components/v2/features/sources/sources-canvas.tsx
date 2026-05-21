@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer, useEffect } from 'react'
+import { useReducer, useEffect, useRef, useState } from 'react'
 import { useCanvasLayout } from './hooks/use-canvas-layout'
 import { useSetupFlow } from './hooks/use-setup-flow'
 import { SourceTile } from './source-tile'
@@ -35,7 +35,20 @@ type Props = {
 }
 
 export function SourcesCanvas({ connections, datasets, vaults }: Props) {
-  const layout = useCanvasLayout({ connections, datasets, vaults })
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const layout = useCanvasLayout({ connections, datasets, vaults, containerWidth })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
   const { open: catalogOpen, openSheet, closeSheet } = useCatalogSheet()
   const { pendingConnectorId, start: startSetup, end: endSetup } = useSetupFlow()
@@ -59,16 +72,13 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   }
 
   return (
-    <div className="px-8 pt-6 pb-12">
-      <header className="flex items-end justify-between gap-6 border-b border-v2-border/60 pb-5">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-v2-muted/70">
-            {'// pipeline · sources'}
-          </p>
-          <h1 className="mt-1 text-[26px] font-semibold leading-tight tracking-tight text-v2-foreground">
+    <div className="mx-auto flex w-full flex-col gap-8 px-6 py-8 md:px-8 md:py-10">
+      <header className="flex items-end justify-between gap-6">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[30px] font-semibold leading-tight tracking-tight text-v2-foreground">
             Connections
           </h1>
-          <p className="mt-1 max-w-prose text-sm text-v2-muted">
+          <p className="text-[14px] text-v2-muted max-w-prose">
             {connections.length} sources feeding {datasets.length} datasets into {vaults.length} data vaults.
           </p>
         </div>
@@ -83,8 +93,9 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
 
       {/* Canvas */}
       <div
-        className="relative mt-6 overflow-hidden rounded-2xl border border-v2-border/60 bg-v2-surface/40"
-        style={{ height: isEmpty && !pendingConnectorId ? 'auto' : layout.height || 420, width: '100%' }}
+        ref={wrapperRef}
+        className="relative overflow-hidden rounded-2xl border border-v2-border/60 bg-v2-surface/40"
+        style={{ height: isEmpty && !pendingConnectorId ? 'auto' : layout.height || 420 }}
         aria-label="Connections canvas"
         role="region"
         onClick={(e) => {
@@ -134,7 +145,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
                     <div
                       key={item.id}
                       className="absolute z-20"
-                      style={{ left: item.x, top: item.y, width: 480 }}
+                      style={{ left: item.x, top: item.y, width: 560 }}
                     >
                       <SourceTileExpanded
                         mode="inspect"
@@ -184,7 +195,7 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
             {pendingConnectorId ? (
               <div
                 className="absolute z-30"
-                style={{ left: 36, top: Math.max(60, layout.height - 380), width: 480 }}
+                style={{ left: 40, top: Math.max(60, layout.height - 420), width: 560 }}
               >
                 <SourceTileExpanded
                   mode="setup"

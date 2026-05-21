@@ -4,6 +4,13 @@ import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api
 
 const t = '2026-05-21T10:00:00.000Z'
 
+// New constants matching use-canvas-layout.ts
+const MIN_CANVAS_WIDTH = 1100
+const VAULT_W = 220
+const DATASET_W = 220
+const LEFT_GUTTER = 40
+const RIGHT_GUTTER = 40
+
 function fxOneConnection(): { connections: ConnectorConnection[]; datasets: ConnectionDataset[]; vaults: VaultRef[] } {
   return {
     connections: [{
@@ -26,14 +33,14 @@ describe('computeCanvasLayout', () => {
     const label = layout.items.find((i) => i.kind === 'category-label')
     expect(label).toBeDefined()
     expect(label?.label).toBe('Regulator')
-    expect(label?.x).toBe(36)
+    expect(label?.x).toBe(40)
 
     const srcItem = layout.items.find((i) => i.kind === 'source-tile' && i.id === 'c1')
     expect(srcItem).toBeDefined()
     if (srcItem?.kind !== 'source-tile') throw new Error('source tile not found')
-    expect(srcItem.x).toBe(36)
-    expect(srcItem.w).toBe(260)
-    expect(srcItem.h).toBe(50)
+    expect(srcItem.x).toBe(40)
+    expect(srcItem.w).toBe(320)
+    expect(srcItem.h).toBe(56)
     expect(srcItem.y).toBeGreaterThan(label!.y) // tile is below its category label
   })
 
@@ -43,7 +50,9 @@ describe('computeCanvasLayout', () => {
     const srcItem = layout.items.find((i) => i.kind === 'source-tile')
     const dsItem = layout.items.find((i) => i.kind === 'dataset-tile' && i.id === 'd1')
     if (srcItem?.kind !== 'source-tile' || dsItem?.kind !== 'dataset-tile') throw new Error('items not found')
-    expect(dsItem.x).toBe(380)
+    // Dataset x is between source right edge and vault left edge
+    expect(dsItem.x).toBeGreaterThan(srcItem.x + srcItem.w)
+    expect(dsItem.x + DATASET_W).toBeLessThan(MIN_CANVAS_WIDTH - RIGHT_GUTTER - VAULT_W)
     // Centers align within 4px
     expect(Math.abs((srcItem.y + srcItem.h / 2) - (dsItem.y + dsItem.h / 2))).toBeLessThan(4)
   })
@@ -54,9 +63,10 @@ describe('computeCanvasLayout', () => {
     const dsItem = layout.items.find((i) => i.kind === 'dataset-tile')
     const vaultItem = layout.items.find((i) => i.kind === 'vault-tile' && i.id === 'v1')
     if (dsItem?.kind !== 'dataset-tile' || vaultItem?.kind !== 'vault-tile') throw new Error('items not found')
-    expect(vaultItem.x).toBe(720)
-    expect(vaultItem.w).toBe(175)
-    expect(vaultItem.h).toBe(80)
+    // Vault x = canvasWidth - RIGHT_GUTTER - VAULT_W = 1100 - 40 - 220 = 840
+    expect(vaultItem.x).toBe(MIN_CANVAS_WIDTH - RIGHT_GUTTER - VAULT_W)
+    expect(vaultItem.w).toBe(220)
+    expect(vaultItem.h).toBe(88)
     expect(Math.abs(vaultItem.y - dsItem.y)).toBeLessThan(80)
   })
 
@@ -88,10 +98,10 @@ describe('computeCanvasLayout', () => {
     expect(layout.edges[0].status).toBe('attention')
   })
 
-  it('returns a width of 920 and a height that grows with content', () => {
+  it('returns a width of at least 1100 and a height that grows with content', () => {
     const f = fxOneConnection()
     const layout = computeCanvasLayout(f)
-    expect(layout.width).toBe(920)
+    expect(layout.width).toBeGreaterThanOrEqual(1100)
     expect(layout.height).toBeGreaterThanOrEqual(200)
   })
 })

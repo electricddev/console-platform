@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { V2Sidebar } from './sidebar'
 import { V2MobileNav } from './mobile-nav'
 
-const FULL_WIDTH_PREFIXES: string[] = []
+const FULL_WIDTH_PREFIXES: string[] = ['/sources']
 // Routes that take the full height of the main area (no inner scroll, no
 // max-w cap) — typically pages that own their own viewport.
 const FULL_BLEED_EXACT: string[] = []

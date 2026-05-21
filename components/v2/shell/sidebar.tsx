@@ -12,6 +12,7 @@ import {
   Compass,
   Vault,
   History,
+  Plug,
   Sun,
   Moon,
   PanelLeftClose,
@@ -39,6 +40,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/', label: 'Overview', icon: Compass, exact: true },
       { href: '/vaults', label: 'Data Vaults', icon: Vault },
+      { href: '/sources', label: 'Sources', icon: Plug },
       { href: '/audit', label: 'Activity', icon: History },
     ],
   },

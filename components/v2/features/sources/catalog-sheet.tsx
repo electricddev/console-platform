@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import {
   CATALOG,
@@ -21,6 +22,11 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
   const [activeCategory, setActiveCategory] = useState(CATEGORY_ORDER[0])
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const reducedMotion = useReducedMotion()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (open) {
@@ -38,7 +44,7 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
     ? { duration: 0.15 }
     : { duration: 0.32, ease: [0.25, 0.1, 0.25, 1] as const }
 
-  return (
+  const content = (
     <AnimatePresence>
       {open ? (
         <>
@@ -118,6 +124,9 @@ export function CatalogSheet({ open, onClose, onPick }: Props) {
       ) : null}
     </AnimatePresence>
   )
+
+  if (!mounted) return null
+  return createPortal(content, document.body)
 }
 
 function CatalogCard({ def, onPick }: { def: ConnectorDefinition; onPick: () => void }) {

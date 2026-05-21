@@ -31,18 +31,19 @@ export type LayoutInput = {
   connections: readonly ConnectorConnection[]
   datasets: readonly ConnectionDataset[]
   vaults: readonly VaultRef[]
+  containerWidth?: number
 }
 
-const CANVAS_WIDTH = 920
-const LANE_SOURCE_X = 36
-const LANE_DATASET_X = 380
-const LANE_VAULT_X = 720
-const SOURCE_W = 260
-const SOURCE_H = 50
-const DATASET_W = 175
-const DATASET_H = 36
-const VAULT_W = 175
-const VAULT_H = 80
+const MIN_CANVAS_WIDTH = 1100
+const MAX_CANVAS_WIDTH = 1480
+const SOURCE_W = 320
+const SOURCE_H = 56
+const DATASET_W = 220
+const DATASET_H = 40
+const VAULT_W = 220
+const VAULT_H = 88
+const LEFT_GUTTER = 40
+const RIGHT_GUTTER = 40
 const CATEGORY_TOP_PADDING = 36
 const CATEGORY_LABEL_HEIGHT = 20
 const TILE_GAP_WITHIN_CATEGORY = 8
@@ -53,6 +54,16 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
   const { connections, datasets, vaults } = input
   const items: CanvasItem[] = []
   const edges: CanvasEdge[] = []
+
+  const requested = input.containerWidth ?? MIN_CANVAS_WIDTH
+  const canvasWidth = Math.min(MAX_CANVAS_WIDTH, Math.max(MIN_CANVAS_WIDTH, requested))
+
+  const laneSourceX = LEFT_GUTTER
+  const laneVaultX = canvasWidth - RIGHT_GUTTER - VAULT_W
+  const sourceRight = laneSourceX + SOURCE_W
+  const vaultLeft = laneVaultX
+  const midGap = vaultLeft - sourceRight
+  const laneDatasetX = sourceRight + Math.round((midGap - DATASET_W) / 2)
 
   // Group connections by category
   const byCategory = new Map<ConnectorCategory, ConnectorConnection[]>()
@@ -75,7 +86,7 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
     items.push({
       kind: 'category-label',
       id: `cat-${cat}`,
-      x: LANE_SOURCE_X,
+      x: laneSourceX,
       y,
       label: CATEGORY_LABELS[cat],
     })
@@ -85,7 +96,7 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
       items.push({
         kind: 'source-tile',
         id: c.id,
-        x: LANE_SOURCE_X,
+        x: laneSourceX,
         y,
         w: SOURCE_W,
         h: SOURCE_H,
@@ -109,7 +120,7 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
       items.push({
         kind: 'dataset-tile',
         id: d.id,
-        x: LANE_DATASET_X,
+        x: laneDatasetX,
         y: dy,
         w: DATASET_W,
         h: DATASET_H,
@@ -136,7 +147,7 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
         ? centers.reduce((a, b) => a + b, 0) / centers.length
         : CANVAS_TOP_PADDING + VAULT_H
     const vy = Math.max(CANVAS_TOP_PADDING, avgCenter - VAULT_H / 2)
-    items.push({ kind: 'vault-tile', id: v.id, x: LANE_VAULT_X, y: vy, w: VAULT_W, h: VAULT_H })
+    items.push({ kind: 'vault-tile', id: v.id, x: laneVaultX, y: vy, w: VAULT_W, h: VAULT_H })
 
     for (const d of consumed) {
       const sourceConn = connections.find((c) => c.id === d.connectionId)
@@ -155,7 +166,7 @@ export function computeCanvasLayout(input: LayoutInput): CanvasLayout {
   }, 0)
   const height = Math.max(200, maxItemBottom + 40)
 
-  return { items, edges, width: CANVAS_WIDTH, height }
+  return { items, edges, width: canvasWidth, height }
 }
 
 export function useCanvasLayout(input: LayoutInput): CanvasLayout {
