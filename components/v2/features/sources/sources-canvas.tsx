@@ -7,6 +7,8 @@ import { DatasetTile } from './dataset-tile'
 import { VaultPeripheralTile } from './vault-peripheral-tile'
 import { CategoryLabel } from './category-lane'
 import { CanvasEdges } from './canvas-edges'
+import { FloatingActionBar } from './floating-action-bar'
+import { Legend } from './legend'
 import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api/schemas'
 
 type CanvasState = { selectedTileId: string | null }
@@ -130,6 +132,12 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
           }
           return null
         })}
+
+        <FloatingActionBar
+          onAddClick={() => { /* wired in Task D1 */ }}
+          onFindClick={() => { /* wired in Task D1 */ }}
+        />
+        <Legend />
       </div>
     </div>
   )
