@@ -9,6 +9,7 @@ import { CategoryLabel } from './category-lane'
 import { CanvasEdges } from './canvas-edges'
 import { FloatingActionBar } from './floating-action-bar'
 import { Legend } from './legend'
+import { EmptyState } from './empty-state'
 import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api/schemas'
 
 type CanvasState = { selectedTileId: string | null }
@@ -32,6 +33,8 @@ type Props = {
 export function SourcesCanvas({ connections, datasets, vaults }: Props) {
   const layout = useCanvasLayout({ connections, datasets, vaults })
   const [state, dispatch] = useReducer(reducer, { selectedTileId: null })
+
+  const isEmpty = connections.length === 0
 
   const connectionById = new Map(connections.map((c) => [c.id, c]))
   const datasetById = new Map(datasets.map((d) => [d.id, d]))
@@ -66,78 +69,87 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
       {/* Canvas */}
       <div
         className="relative mt-6 overflow-hidden rounded-2xl border border-v2-border/60 bg-v2-surface/40"
-        style={{ height: layout.height, width: '100%' }}
+        style={{ height: isEmpty ? 'auto' : layout.height, width: '100%' }}
         aria-label="Connections canvas"
         role="region"
         onClick={(e) => {
           if (e.target === e.currentTarget) dispatch({ type: 'deselect' })
         }}
       >
-        {/* Dotted background */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--v2-foreground) 7%, transparent) 1px, transparent 1.5px)',
-            backgroundSize: '18px 18px',
-          }}
-        />
+        {isEmpty ? (
+          <EmptyState
+            onPick={(_id) => { /* wired in Phase F */ }}
+            onBrowse={() => { /* wired in Task D1 */ }}
+          />
+        ) : (
+          <>
+            {/* Dotted background */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 opacity-60"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--v2-foreground) 7%, transparent) 1px, transparent 1.5px)',
+                backgroundSize: '18px 18px',
+              }}
+            />
 
-        <CanvasEdges
-          edges={layout.edges}
-          items={layout.items}
-          width={layout.width}
-          height={layout.height}
-          highlightedTileId={state.selectedTileId}
-        />
+            <CanvasEdges
+              edges={layout.edges}
+              items={layout.items}
+              width={layout.width}
+              height={layout.height}
+              highlightedTileId={state.selectedTileId}
+            />
 
-        {/* Items */}
-        {layout.items.map((item) => {
-          if (item.kind === 'category-label') {
-            return <CategoryLabel key={item.id} x={item.x} y={item.y} label={item.label} />
-          }
-          const style = { left: item.x, top: item.y, width: item.w, height: item.h }
-          if (item.kind === 'source-tile') {
-            const conn = connectionById.get(item.id)
-            if (!conn) return null
-            return (
-              <div key={item.id} className="absolute" style={style}>
-                <SourceTile
-                  connection={conn}
-                  datasetCount={datasetCountByConn.get(conn.id) ?? 0}
-                  selected={state.selectedTileId === conn.id}
-                  onSelect={() => dispatch({ type: 'select', id: conn.id })}
-                />
-              </div>
-            )
-          }
-          if (item.kind === 'dataset-tile') {
-            const ds = datasetById.get(item.id)
-            if (!ds) return null
-            return (
-              <div key={item.id} className="absolute" style={style}>
-                <DatasetTile dataset={ds} />
-              </div>
-            )
-          }
-          if (item.kind === 'vault-tile') {
-            const v = vaultById.get(item.id)
-            if (!v) return null
-            return (
-              <div key={item.id} className="absolute" style={style}>
-                <VaultPeripheralTile vault={v} />
-              </div>
-            )
-          }
-          return null
-        })}
+            {/* Items */}
+            {layout.items.map((item) => {
+              if (item.kind === 'category-label') {
+                return <CategoryLabel key={item.id} x={item.x} y={item.y} label={item.label} />
+              }
+              const style = { left: item.x, top: item.y, width: item.w, height: item.h }
+              if (item.kind === 'source-tile') {
+                const conn = connectionById.get(item.id)
+                if (!conn) return null
+                return (
+                  <div key={item.id} className="absolute" style={style}>
+                    <SourceTile
+                      connection={conn}
+                      datasetCount={datasetCountByConn.get(conn.id) ?? 0}
+                      selected={state.selectedTileId === conn.id}
+                      onSelect={() => dispatch({ type: 'select', id: conn.id })}
+                    />
+                  </div>
+                )
+              }
+              if (item.kind === 'dataset-tile') {
+                const ds = datasetById.get(item.id)
+                if (!ds) return null
+                return (
+                  <div key={item.id} className="absolute" style={style}>
+                    <DatasetTile dataset={ds} />
+                  </div>
+                )
+              }
+              if (item.kind === 'vault-tile') {
+                const v = vaultById.get(item.id)
+                if (!v) return null
+                return (
+                  <div key={item.id} className="absolute" style={style}>
+                    <VaultPeripheralTile vault={v} />
+                  </div>
+                )
+              }
+              return null
+            })}
 
-        <FloatingActionBar
-          onAddClick={() => { /* wired in Task D1 */ }}
-          onFindClick={() => { /* wired in Task D1 */ }}
-        />
-        <Legend />
+            <FloatingActionBar
+              onAddClick={() => { /* wired in Task D1 */ }}
+              onFindClick={() => { /* wired in Task D1 */ }}
+            />
+            <Legend />
+          </>
+        )}
       </div>
     </div>
   )
