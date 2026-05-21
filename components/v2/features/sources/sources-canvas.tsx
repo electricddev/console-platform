@@ -6,6 +6,7 @@ import { SourceTile } from './source-tile'
 import { DatasetTile } from './dataset-tile'
 import { VaultPeripheralTile } from './vault-peripheral-tile'
 import { CategoryLabel } from './category-lane'
+import { CanvasEdges } from './canvas-edges'
 import type { ConnectorConnection, ConnectionDataset, VaultRef } from '@/lib/api/schemas'
 
 type CanvasState = { selectedTileId: string | null }
@@ -79,6 +80,14 @@ export function SourcesCanvas({ connections, datasets, vaults }: Props) {
               'radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--v2-foreground) 7%, transparent) 1px, transparent 1.5px)',
             backgroundSize: '18px 18px',
           }}
+        />
+
+        <CanvasEdges
+          edges={layout.edges}
+          items={layout.items}
+          width={layout.width}
+          height={layout.height}
+          highlightedTileId={state.selectedTileId}
         />
 
         {/* Items */}
