@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,7 +104,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
           if (blockBackdropDismiss) e.preventDefault()
         }}
       >
-        <DialogTitle className="sr-only">{def?.name ?? 'Add a source'}</DialogTitle>
+        <DialogTitle className="sr-only">{def?.name ?? 'Connect a source'}</DialogTitle>
         <>
           {state.setup.step !== 'idle' && (
             <>
@@ -152,12 +153,20 @@ export function AddSourceModal({ modal, onConnected }: Props) {
           )}
 
           {state.setup.step === 'idle' && (
-            <div className="px-6 pt-5 pb-0">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-v2-muted/70">Add a source</span>
-            </div>
+            <>
+              <div className="px-6 pt-7 pb-4">
+                <h2 className="font-serif text-[22px] font-normal leading-tight tracking-tight text-v2-foreground">
+                  Connect a source
+                </h2>
+                <p className="mt-1 text-[12.5px] text-v2-muted">
+                  Choose a provider to get started.
+                </p>
+              </div>
+              <Separator />
+            </>
           )}
 
-          <div className="px-6 py-5">
+          <div className={cn('px-6', state.setup.step === 'idle' ? 'pt-4 pb-5' : 'py-5')}>
             {state.setup.step === 'idle' && (
               <PickerView onPick={openWithConnector} />
             )}
