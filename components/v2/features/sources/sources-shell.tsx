@@ -2,9 +2,12 @@
 
 import { useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { toast } from 'sonner'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ConnectedTab } from './connected/connected-tab'
 import { CatalogueTab } from './catalogue/catalogue-tab'
+import { AddSourceModal } from './add-source-modal/add-source-modal'
+import { useAddSourceModal } from './hooks/use-add-source-modal'
 import type { ConnectorConnection, ConnectionDataset } from '@/lib/api/schemas'
 
 type Props = {
@@ -19,8 +22,10 @@ export function SourcesShell({ connections, datasets }: Props) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
+  const modal = useAddSourceModal()
 
-  const tab: TabValue = searchParams.get('tab') === 'catalogue' ? 'catalogue' : 'connected'
+  const tab: TabValue =
+    searchParams.get('tab') === 'catalogue' ? 'catalogue' : 'connected'
 
   function changeTab(next: TabValue) {
     const params = new URLSearchParams(searchParams.toString())
@@ -46,7 +51,7 @@ export function SourcesShell({ connections, datasets }: Props) {
         <button
           type="button"
           className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-sm font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]"
-          onClick={() => { /* opens modal — wired in Task 18 */ }}
+          onClick={() => modal.openPicker()}
         >
           + Connect a source
         </button>
@@ -58,12 +63,42 @@ export function SourcesShell({ connections, datasets }: Props) {
           <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
         </TabsList>
         <TabsContent value="connected" className="mt-5">
-          <ConnectedTab connections={connections} datasets={datasets} />
+          <ConnectedTab
+            connections={connections}
+            datasets={datasets}
+            onRowClick={(idOrSentinel) => {
+              if (idOrSentinel === '__browse') {
+                changeTab('catalogue')
+                return
+              }
+              if (idOrSentinel.startsWith('__add:')) {
+                modal.openWithConnector(idOrSentinel.replace('__add:', ''))
+                return
+              }
+              // Real row click → drawer wiring deferred to Task 19
+              console.log('[sources] row click deferred to Task 19:', idOrSentinel)
+            }}
+          />
         </TabsContent>
         <TabsContent value="catalogue" className="mt-5">
-          <CatalogueTab connections={connections} />
+          <CatalogueTab
+            connections={connections}
+            onPick={(id) => {
+              if (id.startsWith('__soon:')) {
+                const name = id.replace('__soon:', '')
+                toast(`${name} is coming soon. Email hello@hyve.xyz to vote.`)
+                return
+              }
+              modal.openWithConnector(id)
+            }}
+            onAlreadyConnected={() => {
+              changeTab('connected')
+            }}
+          />
         </TabsContent>
       </Tabs>
+
+      <AddSourceModal modal={modal} onConnected={() => { /* drawer wiring — Task 19 */ }} />
     </div>
   )
 }
