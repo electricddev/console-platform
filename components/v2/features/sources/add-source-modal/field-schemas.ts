@@ -51,7 +51,7 @@ const OAUTH_AUTH_SCHEMA: ConnectorAuthSchema = {
   schema: z.object({
     accountId: z.string().min(1),
   }),
-  fields: [] as readonly FieldHint[],
+  fields: [],
 }
 
 export const STRIPE_AUTH_SCHEMA = OAUTH_AUTH_SCHEMA
