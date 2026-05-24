@@ -1,0 +1,153 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { connectorById } from '../../catalog-data'
+import { samplePreviewFor, type SamplePreview } from '../sample-rows'
+import type { DiscoveredDataset } from '../setup-reducer'
+
+type Props = {
+  connectorId: string
+  discovered: DiscoveredDataset[]
+  selectedIds: string[]
+  onToggle: (id: string) => void
+  onToggleAll: () => void
+  onConfirm: () => void
+  onCancel: () => void
+  submitting?: boolean
+}
+
+export function ConfirmStep({
+  connectorId, discovered, selectedIds, onToggle, onToggleAll, onConfirm, onCancel, submitting,
+}: Props) {
+  const def = connectorById(connectorId)
+  const allSelected = selectedIds.length === discovered.length
+  const noneSelected = selectedIds.length === 0
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const estimate = useMemo(() => {
+    return discovered
+      .filter((d) => selectedIds.includes(d.id))
+      .reduce((sum, d) => sum + (d.rowCount ?? 0), 0)
+  }, [discovered, selectedIds])
+
+  return (
+    <div className="flex flex-col gap-3 px-1 pt-2">
+      <header className="flex items-center justify-between">
+        <p className="text-[11px] text-v2-muted">
+          <span className="font-medium text-v2-foreground">{selectedIds.length}</span> of {discovered.length} selected
+          {estimate > 0 ? <span className="ml-2 font-mono text-v2-muted/80">· ~{formatRows(estimate)} rows / month</span> : null}
+        </p>
+        <button type="button" onClick={onToggleAll} className="text-[11px] text-v2-muted hover:text-v2-foreground hover:underline underline-offset-2">
+          {allSelected ? 'Clear all' : 'Select all'}
+        </button>
+      </header>
+
+      <ul className="grid gap-1.5">
+        {discovered.map((d) => {
+          const checked = selectedIds.includes(d.id)
+          const expanded = expandedId === d.id
+          const preview = samplePreviewFor(connectorId, d.id)
+          return (
+            <li key={d.id} className={cn('rounded-md border', checked ? 'border-v2-foreground/30 bg-v2-foreground/[0.03]' : 'border-v2-border')}>
+              <div className="flex items-center gap-2 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => onToggle(d.id)}
+                  aria-pressed={checked}
+                  className="flex flex-1 items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                >
+                  <span aria-hidden="true" className={cn('flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors',
+                    checked ? 'border-v2-foreground bg-v2-foreground text-v2-background' : 'border-v2-border bg-v2-surface')}>
+                    {checked ? <Check className="size-3" strokeWidth={2.5} /> : null}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12.5px] font-medium text-v2-foreground">{d.name}</span>
+                    {d.subtitle ? <span className="block truncate text-[10.5px] text-v2-muted">{d.subtitle}</span> : null}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-label={`${expanded ? 'Hide' : 'Show'} sample for ${d.name}`}
+                  onClick={() => setExpandedId(expanded ? null : d.id)}
+                  className="rounded-md p-1 text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                  disabled={!preview}
+                >
+                  <ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} strokeWidth={2} />
+                </button>
+              </div>
+              {expanded && preview ? <SamplePreview preview={preview} /> : null}
+              {expanded && !preview ? (
+                <div className="border-t border-v2-border/60 px-3 py-2 text-[11px] text-v2-muted">No sample available.</div>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Cancel</button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={noneSelected || submitting}
+          className={cn(
+            'rounded-md px-4 py-1.5 text-[12.5px] font-medium',
+            noneSelected || submitting
+              ? 'cursor-not-allowed border border-v2-border bg-v2-surface-2 text-v2-muted'
+              : 'bg-[oklch(0.40_0.10_160)] text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]',
+          )}
+        >
+          {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SamplePreview({ preview }: { preview: SamplePreview }) {
+  if (preview.kind === 'objects') {
+    return (
+      <div className="border-t border-v2-border/60 px-3 py-2">
+        <ul className="flex flex-col gap-1 font-mono text-[10.5px] text-v2-muted">
+          {preview.items.map((it) => (
+            <li key={it.name} className="flex items-center justify-between gap-3">
+              <span className="truncate text-v2-foreground">{it.name}</span>
+              <span>{it.size} · {it.modified}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+  return (
+    <div className="border-t border-v2-border/60 px-3 py-2">
+      <table className="w-full font-mono text-[10.5px]">
+        <thead>
+          <tr className="border-b border-v2-border/40 text-v2-muted">
+            {preview.columns.map((col) => (
+              <th key={col} scope="col" className="py-1 pr-3 text-left font-normal">{col}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {preview.rows.map((r, i) => (
+            <tr key={i} className="border-b border-v2-border/20 last:border-b-0">
+              {preview.columns.map((col) => (
+                <td key={col} className="py-1 pr-3 text-v2-foreground/90">{r[col] ?? ''}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function formatRows(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
+  return String(n)
+}
