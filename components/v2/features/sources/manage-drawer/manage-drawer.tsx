@@ -33,7 +33,7 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
         {connection && def ? (
           <div className="flex h-full flex-col">
             <SheetTitle className="sr-only">{connection.name}</SheetTitle>
-            <header className="border-b border-v2-border/60 p-5">
+            <header className="border-b border-v2-border/60 p-6">
               <div className="flex items-start gap-3">
                 {def.logo.kind === 'wordmark' ? (
                   <span aria-hidden="true" className={cn('flex size-10 items-center justify-center rounded-md font-mono text-[12px] font-semibold', WORDMARK_TONES[def.logo.tone])}>
@@ -55,12 +55,14 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-6">
               <Section title="Health">
-                <div className="text-[12.5px] leading-relaxed text-v2-foreground">
-                  Connected · {datasets.length} datasets · cadence {connection.cadence}
-                </div>
-                <div className="mt-0.5 text-[11.5px] text-v2-muted">Last sync: {new Date(connection.lastSyncAt).toLocaleString()}</div>
+                <dl className="grid gap-0 divide-y divide-v2-border/60 border-t border-b border-v2-border/60">
+                  <HealthRow k="Status" v={connection.status === 'ok' ? 'healthy' : connection.status} />
+                  <HealthRow k="Datasets" v={String(datasets.length)} />
+                  <HealthRow k="Cadence" v={connection.cadence} />
+                  <HealthRow k="Last sync" v={new Date(connection.lastSyncAt).toLocaleString()} />
+                </dl>
               </Section>
 
               <Section title="Datasets">
@@ -105,21 +107,21 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
                         if (res.ok) toast.success(connection.status === 'paused' ? 'Resumed' : 'Paused')
                         else toast.error(res.error)
                       }}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       {connection.status === 'paused' ? 'Resume' : 'Pause'}
                     </button>
                     <button
                       type="button"
                       onClick={() => onReconnect(connection.connectorId)}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       Reconnect
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingRemove(true)}
-                      className="rounded-md border border-[oklch(0.55_0.18_25)]/40 px-3 py-1.5 text-[12px] text-[oklch(0.55_0.18_25)] hover:bg-[oklch(0.55_0.18_25)]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]"
+                      className="rounded-md border border-[oklch(0.55_0.18_25)]/40 px-3 py-1.5 text-[12px] text-[oklch(0.55_0.18_25)] hover:bg-[oklch(0.55_0.18_25)]/10 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]"
                     >
                       Remove…
                     </button>
@@ -137,9 +139,18 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-5">
-      <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-v2-muted">{title}</h3>
+      <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-v2-muted/70">{title}</h3>
       {children}
     </section>
+  )
+}
+
+function HealthRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="grid grid-cols-[88px_1fr] gap-3 py-2.5">
+      <dt className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-v2-muted">{k}</dt>
+      <dd className="text-[12.5px] text-v2-foreground">{v}</dd>
+    </div>
   )
 }
 

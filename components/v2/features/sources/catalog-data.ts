@@ -26,14 +26,14 @@ export type ConnectorDefinition = {
 export type WordmarkTone = 'ink' | 'navy' | 'teal' | 'red' | 'blue' | 'amber' | 'orange' | 'violet'
 
 export const WORDMARK_TONES: Record<WordmarkTone, string> = {
-  ink: 'bg-foreground text-background',
-  navy: 'bg-[#0b2545] text-white',
-  teal: 'bg-[#0f766e] text-white',
-  red: 'bg-[#b91c1c] text-white',
-  blue: 'bg-[#1d4ed8] text-white',
-  amber: 'bg-[#f7a600] text-black',
-  orange: 'bg-[#ee7e2a] text-white',
-  violet: 'bg-[#5d3fd3] text-white',
+  ink: 'bg-v2-foreground text-v2-background',
+  navy: 'bg-[#1a2238] text-[#e8ebf3]',
+  teal: 'bg-[#0d4f4a] text-[#e7f0ee]',
+  red: 'bg-[#5d1a1a] text-[#f0e6e6]',
+  blue: 'bg-[#1c2f5a] text-[#e6ebf5]',
+  amber: 'bg-[#5a4a18] text-[#f0ead0]',
+  orange: 'bg-[#5a2e16] text-[#f5e2d2]',
+  violet: 'bg-[#2d1c4a] text-[#e8e2f5]',
 }
 
 export const CATEGORY_LABELS: Record<ConnectorCategory, string> = {

@@ -82,7 +82,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
     >
       <DialogContent
         showCloseButton={false}
-        className="w-[560px] max-w-[92vw] p-0 sm:max-w-[560px]"
+        className="w-[540px] max-w-[92vw] gap-0 overflow-hidden p-0 sm:max-w-[540px] border-v2-border bg-v2-surface"
         onEscapeKeyDown={(e) => {
           e.preventDefault()
           if (bridgeOpen) { setBridgeOpen(false); return }
@@ -94,7 +94,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
       >
         <DialogTitle className="sr-only">{def?.name ?? 'Add a source'}</DialogTitle>
         {bridgeOpen && state.setup.step !== 'idle' ? (
-          <div className="p-4">
+          <div className="p-5">
             <HyveBridge
               connectorId={state.setup.connectorId}
               onDeny={() => setBridgeOpen(false)}
@@ -118,7 +118,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                   | 'picker'
               }
             />
-            <div className="flex items-start justify-between gap-3 border-b border-v2-border/60 px-5 pb-3">
+            <div className="flex items-start justify-between gap-3 pt-6 px-6 pb-3">
               <div className="flex items-center gap-2.5">
                 {def?.logo.kind === 'wordmark' ? (
                   <span
@@ -151,13 +151,13 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                 type="button"
                 onClick={handleClose}
                 aria-label="Close"
-                className="rounded-md p-1 text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                className="flex size-7 items-center justify-center rounded-full text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground transition-colors duration-150"
               >
                 <X className="size-4" strokeWidth={1.75} />
               </button>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-6 py-4">
               {state.setup.step === 'idle' && (
                 <PickerView onPick={openWithConnector} />
               )}

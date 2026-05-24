@@ -50,7 +50,7 @@ export function SourcesShell({ connections, datasets }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full flex-col gap-7 px-6 py-8 md:px-8 md:py-10">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-10 md:px-10 md:py-12">
       <header className="flex items-end justify-between gap-6">
         <div className="flex flex-col gap-1.5">
           <h1 className="font-serif text-[30px] font-normal leading-tight tracking-tight text-v2-foreground">
@@ -62,7 +62,7 @@ export function SourcesShell({ connections, datasets }: Props) {
         </div>
         <button
           type="button"
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-sm font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]"
+          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-sm font-medium text-white hover:bg-[oklch(0.36_0.10_160)] hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)] transition-colors duration-150"
           onClick={() => { drawer.close(); modal.openPicker() }}
         >
           + Connect a source
@@ -70,9 +70,21 @@ export function SourcesShell({ connections, datasets }: Props) {
       </header>
 
       <Tabs value={tab} onValueChange={(v) => changeTab(v as TabValue)}>
-        <TabsList aria-label="Sources views">
-          <TabsTrigger value="connected">Connected · {connections.length}</TabsTrigger>
-          <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
+        <TabsList className="h-auto justify-start gap-6 rounded-none border-b border-v2-border/60 bg-transparent p-0">
+          <TabsTrigger
+            value="connected"
+            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-0 text-[13.5px] font-medium text-v2-muted shadow-none data-[state=active]:border-v2-foreground data-[state=active]:bg-transparent data-[state=active]:text-v2-foreground data-[state=active]:shadow-none transition-colors duration-150"
+          >
+            {'Connected · '}
+            <span aria-hidden="true" className="font-mono text-[11px] text-v2-muted/70">{connections.length}</span>
+            <span className="sr-only">{connections.length}</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="catalogue"
+            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-0 text-[13.5px] font-medium text-v2-muted shadow-none data-[state=active]:border-v2-foreground data-[state=active]:bg-transparent data-[state=active]:text-v2-foreground data-[state=active]:shadow-none transition-colors duration-150"
+          >
+            Catalogue
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="connected" className="mt-5">
           <ConnectedTab

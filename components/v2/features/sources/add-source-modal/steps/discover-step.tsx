@@ -136,7 +136,7 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
 
   return (
     <div className="flex flex-col gap-3" aria-live="polite" aria-atomic="false">
-      <ul className="grid gap-1.5">
+      <ul className="grid gap-2.5">
         {profile.steps.map((s, i) => {
           const isDone = i < activeIndex || allDone
           const isActive = i === activeIndex && !allDone
@@ -144,15 +144,15 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
             <li
               key={s.id}
               className={cn(
-                'flex items-center gap-2 text-[12.5px] transition-colors',
+                'flex items-center gap-3 text-[13px] transition-colors',
                 isDone || isActive ? 'text-v2-foreground' : 'text-v2-muted/45',
               )}
             >
-              <span className="flex size-4 shrink-0 items-center justify-center">
+              <span className="flex size-5 shrink-0 items-center justify-center">
                 {isDone ? (
-                  <Check className="size-3.5 text-v2-foreground" strokeWidth={2.5} />
+                  <Check className="size-4 text-v2-foreground" strokeWidth={2.5} />
                 ) : isActive ? (
-                  <Loader2 className="size-3.5 animate-spin text-v2-foreground" />
+                  <Loader2 className="size-4 animate-spin text-v2-foreground" />
                 ) : (
                   <Circle className="size-2.5 text-v2-muted/40" strokeWidth={1.5} />
                 )}
@@ -163,19 +163,19 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
         })}
       </ul>
       <div
-        className="h-px w-full overflow-hidden bg-v2-border"
+        className="h-[2px] w-full overflow-hidden bg-v2-border"
         role="progressbar"
         aria-valuenow={Math.round(progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <div className="h-px bg-v2-foreground transition-[width] duration-500 ease-out" style={{ width: `${progress * 100}%` }} />
+        <div className="h-[2px] bg-[oklch(0.40_0.10_160)] transition-[width] duration-500 ease-out" style={{ width: `${progress * 100}%` }} />
       </div>
       <div className="flex justify-end pt-1">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground"
+          className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground transition-colors duration-150"
         >
           Cancel
         </button>

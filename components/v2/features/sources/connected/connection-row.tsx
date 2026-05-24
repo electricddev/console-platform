@@ -12,18 +12,18 @@ const STATUS_LABEL: Record<ConnectionStatus, string> = {
   paused: 'paused',
 }
 
-const STATUS_DOT_BG: Record<ConnectionStatus, string> = {
-  ok: 'bg-[oklch(0.55_0.10_150)]',
-  attention: 'bg-[oklch(0.70_0.14_70)]',
-  error: 'bg-[oklch(0.55_0.18_25)]',
-  paused: 'bg-v2-muted/60',
+const STATUS_PILL: Record<ConnectionStatus, string> = {
+  ok: 'bg-[oklch(0.60_0.12_150)]/12 text-[oklch(0.62_0.13_145)]',
+  attention: 'bg-[oklch(0.78_0.14_80)]/15 text-[oklch(0.78_0.14_80)]',
+  error: 'bg-[oklch(0.62_0.21_25)]/15 text-[oklch(0.62_0.21_25)]',
+  paused: 'bg-v2-muted/12 text-v2-muted',
 }
 
-const STATUS_DOT_VARIANT: Record<ConnectionStatus, string> = {
-  ok: 'rounded-full',
-  attention: 'rounded-full ring-1 ring-current ring-offset-1 ring-offset-v2-surface',
-  error: 'rounded-[1px]',
-  paused: 'rounded-full bg-transparent border border-v2-muted/60',
+const STATUS_DOT: Record<ConnectionStatus, string> = {
+  ok: 'bg-[oklch(0.60_0.12_150)]',
+  attention: 'bg-[oklch(0.78_0.14_80)]',
+  error: 'bg-[oklch(0.62_0.21_25)]',
+  paused: 'bg-v2-muted/60',
 }
 
 function formatAgo(iso: string): string {
@@ -54,37 +54,47 @@ export function ConnectionRow({ connection, datasets, onClick }: Props) {
       type="button"
       onClick={onClick}
       aria-label={`${connection.name} — ${STATUS_LABEL[connection.status]}, ${datasetCount} datasets, last synced ${formatAgo(connection.lastSyncAt)}`}
-      className="group flex w-full items-center gap-4 rounded-md px-4 py-3.5 text-left hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+      className="group flex w-full items-center gap-4 rounded-md px-5 py-4 text-left hover:bg-v2-foreground/[0.025] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground transition-colors duration-150"
     >
       {def?.logo.kind === 'wordmark' ? (
         <span
           aria-hidden="true"
-          className={cn('flex size-9 shrink-0 items-center justify-center rounded-md font-mono text-[11px] font-semibold', WORDMARK_TONES[def.logo.tone])}
+          className={cn('flex size-10 shrink-0 items-center justify-center rounded-md font-mono text-[11px] font-semibold', WORDMARK_TONES[def.logo.tone])}
         >
           {def.logo.label}
         </span>
       ) : def?.logo.kind === 'icon' ? (
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-v2-surface-2">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-v2-surface-2">
           <def.logo.Icon className="size-4 text-v2-muted" strokeWidth={1.75} />
         </span>
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <div className="text-[13.5px] font-medium text-v2-foreground">{connection.name}</div>
-        <div className="mt-0.5 truncate text-[11.5px] text-v2-muted">
+        <div className="flex items-center gap-2 leading-snug">
+          <span className="text-[14px] font-medium tracking-tight text-v2-foreground">{connection.name}</span>
           {connection.subtitle ? (
-            <span className="font-mono text-v2-muted/85">{connection.subtitle}</span>
+            <span className="rounded-[3px] bg-v2-foreground/[0.04] px-1.5 py-0.5 font-mono text-[10.5px] text-v2-muted">
+              {connection.subtitle}
+            </span>
           ) : null}
-          {connection.subtitle ? <span className="mx-1.5">·</span> : null}
+        </div>
+        <div className="mt-0.5 truncate text-[11.5px] text-v2-muted">
           <span>{datasetsLabel}</span>
           <span className="mx-1.5">·</span>
           <span>synced {formatAgo(connection.lastSyncAt)}</span>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 text-[11px] text-v2-muted">
-        <span aria-hidden="true" className={cn('size-1.5', STATUS_DOT_BG[connection.status], STATUS_DOT_VARIANT[connection.status])} />
-        <span>{STATUS_LABEL[connection.status]}</span>
+      <div className="flex shrink-0 items-center gap-2">
+        <span
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium',
+            STATUS_PILL[connection.status],
+          )}
+        >
+          <span aria-hidden="true" className={cn('size-1.5 rounded-full', STATUS_DOT[connection.status])} />
+          {STATUS_LABEL[connection.status]}
+        </span>
         <ChevronRight aria-hidden="true" className="size-3.5 text-v2-muted/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </div>
     </button>

@@ -7,6 +7,9 @@
    ============================================================ */
 
 [data-v2] {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
   /* Light palette — warm off-white with subtle cream undertone. */
   --v2-background: #f7f6f3;
   --v2-foreground: #0a0a0a;

@@ -65,16 +65,16 @@ export function CatalogueTab({ connections, onPick, onAlreadyConnected }: Props)
         </div>
       </div>
 
-      <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-9">
         {CATEGORY_ORDER.map((cat) => {
           const items = byCategory.get(cat)
           if (!items || items.length === 0) return null
           return (
             <section key={cat}>
-              <h2 className="mb-2 text-[10.5px] font-medium uppercase tracking-[0.14em] text-v2-muted">
+              <h2 className="mb-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-v2-muted/70">
                 {CATEGORY_LABELS[cat]}
               </h2>
-              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {items.map((def) => {
                   const connected = connectedCountByConnector.get(def.id) ?? 0
                   const badge = connected > 0
@@ -111,10 +111,10 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-full border px-3 py-1 text-[11.5px] transition-colors',
+        'rounded-full px-3 py-1.5 text-[11.5px] font-medium transition-colors duration-150',
         active
-          ? 'border-v2-foreground bg-v2-foreground text-v2-background'
-          : 'border-v2-border text-v2-muted hover:text-v2-foreground hover:border-v2-foreground/40',
+          ? 'bg-v2-foreground text-v2-background'
+          : 'text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground',
       )}
     >
       {label}

@@ -43,10 +43,8 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
   const accountId = ACCOUNT_IDS[connectorId] ?? '—'
 
   return (
-    <div
-      className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20"
-    >
-      <div className="flex items-center justify-between border-b border-v2-border/60 pb-3">
+    <div className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20">
+      <div className="border-b border-v2-border/60 pb-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-v2-muted">Hyve Bridge</span>
       </div>
 
@@ -62,32 +60,48 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
         </div>
       </div>
 
-      <h2 className="mt-4 font-serif text-[18px] font-normal leading-tight text-v2-foreground">
+      <h2 className="font-serif text-[19px] font-normal leading-tight tracking-tight text-v2-foreground mt-5">
         Authorize Hyve to read this {def?.name} account.
       </h2>
 
       <div className="mt-4 flex flex-col gap-3">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-v2-muted">Hyve will be able to read</div>
-          <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-v2-foreground">
-            {scopes.reads.map((r) => <li key={r}>· {r}</li>)}
+          <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted mb-1.5">Hyve will be able to read</div>
+          <ul className="space-y-1">
+            {scopes.reads.map((r) => (
+              <li key={r} className="flex items-center gap-2 text-[12.5px] text-v2-foreground">
+                <span aria-hidden="true" className="size-1 rounded-full bg-v2-foreground/40 shrink-0" />
+                {r}
+              </li>
+            ))}
           </ul>
         </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-v2-muted">Hyve will not be able to</div>
-          <ul className="mt-1.5 flex flex-col gap-0.5 text-[12.5px] text-v2-foreground/85">
-            {scopes.cannot.map((r) => <li key={r}>· {r}</li>)}
+          <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted mb-1.5">Hyve will not be able to</div>
+          <ul className="space-y-1">
+            {scopes.cannot.map((r) => (
+              <li key={r} className="flex items-center gap-2 text-[12.5px] text-v2-foreground/85">
+                <span aria-hidden="true" className="size-1 rounded-full bg-v2-foreground/30 shrink-0" />
+                {r}
+              </li>
+            ))}
           </ul>
         </div>
       </div>
 
       <div className="mt-5 flex justify-end gap-2">
-        <button type="button" onClick={onDeny} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Deny</button>
+        <button
+          type="button"
+          onClick={onDeny}
+          className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+        >
+          Deny
+        </button>
         <button
           type="button"
           onClick={() => onApprove(accountId)}
           autoFocus
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
         >
           Approve →
         </button>

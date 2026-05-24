@@ -17,24 +17,38 @@ export function Stepbar({ current }: Props) {
   return (
     <ol
       aria-label="Setup progress"
-      className="flex items-center gap-2 px-5 py-3.5 text-[10px] uppercase tracking-[0.12em] text-v2-muted/65"
+      className="flex items-center gap-3 px-6 pt-5 pb-4 font-mono text-[10px] uppercase tracking-[0.14em]"
     >
-      {VISIBLE_STEPS.map((s, i) => (
-        <li key={s} aria-current={i === currentIndex ? 'step' : undefined} className="flex items-center gap-2">
-          <span
-            className={cn(
-              'font-medium',
-              i === currentIndex && 'text-v2-foreground',
-              i < currentIndex && 'text-v2-muted',
+      {VISIBLE_STEPS.map((s, i) => {
+        const active = i === currentIndex
+        const complete = i < currentIndex
+        return (
+          <li key={s} aria-current={active ? 'step' : undefined} className="flex items-center gap-2.5">
+            <span
+              aria-hidden="true"
+              className={cn(
+                'flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-medium leading-none transition-colors',
+                active && 'bg-v2-foreground text-v2-background',
+                complete && 'bg-v2-foreground/15 text-v2-foreground',
+                !active && !complete && 'border border-v2-border text-v2-muted/60',
+              )}
+            >
+              {complete ? '✓' : i + 1}
+            </span>
+            <span
+              className={cn(
+                'transition-colors',
+                active ? 'text-v2-foreground' : complete ? 'text-v2-muted' : 'text-v2-muted/45',
+              )}
+            >
+              {STEP_LABEL[s]}
+            </span>
+            {i < VISIBLE_STEPS.length - 1 && (
+              <span aria-hidden="true" className="h-px w-6 bg-v2-border" />
             )}
-          >
-            {STEP_LABEL[s]}
-          </span>
-          {i < VISIBLE_STEPS.length - 1 && (
-            <span aria-hidden="true">·</span>
-          )}
-        </li>
-      ))}
+          </li>
+        )
+      })}
     </ol>
   )
 }
