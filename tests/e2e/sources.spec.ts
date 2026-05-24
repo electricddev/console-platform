@@ -57,7 +57,7 @@ test.describe('/sources — add-source modal', () => {
     await page.getByRole('button', { name: /Connect Amazon S3 →/i }).click()
 
     // Done step
-    await expect(page.getByRole('heading', { name: /Amazon S3 connected/i })).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('heading', { name: /Amazon S3 is connected/i })).toBeVisible({ timeout: 5000 })
   })
 
   test('Catalogue card → "soon" connector shows a toast, no modal', async ({ page }) => {

@@ -31,7 +31,7 @@ export function DoneStep({
     return () => clearTimeout(t)
   }, [onDismiss])
 
-  // Parse datasets from the trust.reads if available; otherwise fall back to generic
+  // Parse datasets from the trust.reads if available
   const datasetNames = (() => {
     if (!def?.trust) return null
     const reads = def.trust.reads
@@ -41,62 +41,107 @@ export function DoneStep({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean)
-      .slice(0, 6) // cap at 6 for display
+      .slice(0, 6)
+  })()
+
+  // Qualifier (scope/cadence)
+  const qualifierPart = (() => {
+    if (!def?.trust) return null
+    const [, ...parts] = def.trust.reads.split('·')
+    return parts.map((s) => s.trim()).join(' · ') || null
   })()
 
   return (
     <>
-      {/* Stage */}
-      <div className="flex flex-col items-center px-8 pt-8 pb-6 text-center">
-        {/* Check mark with glow */}
-        <div className="relative flex items-center justify-center">
-          {/* Radial glow behind the circle */}
-          <div
-            aria-hidden="true"
-            className="absolute size-24 rounded-full bg-v2-green/30 blur-xl"
-          />
-          <motion.div
-            initial={shouldReduceMotion ? false : { scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="relative flex size-14 items-center justify-center rounded-full bg-v2-green-soft text-v2-green"
-          >
-            <Check className="size-7" strokeWidth={2.5} />
-          </motion.div>
-        </div>
+      {/* Stage — left-aligned celebration */}
+      <div className="flex-1 px-7 pt-9 pb-4">
+        {/* Logo + check row — both left-aligned */}
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center gap-4"
+        >
+          {def?.logo.kind === 'wordmark' ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                'inline-flex size-14 items-center justify-center rounded-xl font-mono text-[14px] font-semibold shrink-0',
+                WORDMARK_TONES[def.logo.tone],
+              )}
+            >
+              {def.logo.label}
+            </span>
+          ) : def?.logo.kind === 'icon' ? (
+            <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-xl bg-v2-surface-2">
+              <def.logo.Icon className="size-6 text-v2-muted" strokeWidth={1.75} />
+            </span>
+          ) : null}
 
-        {/* Headline */}
+          {/* Check icon */}
+          <span className="flex size-7 items-center justify-center rounded-full bg-v2-green-soft text-v2-green shrink-0">
+            <Check className="size-3.5" strokeWidth={2.5} />
+          </span>
+        </motion.div>
+
+        {/* Headline — big, left-aligned */}
         <motion.h2
           initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.12 }}
-          className="mt-4 font-serif text-[28px] tracking-tight leading-[1.05] text-v2-foreground"
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mt-6 font-serif text-[36px] font-normal leading-[1.02] tracking-[-0.015em] text-v2-foreground"
         >
-          {def?.name ?? 'Source'} connected.
+          {def?.name ?? 'Source'} is connected.
         </motion.h2>
 
-        {/* Sub */}
+        {/* Sub copy */}
         <motion.p
           initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, delay: 0.2 }}
-          className="mt-1.5 text-[13px] text-v2-muted"
+          transition={{ duration: 0.28, delay: 0.18 }}
+          className="mt-2 text-[14px] text-v2-muted"
         >
-          {datasetCount} dataset{datasetCount === 1 ? '' : 's'} are syncing. First
-          sync starts in 2 minutes.
+          {datasetCount} dataset{datasetCount === 1 ? '' : 's'} are syncing. First sync in 2 minutes.
         </motion.p>
 
-        {/* Dataset name list */}
-        {datasetNames && datasetNames.length > 0 ? (
-          <motion.div
+        {/* Data sheet — what was connected */}
+        {(datasetNames || qualifierPart) && (
+          <motion.dl
             initial={shouldReduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.24, delay: 0.3 }}
-            className="mt-6 font-mono text-[11.5px] text-v2-muted"
+            transition={{ duration: 0.24, delay: 0.26 }}
+            className="mt-7"
           >
-            {datasetNames.join(', ')}
-          </motion.div>
-        ) : null}
+            {datasetNames && (
+              <div className="grid grid-cols-[100px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+                <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+                  Datasets
+                </dt>
+                <dd className="font-mono text-[12px] text-v2-foreground/90 leading-[1.55]">
+                  {datasetNames.join(', ')}
+                </dd>
+              </div>
+            )}
+            <div className="grid grid-cols-[100px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+              <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+                Cadence
+              </dt>
+              <dd className="font-mono text-[12px] text-v2-foreground/90 leading-[1.55]">
+                Every 5 minutes
+              </dd>
+            </div>
+            {qualifierPart && (
+              <div className="grid grid-cols-[100px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+                <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+                  Scope
+                </dt>
+                <dd className="font-mono text-[12px] text-v2-foreground/90 leading-[1.55]">
+                  {qualifierPart}
+                </dd>
+              </div>
+            )}
+          </motion.dl>
+        )}
       </div>
 
       {/* Action bar */}

@@ -9,6 +9,7 @@ type Props = {
   connectorId: string
   onApprove: (accountId: string) => void
   onDeny: () => void
+  stepIndicator?: string
 }
 
 // Plausible-looking account ids per provider, for the mocked flow only.
@@ -39,7 +40,7 @@ const SCOPES: Record<string, { reads: string[]; cannot: string[] }> = {
   },
 }
 
-export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
+export function HyveBridge({ connectorId, onApprove, onDeny, stepIndicator }: Props) {
   const def = connectorById(connectorId)
   const scopes = SCOPES[connectorId] ?? { reads: [], cannot: [] }
   const accountId = ACCOUNT_IDS[connectorId] ?? '—'
@@ -47,9 +48,9 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
   return (
     <>
       {/* Stage — the authorisation surface */}
-      <div className="px-6 pt-5 pb-2">
-        <div className="rounded-lg border border-v2-border/60 bg-v2-surface-2/40 p-5">
-          {/* Provider chip */}
+      <div className="flex-1 px-7 pt-7 pb-2">
+        <div className="rounded-lg border border-v2-border/60 bg-v2-surface-2/40 p-6">
+          {/* Provider chip — left */}
           <div className="flex items-center gap-3 mb-5">
             {def?.logo.kind === 'wordmark' ? (
               <span
@@ -60,6 +61,10 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
                 )}
               >
                 {def.logo.label}
+              </span>
+            ) : def?.logo.kind === 'icon' ? (
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-v2-surface-2">
+                <def.logo.Icon className="size-4 text-v2-muted" strokeWidth={1.75} />
               </span>
             ) : null}
             <div>
@@ -72,7 +77,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
             </div>
           </div>
 
-          {/* Heading */}
+          {/* Heading — left-aligned */}
           <h2 className="font-serif text-[20px] font-normal leading-tight tracking-tight text-v2-foreground">
             Authorize Hyve to read this {def?.name} account.
           </h2>
@@ -115,6 +120,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
             </Button>
           </>
         }
+        stepIndicator={stepIndicator}
       />
     </>
   )

@@ -5,7 +5,6 @@ import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { connectorById } from '../../catalog-data'
 import { samplePreviewFor, type SamplePreview } from '../sample-rows'
@@ -21,6 +20,7 @@ type Props = {
   onConfirm: () => void
   onCancel: () => void
   submitting?: boolean
+  stepIndicator?: string
 }
 
 export function ConfirmStep({
@@ -32,6 +32,7 @@ export function ConfirmStep({
   onConfirm,
   onCancel,
   submitting,
+  stepIndicator,
 }: Props) {
   const def = connectorById(connectorId)
   const allSelected = selectedIds.length === discovered.length
@@ -47,32 +48,30 @@ export function ConfirmStep({
   return (
     <>
       {/* Stage */}
-      <div className="px-6 pt-5 pb-3">
-        {/* Header row: count + badge || toggle link */}
-        <div className="flex items-center justify-between gap-3 mb-2.5">
-          <div className="flex items-center gap-2.5">
-            <p className="font-mono text-[11px] text-v2-muted">
-              <span className="font-semibold text-v2-foreground">
-                {selectedIds.length}
-              </span>{' '}
-              of {discovered.length} selected
-            </p>
-            {estimate > 0 ? (
-              <Badge
-                variant="outline"
-                className="font-mono text-[10.5px] px-1.5 py-0.5"
-              >
-                ~{formatRows(estimate)} rows / month
-              </Badge>
-            ) : null}
-          </div>
-          <Button variant="link" size="sm" onClick={onToggleAll} className="h-auto p-0 text-[11.5px]">
+      <div className="flex-1 px-7 pt-9 pb-3 overflow-y-auto">
+        {/* Left-aligned headline */}
+        <h2 className="font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.012em] text-v2-foreground">
+          Choose what to ingest
+        </h2>
+
+        {/* Metrics line */}
+        <div className="mt-2 flex items-center gap-4">
+          <span className="font-mono text-[12px] text-v2-muted">
+            <span className="text-v2-foreground">{selectedIds.length}</span>{' '}
+            of {discovered.length} selected
+          </span>
+          {estimate > 0 ? (
+            <span className="font-mono text-[12px] text-v2-muted">
+              ~{formatRows(estimate)} rows / month
+            </span>
+          ) : null}
+          <Button variant="link" size="sm" onClick={onToggleAll} className="h-auto p-0 text-[11.5px] ml-auto">
             {allSelected ? 'Clear all' : 'Select all'}
           </Button>
         </div>
 
         {/* Dataset list */}
-        <ul className="flex flex-col gap-1.5">
+        <ul className="mt-4 flex flex-col">
           {discovered.map((d) => {
             const checked = selectedIds.includes(d.id)
             const expanded = expandedId === d.id
@@ -80,14 +79,18 @@ export function ConfirmStep({
             return (
               <li
                 key={d.id}
-                className={cn(
-                  'rounded-md border transition-colors overflow-hidden',
-                  checked
-                    ? 'border-v2-green/50 bg-v2-green-soft/50 ring-1 ring-inset ring-v2-green/40'
-                    : 'border-v2-border bg-transparent hover:border-v2-border/80 hover:bg-v2-foreground/[0.02]',
-                )}
+                className="relative border-b border-v2-border/30 last:border-b-0 overflow-hidden"
               >
-                <div className="flex items-center gap-3 px-3.5 py-3">
+                {/* Left-edge selection accent bar */}
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute left-0 top-0 bottom-0 w-[3px] transition-colors duration-150',
+                    checked ? 'bg-v2-green' : 'bg-transparent',
+                  )}
+                />
+
+                <div className="flex items-center gap-3 pl-5 pr-3 py-3.5">
                   {/* Clickable row region for toggle */}
                   <div
                     role="button"
@@ -100,7 +103,7 @@ export function ConfirmStep({
                       }
                     }}
                     aria-pressed={checked}
-                    className="flex flex-1 cursor-pointer items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                    className="flex flex-1 cursor-pointer items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground rounded-sm"
                   >
                     <Checkbox
                       checked={checked}
@@ -108,16 +111,16 @@ export function ConfirmStep({
                       className="size-4 pointer-events-none"
                       tabIndex={-1}
                     />
-                    <span className="min-w-0">
-                      <span className="block truncate font-mono text-[12.5px] text-v2-foreground">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-mono text-[13px] text-v2-foreground">
                         {d.name}
                       </span>
-                      {d.subtitle ? (
-                        <span className="block truncate text-[11px] text-v2-muted">
-                          {d.subtitle}
-                        </span>
-                      ) : null}
                     </span>
+                    {d.rowCount ? (
+                      <span className="font-mono text-[11.5px] text-v2-muted shrink-0">
+                        {d.subtitle}
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* Expand/collapse chevron */}
@@ -153,7 +156,7 @@ export function ConfirmStep({
                       {preview ? (
                         <SamplePreviewView preview={preview} />
                       ) : (
-                        <div className="border-t border-v2-border/60 px-3 py-2 text-[11px] text-v2-muted">
+                        <div className="border-t border-v2-border/60 px-5 py-2 text-[11px] text-v2-muted">
                           No sample available.
                         </div>
                       )}
@@ -183,6 +186,7 @@ export function ConfirmStep({
             {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}
           </Button>
         }
+        stepIndicator={stepIndicator}
       />
     </>
   )
@@ -191,7 +195,7 @@ export function ConfirmStep({
 function SamplePreviewView({ preview }: { preview: SamplePreview }) {
   if (preview.kind === 'objects') {
     return (
-      <div className="border-t border-v2-border/60 px-3 py-2.5">
+      <div className="border-t border-v2-border/60 px-5 py-2.5">
         <ul className="flex flex-col gap-1 font-mono text-[10.5px] text-v2-muted">
           {preview.items.map((it) => (
             <li key={it.name} className="flex items-center justify-between gap-3">

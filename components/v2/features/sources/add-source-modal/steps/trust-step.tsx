@@ -1,8 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { connectorById, WORDMARK_TONES } from '../../catalog-data'
+import { connectorById } from '../../catalog-data'
 import { ModalActionBar } from '../modal-action-bar'
 
 type Props = {
@@ -10,17 +9,18 @@ type Props = {
   accountId?: string
   onContinue: () => void
   onCancel: () => void
+  stepIndicator?: string
 }
 
-export function TrustStep({ connectorId, accountId, onContinue, onCancel }: Props) {
+export function TrustStep({ connectorId, accountId, onContinue, onCancel, stepIndicator }: Props) {
   const def = connectorById(connectorId)
   const trust = def?.trust
 
   if (!trust) {
     return (
       <>
-        <div className="px-6 pt-7 pb-2">
-          <p className="text-[12.5px] text-v2-muted">
+        <div className="flex-1 px-7 pt-9 pb-6">
+          <p className="text-[13px] text-v2-muted">
             No trust copy available for this connector yet.
           </p>
         </div>
@@ -35,6 +35,7 @@ export function TrustStep({ connectorId, accountId, onContinue, onCancel }: Prop
               Continue →
             </Button>
           }
+          stepIndicator={stepIndicator}
         />
       </>
     )
@@ -48,133 +49,110 @@ export function TrustStep({ connectorId, accountId, onContinue, onCancel }: Prop
     : []
   const qualifier = qualifierParts.map((s) => s.trim()).join(' · ')
 
+  const providerName = def?.name ?? connectorId
+
   return (
     <>
-      {/* Stage */}
-      <div className="px-6 pt-7 pb-4">
-        {/* Eyebrow */}
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-v2-muted/60">
-          Terms of the connection
+      {/* Stage — essay + data sheet */}
+      <div className="flex-1 px-7 pt-9 pb-4 overflow-y-auto">
+        {/* Mono kicker */}
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-v2-muted/70">
+          Connection terms
         </div>
 
-        {/* Provider context inline */}
-        <div className="mt-1 flex items-center gap-2">
-          {def?.logo.kind === 'wordmark' ? (
-            <span
-              aria-hidden="true"
-              className={cn(
-                'flex size-6 items-center justify-center rounded-[4px] font-mono text-[9px] font-semibold shrink-0',
-                WORDMARK_TONES[def.logo.tone],
-              )}
-            >
-              {def.logo.label}
-            </span>
-          ) : def?.logo.kind === 'icon' ? (
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-v2-surface-2">
-              <def.logo.Icon className="size-3.5 text-v2-muted" strokeWidth={1.75} />
-            </span>
-          ) : null}
-          <span className="font-mono text-[11.5px] text-v2-muted">
-            {def?.name ?? connectorId}
-            {accountId ? ` · ${accountId}` : null}
-          </span>
-        </div>
-
-        {/* Headline */}
-        <h2 className="mt-3 font-serif text-[26px] leading-[1.15] tracking-[-0.012em] text-v2-foreground">
-          What Hyve will do with your {def?.name} data.
+        {/* Serif headline */}
+        <h2 className="mt-2 font-serif text-[32px] font-normal leading-[1.05] tracking-[-0.012em] text-v2-foreground">
+          What Hyve will do with your {providerName} data.
         </h2>
-        <p className="mt-1.5 max-w-[420px] text-[12.5px] text-v2-muted">
-          You&rsquo;re granting Hyve read access. Here&rsquo;s exactly what that means.
+
+        {/* Lead paragraph — introduces spirit of the agreement */}
+        <p className="mt-3 max-w-[58ch] text-[14px] text-v2-foreground/85 leading-[1.65]">
+          Hyve operates a confidential compute enclave built around your data.
+          You retain ownership; Hyve gets read-only access scoped to the records
+          below. Pause or disconnect at any moment.
         </p>
 
-        {/* Clause rows */}
-        <div className="mt-7">
-          <TrustRow index="01" keyLabel="Reads">
-            {/* Render each identifier as a pill, then qualifier on a new line */}
-            <div className="flex flex-wrap gap-1.5">
-              {items.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-[3px] bg-v2-foreground/[0.10] font-mono text-[11.5px] px-1.5 py-0.5 text-v2-foreground/90"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-            {qualifier ? (
-              <div className="mt-1.5 font-mono text-[10.5px] text-v2-muted/70">
-                {qualifier}
+        {/* Data sheet */}
+        <dl className="mt-6">
+          {/* Reads row */}
+          <div className="grid grid-cols-[120px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+            <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+              Reads
+            </dt>
+            <dd>
+              <div className="flex flex-wrap gap-1.5">
+                {items.map((item) => (
+                  <span
+                    key={item}
+                    className="font-mono text-[12px] bg-v2-foreground/[0.08] text-v2-foreground rounded-[3px] px-1.5 py-0.5"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
-            ) : null}
-          </TrustRow>
+              {qualifier ? (
+                <div className="mt-1.5 font-mono text-[12px] text-v2-muted">
+                  — {qualifier}
+                </div>
+              ) : null}
+            </dd>
+          </div>
 
-          <TrustRow index="02" keyLabel="Storage">
-            <span className="text-[13px] text-v2-foreground/90 leading-relaxed">
+          {/* Storage row */}
+          <div className="grid grid-cols-[120px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+            <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+              Storage
+            </dt>
+            <dd className="text-[14px] text-v2-foreground/90 leading-[1.55]">
               {trust.storage}
-            </span>
-          </TrustRow>
+            </dd>
+          </div>
 
-          <TrustRow index="03" keyLabel="Audit">
-            <span className="text-[13px] text-v2-foreground/90 leading-relaxed">
+          {/* Audit row */}
+          <div className="grid grid-cols-[120px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+            <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+              Audit
+            </dt>
+            <dd className="text-[14px] text-v2-foreground/90 leading-[1.55]">
               {trust.audit}
-            </span>
-          </TrustRow>
+            </dd>
+          </div>
 
-          <TrustRow index="04" keyLabel="Revoke" isLast>
-            <span className="text-[13px] text-v2-foreground/90 leading-relaxed">
+          {/* Revoke row */}
+          <div className="grid grid-cols-[120px_1fr] gap-x-8 py-4 border-b border-v2-border/40">
+            <dt className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-v2-muted pt-0.5">
+              Revoke
+            </dt>
+            <dd className="text-[14px] text-v2-foreground/90 leading-[1.55]">
               {trust.revoke}
-            </span>
-          </TrustRow>
+            </dd>
+          </div>
+        </dl>
+
+        {/* Policy link */}
+        <div className="mt-4">
+          <Button variant="link" size="sm" asChild className="px-0 text-v2-muted/70 hover:text-v2-foreground">
+            <a href="/legal/data-handling" target="_blank" rel="noopener noreferrer">
+              Full data handling policy →
+            </a>
+          </Button>
         </div>
       </div>
 
       {/* Action bar */}
       <ModalActionBar
         left={
-          <Button variant="link" size="sm" asChild>
-            <a href="/legal/data-handling" target="_blank" rel="noopener noreferrer">
-              Full data handling policy
-            </a>
+          <Button variant="link" size="sm" type="button" onClick={onCancel}>
+            Cancel
           </Button>
         }
         right={
-          <>
-            <Button variant="outline" size="sm" type="button" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button size="sm" variant="brand" onClick={onContinue}>
-              Continue →
-            </Button>
-          </>
+          <Button size="sm" variant="brand" onClick={onContinue}>
+            Continue →
+          </Button>
         }
+        stepIndicator={stepIndicator}
       />
     </>
-  )
-}
-
-function TrustRow({
-  index,
-  keyLabel,
-  children,
-  isLast = false,
-}: {
-  index: string
-  keyLabel: string
-  children: React.ReactNode
-  isLast?: boolean
-}) {
-  return (
-    <div
-      className={cn(
-        'grid grid-cols-[44px_1fr] gap-x-5 gap-y-0.5 py-4',
-        !isLast && 'border-b border-v2-border/40',
-      )}
-    >
-      <div className="font-mono text-[10.5px] tracking-[0.06em] text-v2-muted/80 pt-0.5">
-        {index} / {keyLabel}
-      </div>
-      <div>{children}</div>
-    </div>
   )
 }

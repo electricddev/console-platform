@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ModalActionBar } from '../modal-action-bar'
+import { connectorById } from '../../catalog-data'
 import type { DiscoveredDataset } from '../setup-reducer'
 
 type DiscoveryProfile = {
@@ -237,10 +238,12 @@ type Props = {
   connectorId: string
   onComplete: (discovered: DiscoveredDataset[]) => void
   onCancel: () => void
+  stepIndicator?: string
 }
 
-export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
+export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator }: Props) {
   const profile = PROFILES[connectorId]
+  const def = connectorById(connectorId)
   const [activeIndex, setActiveIndex] = useState(0)
   const shouldReduceMotion = useReducedMotion()
 
@@ -261,17 +264,27 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
   }, [activeIndex, profile, onComplete])
 
   if (!profile) {
-    return <p className="px-6 py-5 text-sm text-v2-muted">No discovery profile.</p>
+    return <p className="px-7 py-5 text-sm text-v2-muted">No discovery profile.</p>
   }
 
   const allDone = activeIndex >= profile.steps.length
   const progress = Math.min(activeIndex / profile.steps.length, 1)
+  const providerName = def?.name ?? connectorId
 
   return (
     <>
-      {/* Stage */}
-      <div className="px-6 pt-8 pb-6" aria-live="polite" aria-atomic="false">
-        <ul className="grid gap-0 min-h-[200px]">
+      {/* Stage — left-aligned */}
+      <div className="flex-1 px-7 pt-9 pb-6" aria-live="polite" aria-atomic="false">
+        {/* Left-aligned headline */}
+        <h2 className="font-serif text-[24px] font-normal leading-[1.1] tracking-[-0.01em] text-v2-foreground">
+          Scanning {providerName}
+        </h2>
+        <p className="mt-1 text-[13px] text-v2-muted">
+          Reading endpoints, sampling schemas…
+        </p>
+
+        {/* Step list */}
+        <ul className="mt-7 grid gap-0 min-h-[160px]">
           {profile.steps.map((s, i) => {
             const isDone = i < activeIndex || allDone
             const isActive = i === activeIndex && !allDone
@@ -282,7 +295,7 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.22, delay: i * 0.04 }}
                 className={cn(
-                  'flex items-center gap-3 py-2 text-[13px] transition-colors',
+                  'flex items-center gap-3 py-2 text-[14px] transition-colors',
                   isDone
                     ? 'text-v2-muted'
                     : isActive
@@ -310,9 +323,9 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
           })}
         </ul>
 
-        {/* Progress bar below list */}
+        {/* Progress bar — thicker, more present */}
         <div
-          className="mt-5 h-1 w-full overflow-hidden rounded-full bg-v2-border/40"
+          className="mt-7 h-1.5 w-full overflow-hidden rounded-full bg-v2-border/40"
           role="progressbar"
           aria-valuenow={Math.round(progress * 100)}
           aria-valuemin={0}
@@ -325,13 +338,14 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Action bar — single Cancel on left, no primary */}
+      {/* Action bar — single Cancel on left */}
       <ModalActionBar
         left={
           <Button variant="link" size="sm" onClick={onCancel}>
             Cancel
           </Button>
         }
+        stepIndicator={stepIndicator}
       />
     </>
   )
