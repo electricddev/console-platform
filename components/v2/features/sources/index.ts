@@ -1,1 +1,1 @@
-export { SourcesCanvas } from './sources-canvas'
+export { SourcesShell } from './sources-shell'
