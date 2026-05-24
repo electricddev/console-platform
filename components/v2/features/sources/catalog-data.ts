@@ -154,6 +154,58 @@ export const CATALOG: ConnectorDefinition[] = [
     wired: 'soon', logo: { kind: 'icon', Icon: Database } },
   { id: 'rest-poller', category: 'custom', name: 'REST poller', tagline: 'Pull endpoint',
     wired: 'soon', logo: { kind: 'icon', Icon: Database } },
+
+  // Payments
+  { id: 'stripe', category: 'payments', name: 'Stripe', tagline: 'Charges · invoices · subscriptions',
+    wired: 'wired', logo: { kind: 'wordmark', label: 'S', tone: 'violet' },
+    trust: {
+      reads: 'charges, invoices, customers, refunds, subscriptions · last 24 months · read-only',
+      storage: 'Confidential enclave. Hyve operators cannot read raw. Every query signed.',
+      audit: 'Hash of every read written to ledger. Counterparty access logged.',
+      revoke: 'Pause or disconnect from Sources. Effective immediately.',
+    } },
+  { id: 'adyen', category: 'payments', name: 'Adyen', tagline: 'Payments platform',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'AD', tone: 'teal' } },
+  { id: 'square', category: 'payments', name: 'Square', tagline: 'In-person payments',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'SQ', tone: 'ink' } },
+  { id: 'braintree', category: 'payments', name: 'Braintree', tagline: 'Payments platform',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'BT', tone: 'navy' } },
+
+  // Banking
+  { id: 'plaid', category: 'banking', name: 'Plaid', tagline: 'Bank account data',
+    wired: 'wired', logo: { kind: 'wordmark', label: 'P', tone: 'ink' },
+    trust: {
+      reads: 'transactions, balances, accounts · last 24 months · read-only',
+      storage: 'Confidential enclave. Hyve operators cannot read raw. Every query signed.',
+      audit: 'Hash of every read written to ledger. Counterparty access logged.',
+      revoke: 'Pause or disconnect from Sources. Effective immediately.',
+    } },
+  { id: 'mx', category: 'banking', name: 'MX', tagline: 'Bank account data',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'MX', tone: 'blue' } },
+  { id: 'teller', category: 'banking', name: 'Teller', tagline: 'Bank API',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'T', tone: 'amber' } },
+
+  // Accounting
+  { id: 'quickbooks', category: 'accounting', name: 'QuickBooks', tagline: 'Books · invoices · expenses',
+    wired: 'wired', logo: { kind: 'wordmark', label: 'QB', tone: 'teal' },
+    trust: {
+      reads: 'invoices, expenses, journal entries, customers, vendors · last 24 months · read-only',
+      storage: 'Confidential enclave. Hyve operators cannot read raw. Every query signed.',
+      audit: 'Hash of every read written to ledger. Counterparty access logged.',
+      revoke: 'Pause or disconnect from Sources. Effective immediately.',
+    } },
+  { id: 'xero', category: 'accounting', name: 'Xero', tagline: 'Books · invoices · expenses',
+    wired: 'wired', logo: { kind: 'wordmark', label: 'X', tone: 'blue' },
+    trust: {
+      reads: 'invoices, expenses, journal entries, contacts · last 24 months · read-only',
+      storage: 'Confidential enclave. Hyve operators cannot read raw. Every query signed.',
+      audit: 'Hash of every read written to ledger. Counterparty access logged.',
+      revoke: 'Pause or disconnect from Sources. Effective immediately.',
+    } },
+  { id: 'netsuite', category: 'accounting', name: 'NetSuite', tagline: 'ERP',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'NS', tone: 'red' } },
+  { id: 'sage-intacct', category: 'accounting', name: 'Sage Intacct', tagline: 'ERP',
+    wired: 'soon', logo: { kind: 'wordmark', label: 'SI', tone: 'orange' } },
 ]
 
 export function connectorById(id: string): ConnectorDefinition | undefined {
@@ -165,6 +217,7 @@ export function connectorsByCategory(category: ConnectorCategory): ConnectorDefi
 }
 
 export const CATEGORY_ORDER: ConnectorCategory[] = [
+  'payments', 'banking', 'accounting',
   'fund-admin', 'regulator', 'storage', 'warehouse',
   'on-chain', 'market-data', 'rating-agency', 'agent-bank',
   'analytics', 'custom',
