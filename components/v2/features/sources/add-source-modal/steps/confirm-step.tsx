@@ -50,8 +50,13 @@ export function ConfirmStep({
           const expanded = expandedId === d.id
           const preview = samplePreviewFor(connectorId, d.id)
           return (
-            <li key={d.id} className={cn('rounded-md border', checked ? 'border-v2-foreground/30 bg-v2-foreground/[0.03]' : 'border-v2-border')}>
-              <div className="flex items-center gap-2 px-3 py-2">
+            <li key={d.id} className={cn(
+              'rounded-md border transition-colors',
+              checked
+                ? 'border-v2-green/30 bg-v2-green-soft/40 ring-1 ring-inset ring-v2-green/15'
+                : 'border-v2-border',
+            )}>
+              <div className="flex items-center gap-2 px-3.5 py-2.5">
                 <button
                   type="button"
                   onClick={() => onToggle(d.id)}
@@ -97,7 +102,7 @@ export function ConfirmStep({
             'rounded-md px-4 py-1.5 text-[12.5px] font-medium',
             noneSelected || submitting
               ? 'cursor-not-allowed border border-v2-border bg-v2-surface-2 text-v2-muted'
-              : 'bg-[oklch(0.40_0.10_160)] text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]',
+              : 'bg-v2-green text-white hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green',
           )}
         >
           {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}

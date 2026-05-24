@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react'
 import { Check } from 'lucide-react'
-import { connectorById } from '../../catalog-data'
+import { cn } from '@/lib/utils'
+import { connectorById, WORDMARK_TONES } from '../../catalog-data'
 
 type Props = {
   connectorId: string
@@ -21,33 +22,59 @@ export function DoneStep({ connectorId, datasetCount, onGoToConnection, onAddAno
   }, [onDismiss])
 
   return (
-    <div className="flex flex-col items-center gap-4 px-1 pt-4 text-center">
-      <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-full bg-[oklch(0.60_0.12_150)]/12 text-[oklch(0.62_0.13_145)]">
-        <Check className="size-6" strokeWidth={2.5} />
-      </span>
-      <div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-v2-muted/65 mb-1">Connected</div>
-        <h2 className="font-serif text-[26px] font-normal leading-[1.1] tracking-[-0.01em] text-v2-foreground mt-4">
-          {def?.name ?? 'Source'} connected.
-        </h2>
-        <p className="mt-1 text-[13px] text-v2-muted">
-          {datasetCount} dataset{datasetCount === 1 ? '' : 's'} · first sync in 2 minutes.
-        </p>
+    <div className="flex flex-col gap-5 px-1 pt-2">
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-v2-muted/70">
+        Connected
       </div>
-      <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={onGoToConnection}
-          className="rounded-md border border-v2-border px-5 py-2 text-[12.5px] text-v2-foreground hover:bg-v2-foreground/[0.04] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+
+      <div className="flex items-start gap-4">
+        {def?.logo.kind === 'wordmark' ? (
+          <span
+            aria-hidden="true"
+            className={cn(
+              'flex size-12 items-center justify-center rounded-md font-mono text-[14px] font-semibold',
+              WORDMARK_TONES[def.logo.tone],
+            )}
+          >
+            {def.logo.label}
+          </span>
+        ) : def?.logo.kind === 'icon' ? (
+          <span className="flex size-12 items-center justify-center rounded-md bg-v2-surface-2">
+            <def.logo.Icon className="size-6 text-v2-muted" strokeWidth={1.75} />
+          </span>
+        ) : null}
+
+        <div className="min-w-0 flex-1">
+          <h2 className="font-serif text-[26px] font-normal leading-[1.1] tracking-[-0.01em] text-v2-foreground">
+            {def?.name ?? 'Source'} connected.
+          </h2>
+          <p className="mt-1.5 text-[13px] text-v2-muted">
+            {datasetCount} dataset{datasetCount === 1 ? '' : 's'} · first sync in 2 minutes.
+          </p>
+        </div>
+
+        <span
+          aria-hidden="true"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-v2-green-soft text-v2-green"
         >
-          Go to connection
-        </button>
+          <Check className="size-4" strokeWidth={2.5} />
+        </span>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
         <button
           type="button"
           onClick={onAddAnother}
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-5 py-2 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+          className="rounded-md border border-v2-border px-3.5 py-1.5 text-[12.5px] text-v2-foreground transition-colors hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
         >
           Add another
+        </button>
+        <button
+          type="button"
+          onClick={onGoToConnection}
+          className="rounded-md bg-v2-green px-4 py-1.5 text-[12.5px] font-medium text-white transition-colors hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green"
+        >
+          Go to connection →
         </button>
       </div>
     </div>

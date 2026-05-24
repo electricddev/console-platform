@@ -138,8 +138,8 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-5">
-      <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-v2-muted/70">{title}</h3>
+    <section className="mb-6">
+      <h3 className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-v2-muted/70">{title}</h3>
       {children}
     </section>
   )

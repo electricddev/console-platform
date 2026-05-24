@@ -35,7 +35,7 @@ function OAuthShape({ connectorId, onOAuthRequest, onCancel }: Props) {
       <button
         type="button"
         onClick={onOAuthRequest}
-        className="self-start rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-[13px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]"
+        className="self-start rounded-md bg-v2-green px-4 py-2 text-[13px] font-medium text-white hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green"
       >
         Sign in with {name} →
       </button>

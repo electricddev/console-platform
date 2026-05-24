@@ -15,6 +15,9 @@
   --color-v2-accent: var(--v2-accent);
   --color-v2-brand: var(--v2-brand);
   --color-v2-brand-soft: var(--v2-brand-soft);
+  --color-v2-green: var(--v2-green);
+  --color-v2-green-hover: var(--v2-green-hover);
+  --color-v2-green-soft: var(--v2-green-soft);
   --color-v2-success: var(--v2-success);
   --color-v2-warning: var(--v2-warning);
   --color-v2-info: var(--v2-info);

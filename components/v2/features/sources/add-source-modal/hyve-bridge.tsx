@@ -44,11 +44,15 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
 
   return (
     <div className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20">
-      <div className="border-b border-v2-border/60 pb-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-v2-muted">Hyve Bridge</span>
-      </div>
+      <button
+        type="button"
+        onClick={onDeny}
+        className="mb-3 text-[11.5px] text-v2-muted transition-colors hover:text-v2-foreground"
+      >
+        ← Back to setup
+      </button>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         {def?.logo.kind === 'wordmark' ? (
           <span aria-hidden="true" className={cn('flex size-9 items-center justify-center rounded-md font-mono text-[12px] font-semibold', WORDMARK_TONES[def.logo.tone])}>
             {def.logo.label}
@@ -101,7 +105,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
           type="button"
           onClick={() => onApprove(accountId)}
           autoFocus
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+          className="rounded-md bg-v2-green px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-v2-green-hover hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
         >
           Approve →
         </button>

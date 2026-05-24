@@ -31,6 +31,11 @@
   --v2-info: oklch(0.65 0.1 240);
   --v2-danger: oklch(0.62 0.21 25);
 
+  /* Forest-green accent — intentionally constant across modes */
+  --v2-green: oklch(0.40 0.10 160);
+  --v2-green-hover: oklch(0.36 0.10 160);
+  --v2-green-soft: color-mix(in oklab, oklch(0.40 0.10 160) 12%, transparent);
+
   /* Shell metrics — wider sidebar for premium breathing room */
   --v2-sidebar-w: 224px;
   --v2-sidebar-w-collapsed: 64px;
@@ -51,6 +56,11 @@
 
   --v2-brand: var(--v2-foreground);
   --v2-brand-soft: color-mix(in oklab, var(--v2-foreground) 10%, transparent);
+
+  /* Forest-green accent — intentionally constant across modes */
+  --v2-green: oklch(0.40 0.10 160);
+  --v2-green-hover: oklch(0.36 0.10 160);
+  --v2-green-soft: color-mix(in oklab, oklch(0.40 0.10 160) 12%, transparent);
 }
 
 /* Tailwind `@theme` mappings for these tokens live in app/globals.css, since

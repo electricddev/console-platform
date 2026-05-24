@@ -163,13 +163,13 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
         })}
       </ul>
       <div
-        className="h-[2px] w-full overflow-hidden bg-v2-border"
+        className="h-[3px] w-full overflow-hidden bg-v2-border"
         role="progressbar"
         aria-valuenow={Math.round(progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <div className="h-[2px] bg-[oklch(0.40_0.10_160)] transition-[width] duration-500 ease-out" style={{ width: `${progress * 100}%` }} />
+        <div className="h-[3px] bg-v2-green transition-[width] duration-500 ease-out" style={{ width: `${progress * 100}%` }} />
       </div>
       <div className="flex justify-end pt-1">
         <button

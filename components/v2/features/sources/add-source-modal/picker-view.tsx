@@ -44,7 +44,7 @@ export function PickerView({ onPick }: Props) {
                     type="button"
                     onClick={() => onPick(def.id)}
                     className={cn(
-                      'flex h-20 flex-col items-center justify-center gap-1 rounded-md border border-v2-border bg-v2-surface px-2 text-center hover:border-v2-foreground/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground',
+                      'flex h-20 flex-col items-center justify-center gap-1 rounded-md border border-v2-border bg-v2-surface px-2 text-center transition-[border-color,transform] duration-200 hover:translate-y-[-1px] hover:border-v2-foreground/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground',
                     )}
                   >
                     {def.logo.kind === 'wordmark' ? (

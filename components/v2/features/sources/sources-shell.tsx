@@ -62,7 +62,7 @@ export function SourcesShell({ connections, datasets }: Props) {
         </div>
         <button
           type="button"
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-sm font-medium text-white hover:bg-[oklch(0.36_0.10_160)] hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)] transition-colors duration-150"
+          className="rounded-md bg-v2-green px-4 py-2 text-sm font-medium text-white hover:bg-v2-green-hover hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green transition-colors duration-150"
           onClick={() => { drawer.close(); modal.openPicker() }}
         >
           + Connect a source
