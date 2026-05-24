@@ -5,7 +5,7 @@ const NOW = new Date('2026-05-08T09:00:00Z').toISOString()
 export const userFixtures: User[] = [
   {
     id: 'usr_maya',
-    name: 'Kirk Patel',
+    name: 'Kirk',
     email: 'kirk@infinifi.io',
     role: 'counterparty',
     orgId: 'org_infinifi',

@@ -29,7 +29,7 @@ export type UserMenuRole = 'originator' | 'counterparty'
 
 const USER_BY_ROLE: Record<UserMenuRole, { name: string; email: string; initials: string }> = {
   originator: { name: 'John Marshall', email: 'john@securitize.io', initials: 'JM' },
-  counterparty: { name: 'Kirk Patel', email: 'kirk@infinifi.io', initials: 'KP' },
+  counterparty: { name: 'Kirk', email: 'kirk@infinifi.io', initials: 'K' },
 }
 
 const WORKSPACES: Workspace[] = [
