@@ -847,6 +847,9 @@ export const ConnectorCategorySchema = z.enum([
   'rating-agency',
   'agent-bank',
   'analytics',
+  'payments',
+  'banking',
+  'accounting',
   'custom',
 ])
 export type ConnectorCategory = z.infer<typeof ConnectorCategorySchema>

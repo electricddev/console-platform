@@ -40,6 +40,9 @@ export const CATEGORY_LABELS: Record<ConnectorCategory, string> = {
   'rating-agency': 'Rating agency',
   'agent-bank': 'Agent bank',
   analytics: 'Analytics',
+  payments: 'Payments',
+  banking: 'Banking',
+  accounting: 'Accounting',
   custom: 'Custom',
 }
 
