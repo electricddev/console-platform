@@ -78,7 +78,7 @@ export function ConfirmStep({
                   <ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} strokeWidth={2} />
                 </button>
               </div>
-              {expanded && preview ? <SamplePreview preview={preview} /> : null}
+              {expanded && preview ? <SamplePreviewView preview={preview} /> : null}
               {expanded && !preview ? (
                 <div className="border-t border-v2-border/60 px-3 py-2 text-[11px] text-v2-muted">No sample available.</div>
               ) : null}
@@ -107,7 +107,7 @@ export function ConfirmStep({
   )
 }
 
-function SamplePreview({ preview }: { preview: SamplePreview }) {
+function SamplePreviewView({ preview }: { preview: SamplePreview }) {
   if (preview.kind === 'objects') {
     return (
       <div className="border-t border-v2-border/60 px-3 py-2">
@@ -134,7 +134,7 @@ function SamplePreview({ preview }: { preview: SamplePreview }) {
         </thead>
         <tbody>
           {preview.rows.map((r, i) => (
-            <tr key={i} className="border-b border-v2-border/20 last:border-b-0">
+            <tr key={typeof r.id === 'string' ? r.id : i} className="border-b border-v2-border/20 last:border-b-0">
               {preview.columns.map((col) => (
                 <td key={col} className="py-1 pr-3 text-v2-foreground/90">{r[col] ?? ''}</td>
               ))}
