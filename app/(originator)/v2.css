@@ -60,7 +60,7 @@
   /* Forest-green accent — intentionally constant across modes */
   --v2-green: oklch(0.40 0.10 160);
   --v2-green-hover: oklch(0.36 0.10 160);
-  --v2-green-soft: color-mix(in oklab, oklch(0.40 0.10 160) 12%, transparent);
+  --v2-green-soft: color-mix(in oklab, oklch(0.40 0.10 160) 22%, transparent);
 }
 
 /* Tailwind `@theme` mappings for these tokens live in app/globals.css, since

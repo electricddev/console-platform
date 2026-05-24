@@ -27,7 +27,7 @@ export function Stepbar({ current }: Props) {
             <span
               aria-hidden="true"
               className={cn(
-                'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium leading-none transition-colors',
+                'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-medium leading-none transition-colors',
                 active && 'bg-v2-foreground text-v2-background',
                 complete && 'bg-v2-foreground/15 text-v2-foreground',
                 !active && !complete && 'border border-v2-border text-v2-muted/60',
