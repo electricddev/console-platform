@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ConnectedTab } from './connected/connected-tab'
@@ -20,11 +20,9 @@ export function SourcesShell({ connections, datasets }: Props) {
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
-  const urlTab: TabValue = searchParams.get('tab') === 'catalogue' ? 'catalogue' : 'connected'
-  const [tab, setTab] = useState<TabValue>(urlTab)
+  const tab: TabValue = searchParams.get('tab') === 'catalogue' ? 'catalogue' : 'connected'
 
   function changeTab(next: TabValue) {
-    setTab(next)
     const params = new URLSearchParams(searchParams.toString())
     if (next === 'connected') params.delete('tab')
     else params.set('tab', next)
