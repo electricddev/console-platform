@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import { pauseConnection, resumeConnection, removeConnection } from '@/app/(originator)/sources/actions'
@@ -98,8 +99,9 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
                   />
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={async () => {
                         const res = connection.status === 'paused'
                           ? await resumeConnection(connection.id)
@@ -107,24 +109,15 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
                         if (res.ok) toast.success(connection.status === 'paused' ? 'Resumed' : 'Paused')
                         else toast.error(res.error)
                       }}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       {connection.status === 'paused' ? 'Resume' : 'Pause'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onReconnect(connection.connectorId)}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
-                    >
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => onReconnect(connection.connectorId)}>
                       Reconnect
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingRemove(true)}
-                      className="rounded-md border border-[oklch(0.55_0.18_25)]/40 px-3 py-1.5 text-[12px] text-[oklch(0.55_0.18_25)] hover:bg-[oklch(0.55_0.18_25)]/10 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]"
-                    >
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => setConfirmingRemove(true)}>
                       Remove…
-                    </button>
+                    </Button>
                   </div>
                 )}
               </Section>
@@ -170,8 +163,10 @@ function RemoveConfirm({ connection, onCancel, onRemoved }: { connection: Connec
         className="mt-2 w-full rounded-md border border-v2-border bg-v2-surface px-2 py-1.5 text-[12px] focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
       />
       <div className="mt-2 flex gap-2">
-        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-2.5 py-1 text-[11.5px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Cancel</button>
-        <button
+        <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
+        <Button
+          variant="destructive"
+          size="sm"
           type="button"
           disabled={!match}
           onClick={async () => {
@@ -179,10 +174,9 @@ function RemoveConfirm({ connection, onCancel, onRemoved }: { connection: Connec
             if (result.ok) { toast.success('Removed'); onRemoved() }
             else toast.error(result.error)
           }}
-          className={cn('rounded-md border px-2.5 py-1 text-[11.5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]', match ? 'border-[oklch(0.55_0.18_25)] bg-[oklch(0.55_0.18_25)] text-v2-background' : 'cursor-not-allowed border-v2-border text-v2-muted')}
         >
           Remove
-        </button>
+        </Button>
       </div>
     </div>
   )

@@ -1,8 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { connectorById } from '../../catalog-data'
 import { samplePreviewFor, type SamplePreview } from '../sample-rows'
 import type { DiscoveredDataset } from '../setup-reducer'
@@ -35,13 +38,17 @@ export function ConfirmStep({
   return (
     <div className="flex flex-col gap-3 px-1 pt-2">
       <header className="flex items-center justify-between">
-        <p className="text-[11px] text-v2-muted">
-          <span className="font-medium text-v2-foreground">{selectedIds.length}</span> of {discovered.length} selected
-          {estimate > 0 ? <span className="ml-2 font-mono text-v2-muted/80">· ~{formatRows(estimate)} rows / month</span> : null}
-        </p>
-        <button type="button" onClick={onToggleAll} className="text-[11px] text-v2-muted hover:text-v2-foreground hover:underline underline-offset-2">
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground">{selectedIds.length}</span> of {discovered.length} selected
+          </p>
+          {estimate > 0 ? (
+            <Badge variant="secondary" className="font-mono">~{formatRows(estimate)} rows / month</Badge>
+          ) : null}
+        </div>
+        <Button variant="link" size="sm" onClick={onToggleAll}>
           {allSelected ? 'Clear all' : 'Select all'}
-        </button>
+        </Button>
       </header>
 
       <ul className="grid gap-1.5">
@@ -57,21 +64,26 @@ export function ConfirmStep({
                 : 'border-v2-border',
             )}>
               <div className="flex items-center gap-2 px-3.5 py-2.5">
-                <button
-                  type="button"
+                {/* Use div+role to avoid nested <button> — Checkbox renders a <button role="checkbox"> */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onToggle(d.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(d.id) } }}
                   aria-pressed={checked}
-                  className="flex flex-1 items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                  className="flex flex-1 cursor-pointer items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                 >
-                  <span aria-hidden="true" className={cn('flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors',
-                    checked ? 'border-v2-foreground bg-v2-foreground text-v2-background' : 'border-v2-border bg-v2-surface')}>
-                    {checked ? <Check className="size-3" strokeWidth={2.5} /> : null}
-                  </span>
+                  <Checkbox
+                    checked={checked}
+                    aria-label={`Select ${d.name}`}
+                    className="size-4 pointer-events-none"
+                    tabIndex={-1}
+                  />
                   <span className="min-w-0">
                     <span className="block truncate text-[12.5px] font-medium text-v2-foreground">{d.name}</span>
                     {d.subtitle ? <span className="block truncate text-[10.5px] text-v2-muted">{d.subtitle}</span> : null}
                   </span>
-                </button>
+                </div>
                 <button
                   type="button"
                   aria-expanded={expanded}
@@ -93,20 +105,15 @@ export function ConfirmStep({
       </ul>
 
       <div className="flex justify-end gap-2 pt-1">
-        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Cancel</button>
-        <button
-          type="button"
+        <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button
+          size="sm"
           onClick={onConfirm}
           disabled={noneSelected || submitting}
-          className={cn(
-            'rounded-md px-4 py-1.5 text-[12.5px] font-medium',
-            noneSelected || submitting
-              ? 'cursor-not-allowed border border-v2-border bg-v2-surface-2 text-v2-muted'
-              : 'bg-v2-green text-white hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green',
-          )}
+          className="bg-v2-green text-white hover:bg-v2-green-hover"
         >
           {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}
-        </button>
+        </Button>
       </div>
     </div>
   )

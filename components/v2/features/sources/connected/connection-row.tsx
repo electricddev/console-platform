@@ -2,28 +2,29 @@
 
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import type { ConnectorConnection, ConnectionDataset, ConnectionStatus } from '@/lib/api/schemas'
 
 const STATUS_LABEL: Record<ConnectionStatus, string> = {
-  ok: 'healthy',
-  attention: 'attention',
-  error: 'error',
-  paused: 'paused',
+  ok: 'Healthy',
+  attention: 'Attention',
+  error: 'Error',
+  paused: 'Paused',
 }
 
-const STATUS_PILL: Record<ConnectionStatus, string> = {
-  ok: 'bg-[oklch(0.60_0.12_150)]/12 text-[oklch(0.62_0.13_145)]',
-  attention: 'bg-[oklch(0.78_0.14_80)]/15 text-[oklch(0.78_0.14_80)]',
-  error: 'bg-[oklch(0.62_0.21_25)]/15 text-[oklch(0.62_0.21_25)]',
-  paused: 'bg-v2-muted/12 text-v2-muted',
+const STATUS_BADGE_CLASS: Record<ConnectionStatus, string> = {
+  ok: 'bg-v2-green-soft text-v2-green border-v2-green/20',
+  attention: 'bg-amber-500/15 text-amber-500 border-amber-500/20',
+  error: '',
+  paused: '',
 }
 
 const STATUS_DOT: Record<ConnectionStatus, string> = {
-  ok: 'bg-[oklch(0.60_0.12_150)]',
-  attention: 'bg-[oklch(0.78_0.14_80)]',
-  error: 'bg-[oklch(0.62_0.21_25)]',
-  paused: 'bg-v2-muted/60',
+  ok: 'bg-v2-green',
+  attention: 'bg-amber-500',
+  error: 'bg-destructive',
+  paused: 'bg-muted-foreground/60',
 }
 
 function formatAgo(iso: string): string {
@@ -73,9 +74,7 @@ export function ConnectionRow({ connection, datasets, onClick }: Props) {
         <div className="flex items-center gap-2 leading-snug">
           <span className="text-[14px] font-medium tracking-tight text-v2-foreground">{connection.name}</span>
           {connection.subtitle ? (
-            <span className="rounded-[3px] bg-v2-foreground/[0.04] px-1.5 py-0.5 font-mono text-[10.5px] text-v2-muted">
-              {connection.subtitle}
-            </span>
+            <Badge variant="outline" className="font-mono">{connection.subtitle}</Badge>
           ) : null}
         </div>
         <div className="mt-0.5 truncate text-[11.5px] text-v2-muted">
@@ -86,15 +85,22 @@ export function ConnectionRow({ connection, datasets, onClick }: Props) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <span
-          className={cn(
-            'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium',
-            STATUS_PILL[connection.status],
-          )}
-        >
-          <span aria-hidden="true" className={cn('size-1.5 rounded-full', STATUS_DOT[connection.status])} />
-          {STATUS_LABEL[connection.status]}
-        </span>
+        {connection.status === 'error' ? (
+          <Badge variant="destructive" className="gap-1.5">
+            <span aria-hidden="true" className={cn('size-1.5 rounded-full', STATUS_DOT[connection.status])} />
+            {STATUS_LABEL[connection.status]}
+          </Badge>
+        ) : connection.status === 'paused' ? (
+          <Badge variant="outline" className="gap-1.5">
+            <span aria-hidden="true" className={cn('size-1.5 rounded-full', STATUS_DOT[connection.status])} />
+            {STATUS_LABEL[connection.status]}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className={cn('gap-1.5', STATUS_BADGE_CLASS[connection.status])}>
+            <span aria-hidden="true" className={cn('size-1.5 rounded-full', STATUS_DOT[connection.status])} />
+            {STATUS_LABEL[connection.status]}
+          </Badge>
+        )}
         <ChevronRight aria-hidden="true" className="size-3.5 text-v2-muted/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </div>
     </button>

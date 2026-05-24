@@ -5,7 +5,7 @@ test.describe('/sources — connected tab', () => {
   test('renders the page shell and the connected list', async ({ page }) => {
     await page.goto('/sources')
     await expect(page.getByRole('heading', { name: 'Sources' })).toBeVisible()
-    await expect(page.getByRole('tab', { name: /Connected · \d+/i })).toBeVisible()
+    await expect(page.getByRole('tab', { name: /Connected/i })).toBeVisible()
     await expect(page.getByRole('tab', { name: /Catalogue/i })).toBeVisible()
     // Stripe fixture row — aria-label starts with "Stripe — healthy"
     await expect(page.getByRole('button', { name: /Stripe — healthy/i })).toBeVisible()

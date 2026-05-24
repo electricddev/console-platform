@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Check, Circle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { DiscoveredDataset } from '../setup-reducer'
 
 type DiscoveryProfile = {
@@ -172,13 +173,7 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
         <div className="h-[3px] bg-v2-green transition-[width] duration-500 ease-out" style={{ width: `${progress * 100}%` }} />
       </div>
       <div className="flex justify-end pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground transition-colors duration-150"
-        >
-          Cancel
-        </button>
+        <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )

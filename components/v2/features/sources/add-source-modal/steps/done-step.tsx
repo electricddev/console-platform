@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { connectorById, WORDMARK_TONES } from '../../catalog-data'
 
 type Props = {
@@ -62,20 +63,10 @@ export function DoneStep({ connectorId, datasetCount, onGoToConnection, onAddAno
       </div>
 
       <div className="flex justify-end gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onAddAnother}
-          className="rounded-md border border-v2-border px-3.5 py-1.5 text-[12.5px] text-v2-foreground transition-colors hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
-        >
-          Add another
-        </button>
-        <button
-          type="button"
-          onClick={onGoToConnection}
-          className="rounded-md bg-v2-green px-4 py-1.5 text-[12.5px] font-medium text-white transition-colors hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green"
-        >
+        <Button variant="outline" size="sm" onClick={onAddAnother}>Add another</Button>
+        <Button size="sm" onClick={onGoToConnection} className="bg-v2-green text-white hover:bg-v2-green-hover">
           Go to connection →
-        </button>
+        </Button>
       </div>
     </div>
   )

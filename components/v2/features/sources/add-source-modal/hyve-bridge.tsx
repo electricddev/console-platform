@@ -1,6 +1,7 @@
 'use client'
 
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -44,13 +45,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
 
   return (
     <div className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20">
-      <button
-        type="button"
-        onClick={onDeny}
-        className="mb-3 text-[11.5px] text-v2-muted transition-colors hover:text-v2-foreground"
-      >
-        ← Back to setup
-      </button>
+      <Button variant="link" size="sm" onClick={onDeny} className="mb-3 px-0">← Back to setup</Button>
 
       <div className="flex items-center gap-3">
         {def?.logo.kind === 'wordmark' ? (
@@ -94,21 +89,15 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
       </div>
 
       <div className="mt-5 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onDeny}
-          className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
-        >
-          Deny
-        </button>
-        <button
-          type="button"
-          onClick={() => onApprove(accountId)}
+        <Button variant="outline" size="sm" onClick={onDeny}>Deny</Button>
+        <Button
           autoFocus
-          className="rounded-md bg-v2-green px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-v2-green-hover hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+          size="sm"
+          onClick={() => onApprove(accountId)}
+          className="bg-v2-green text-white hover:bg-v2-green-hover"
         >
           Approve →
-        </button>
+        </Button>
       </div>
     </div>
   )

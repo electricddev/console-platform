@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import { Stepbar } from './stepbar'
@@ -81,8 +81,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
       }}
     >
       <DialogContent
-        showCloseButton={false}
-        className="w-[540px] max-w-[92vw] gap-0 overflow-hidden p-0 sm:max-w-[540px] border-v2-border bg-v2-surface"
+        className="w-[540px] max-w-[92vw] gap-0 sm:max-w-[540px]"
         onEscapeKeyDown={(e) => {
           e.preventDefault()
           if (bridgeOpen) { setBridgeOpen(false); return }
@@ -136,29 +135,13 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  aria-label="Close"
-                  className="flex size-7 items-center justify-center rounded-full text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground transition-colors duration-150"
-                >
-                  <X className="size-4" strokeWidth={1.75} />
-                </button>
               </div>
             </>
           )}
 
           {state.setup.step === 'idle' && (
-            <div className="flex items-center justify-between px-6 pt-5 pb-0">
+            <div className="px-6 pt-5 pb-0">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-v2-muted/70">Add a source</span>
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Close"
-                className="flex size-7 items-center justify-center rounded-full text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground transition-colors duration-150"
-              >
-                <X className="size-4" strokeWidth={1.75} />
-              </button>
             </div>
           )}
 
@@ -260,24 +243,12 @@ export function AddSourceModal({ modal, onConnected }: Props) {
 
             {state.setup.step === 'error' && (
               <div className="flex flex-col gap-3">
-                <p className="text-[12.5px] text-[oklch(0.55_0.18_25)]">
+                <p className="text-[12.5px] text-destructive">
                   {state.setup.error}
                 </p>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => dispatchSetup({ type: 'retry' })}
-                    className="rounded-md bg-v2-green px-3 py-1.5 text-[12px] font-medium text-white hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
-                  >
-                    Try again
-                  </button>
+                  <Button variant="outline" size="sm" onClick={handleClose}>Cancel</Button>
+                  <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={() => dispatchSetup({ type: 'retry' })}>Try again</Button>
                 </div>
               </div>
             )}

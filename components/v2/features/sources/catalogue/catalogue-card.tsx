@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { WORDMARK_TONES, type ConnectorDefinition } from '../catalog-data'
 
 type Badge =
@@ -34,15 +35,13 @@ export function CatalogueCard({ def, badge, onClick }: Props) {
           <div className="mt-0.5 truncate text-[11px] text-v2-muted">{def.tagline}</div>
         </div>
         {badge.kind === 'connected' && (
-          <span className="flex shrink-0 items-center gap-1.5 font-mono text-[10px] text-v2-muted">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[oklch(0.62_0.13_145)]" />
+          <Badge variant="secondary" className="shrink-0 gap-1.5 font-mono text-[10px]">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-v2-green" />
             {badge.count}
-          </span>
+          </Badge>
         )}
         {badge.kind === 'soon' && (
-          <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted/70">
-            soon
-          </span>
+          <Badge variant="outline" className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em]">Coming soon</Badge>
         )}
       </div>
       <div className="mt-auto flex items-end justify-between">

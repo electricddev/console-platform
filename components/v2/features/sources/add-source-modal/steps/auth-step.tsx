@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { authSchemaFor } from '../field-schemas'
 
 type Props = {
@@ -32,20 +33,13 @@ function OAuthShape({ connectorId, onOAuthRequest, onCancel }: Props) {
         You'll be sent to a Hyve-hosted authorisation page to grant read access to your {name} account.
         We'll bring you back here as soon as you approve.
       </p>
-      <button
-        type="button"
+      <Button
         onClick={onOAuthRequest}
-        className="self-start rounded-md bg-v2-green px-4 py-2 text-[13px] font-medium text-white hover:bg-v2-green-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green"
+        className="self-start bg-v2-green text-white hover:bg-v2-green-hover"
       >
         Sign in with {name} →
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="self-start text-[11.5px] text-v2-muted underline-offset-2 hover:underline"
-      >
-        Cancel
-      </button>
+      </Button>
+      <Button variant="link" size="sm" onClick={onCancel} className="self-start">Cancel</Button>
     </div>
   )
 }
@@ -71,7 +65,7 @@ function FileUploadShape({ onUpdate, onSubmit, onCancel }: Props) {
         />
       </label>
       <div className="flex justify-end">
-        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Cancel</button>
+        <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )
@@ -89,8 +83,8 @@ function FormShape({ connectorId, values, onUpdate, onSubmit, onCancel }: Props)
           SEC EDGAR is a public dataset and needs no credentials. Continue to discover available forms.
         </p>
         <div className="flex justify-end gap-2 pt-1">
-          <Btn onClick={onCancel} tone="secondary">Cancel</Btn>
-          <Btn onClick={onSubmit}>Continue</Btn>
+          <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={onSubmit}>Continue</Button>
         </div>
       </div>
     )
@@ -135,30 +129,17 @@ function FormShape({ connectorId, values, onUpdate, onSubmit, onCancel }: Props)
         )
       })}
       <div className="flex justify-end gap-2 pt-1 sm:col-span-2">
-        <Btn onClick={onCancel} tone="secondary" buttonType="button">Cancel</Btn>
-        <Btn onClick={onSubmit} disabled={!valid} buttonType="submit">Continue</Btn>
+        <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={!valid}
+          className="bg-v2-green text-white hover:bg-v2-green-hover"
+          onClick={onSubmit}
+        >
+          Continue
+        </Button>
       </div>
     </form>
-  )
-}
-
-function Btn({ children, onClick, disabled, tone, buttonType }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; tone?: 'secondary'; buttonType?: 'submit' | 'button' }) {
-  return (
-    <button
-      type={buttonType ?? 'button'}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'rounded-md border px-3 py-1.5 text-[12px] transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground',
-        tone === 'secondary'
-          ? 'border-v2-border text-v2-muted hover:text-v2-foreground'
-          : disabled
-            ? 'cursor-not-allowed border-v2-border bg-v2-surface-2 text-v2-muted'
-            : 'border-v2-foreground bg-v2-foreground text-v2-background hover:bg-v2-foreground/90',
-      )}
-    >
-      {children}
-    </button>
   )
 }

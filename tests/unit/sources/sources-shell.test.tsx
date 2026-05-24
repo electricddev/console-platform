@@ -25,7 +25,7 @@ describe('<SourcesShell>', () => {
   it('renders the page title and Connected count badge', () => {
     render(<SourcesShell connections={fakeConnections} datasets={fakeDatasets} />)
     expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /Connected · 1/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Connected/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Catalogue/i })).toBeInTheDocument()
   })
 

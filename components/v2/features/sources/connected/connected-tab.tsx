@@ -5,6 +5,8 @@ import { Search } from 'lucide-react'
 import { ConnectionRow } from './connection-row'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import { cn } from '@/lib/utils'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
+import { Badge } from '@/components/ui/badge'
 import type { ConnectorConnection, ConnectionDataset } from '@/lib/api/schemas'
 
 type Props = {
@@ -84,18 +86,19 @@ export function ConnectedTab({ connections, datasets, onRowClick }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <Search className="size-3.5 text-v2-muted/70 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
+        <InputGroup className="max-w-xs">
+          <InputGroupAddon align="inline-start">
+            <Search className="size-3.5" />
+          </InputGroupAddon>
+          <InputGroupInput
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search sources…"
             aria-label="Search sources"
-            className="w-full max-w-xs rounded-md border border-v2-border bg-v2-surface pl-9 pr-3 py-1.5 text-[12.5px] placeholder:text-v2-muted/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
           />
-        </div>
-        <span className="ml-auto font-mono text-[11px] text-v2-muted">{filtered.length} of {connections.length}</span>
+        </InputGroup>
+        <Badge variant="outline" className="ml-auto font-mono">{filtered.length} of {connections.length}</Badge>
       </div>
       <ul className="flex flex-col divide-y divide-v2-border/50">
         {filtered.map((c) => (

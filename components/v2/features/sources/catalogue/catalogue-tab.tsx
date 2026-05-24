@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { CatalogueCard } from './catalogue-card'
 import { CATALOG, CATEGORY_LABELS, CATEGORY_ORDER, type ConnectorDefinition } from '../catalog-data'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import type { ConnectorConnection } from '@/lib/api/schemas'
 
 type Props = {
@@ -44,23 +46,37 @@ export function CatalogueTab({ connections, onPick, onAlreadyConnected }: Props)
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search providers…"
-          aria-label="Search catalogue"
-          className="w-full max-w-xs rounded-md border border-v2-border bg-v2-surface px-3 py-1.5 text-[12.5px] placeholder:text-v2-muted/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
-        />
+        <InputGroup className="max-w-xs">
+          <InputGroupAddon align="inline-start">
+            <Search className="size-3.5" />
+          </InputGroupAddon>
+          <InputGroupInput
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search providers…"
+            aria-label="Search catalogue"
+          />
+        </InputGroup>
         <div className="flex flex-wrap gap-1.5">
-          <FilterChip label="All" active={activeCategory === null} onClick={() => setActiveCategory(null)} />
+          <Button
+            variant={activeCategory === null ? 'default' : 'ghost'}
+            size="xs"
+            onClick={() => setActiveCategory(null)}
+            className="rounded-full"
+          >
+            All
+          </Button>
           {CATEGORY_ORDER.map((cat) => (
-            <FilterChip
+            <Button
               key={cat}
-              label={CATEGORY_LABELS[cat]}
-              active={activeCategory === cat}
+              variant={activeCategory === cat ? 'default' : 'ghost'}
+              size="xs"
               onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-            />
+              className="rounded-full"
+            >
+              {CATEGORY_LABELS[cat]}
+            </Button>
           ))}
         </div>
       </div>
@@ -104,20 +120,3 @@ export function CatalogueTab({ connections, onPick, onAlreadyConnected }: Props)
   )
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'rounded-full px-3 py-1.5 text-[11.5px] font-medium transition-colors duration-150',
-        active
-          ? 'bg-v2-foreground text-v2-background'
-          : 'text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground',
-      )}
-    >
-      {label}
-    </button>
-  )
-}

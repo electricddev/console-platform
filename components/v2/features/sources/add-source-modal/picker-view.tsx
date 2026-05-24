@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { CATALOG, CATEGORY_LABELS, CATEGORY_ORDER, WORDMARK_TONES } from '../catalog-data'
 
 type Props = { onPick: (connectorId: string) => void }
@@ -18,16 +20,19 @@ export function PickerView({ onPick }: Props) {
 
   return (
     <div className="flex flex-col gap-4 px-1 pt-1">
-      <input
-        type="text"
-        // eslint-disable-next-line jsx-a11y/no-autofocus
-        autoFocus
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search providers…"
-        aria-label="Search providers"
-        className="w-full rounded-md border border-v2-border bg-v2-surface px-3 py-2 text-[13px] placeholder:text-v2-muted/60 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
-      />
+      <InputGroup>
+        <InputGroupAddon align="inline-start">
+          <Search className="size-3.5" />
+        </InputGroupAddon>
+        <InputGroupInput
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+          placeholder="Search providers…"
+          aria-label="Search providers"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </InputGroup>
       <div className="flex flex-col gap-4">
         {CATEGORY_ORDER.map((cat) => {
           const items = visible.filter((c) => c.category === cat)

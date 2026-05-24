@@ -4,6 +4,8 @@ import { useMemo, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { ConnectedTab } from './connected/connected-tab'
 import { CatalogueTab } from './catalogue/catalogue-tab'
 import { AddSourceModal } from './add-source-modal/add-source-modal'
@@ -60,29 +62,21 @@ export function SourcesShell({ connections, datasets }: Props) {
             {connections.length} sources feeding {datasets.length} datasets.
           </p>
         </div>
-        <button
-          type="button"
-          className="rounded-md bg-v2-green px-4 py-2 text-sm font-medium text-white hover:bg-v2-green-hover hover:shadow-[0_4px_18px_-8px_oklch(0.40_0.10_160_/_0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-green transition-colors duration-150"
+        <Button
+          className="bg-v2-green text-white hover:bg-v2-green-hover"
           onClick={() => { drawer.close(); modal.openPicker() }}
         >
           + Connect a source
-        </button>
+        </Button>
       </header>
 
       <Tabs value={tab} onValueChange={(v) => changeTab(v as TabValue)}>
-        <TabsList className="h-auto justify-start gap-6 rounded-none border-b border-v2-border/60 bg-transparent p-0">
-          <TabsTrigger
-            value="connected"
-            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-0 text-[13.5px] font-medium text-v2-muted shadow-none data-[state=active]:border-v2-foreground data-[state=active]:bg-transparent data-[state=active]:text-v2-foreground data-[state=active]:shadow-none transition-colors duration-150"
-          >
-            {'Connected · '}
-            <span aria-hidden="true" className="font-mono text-[11px] text-v2-muted/70">{connections.length}</span>
-            <span className="sr-only">{connections.length}</span>
+        <TabsList variant="line" className="w-full justify-start gap-6 border-b border-v2-border/60 px-0">
+          <TabsTrigger value="connected" className="flex-none gap-1.5 px-0 text-[14px]">
+            Connected
+            <Badge variant="secondary" className="font-mono">{connections.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger
-            value="catalogue"
-            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-0 text-[13.5px] font-medium text-v2-muted shadow-none data-[state=active]:border-v2-foreground data-[state=active]:bg-transparent data-[state=active]:text-v2-foreground data-[state=active]:shadow-none transition-colors duration-150"
-          >
+          <TabsTrigger value="catalogue" className="flex-none px-0 text-[14px]">
             Catalogue
           </TabsTrigger>
         </TabsList>
