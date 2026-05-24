@@ -32,7 +32,31 @@ export function ConnectedTab({ connections, datasets, onRowClick }: Props) {
   }, [connections, query])
 
   if (connections.length === 0) {
-    return null /* empty state is Task 10 */
+    return (
+      <div className="rounded-lg border border-dashed border-v2-border/80 bg-v2-surface/30 px-8 py-12 text-center">
+        <h2 className="font-serif text-[20px] text-v2-foreground">No sources connected yet.</h2>
+        <p className="mt-1 text-[12.5px] text-v2-muted">Start with one of these — or browse the full catalogue.</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {['stripe', 'plaid', 's3', 'sec-edgar'].map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onRowClick?.(`__add:${id}`)}
+              className="rounded-md border border-v2-border bg-v2-surface px-3 py-1.5 text-[12px] text-v2-foreground hover:border-v2-foreground/40"
+            >
+              {id === 'sec-edgar' ? 'SEC EDGAR' : id[0].toUpperCase() + id.slice(1)}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => onRowClick?.('__browse')}
+            className="rounded-md px-3 py-1.5 text-[12px] text-v2-muted underline-offset-2 hover:underline"
+          >
+            Browse catalogue →
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
