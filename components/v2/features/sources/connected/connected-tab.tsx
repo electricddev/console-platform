@@ -39,7 +39,7 @@ export function ConnectedTab({ connections, datasets, onRowClick }: Props) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <input
-          type="text"
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search sources…"

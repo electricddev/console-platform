@@ -85,7 +85,7 @@ export function ConnectionRow({ connection, datasets, onClick }: Props) {
       <div className="flex shrink-0 items-center gap-2 text-[11px] text-v2-muted">
         <span aria-hidden="true" className={cn('size-1.5', STATUS_DOT_BG[connection.status], STATUS_DOT_VARIANT[connection.status])} />
         <span>{STATUS_LABEL[connection.status]}</span>
-        <ChevronRight className="size-3.5 text-v2-muted/60 opacity-0 transition-opacity group-hover:opacity-100" />
+        <ChevronRight aria-hidden="true" className="size-3.5 text-v2-muted/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </div>
     </button>
   )
