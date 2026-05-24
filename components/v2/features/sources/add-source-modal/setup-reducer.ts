@@ -44,8 +44,7 @@ export function setupReducer(state: SetupState, action: SetupAction): SetupState
       if (state.step !== 'discover') return state
       return { step: 'confirm', connectorId: state.connectorId, authPayload: state.authPayload, discovered: action.discovered, selectedIds: action.discovered.map((d) => d.id) }
     case 'toggleDataset':
-      if (state.step !== 'confirm' && state.step !== 'submitting') return state
-      if (state.step === 'submitting') return state
+      if (state.step !== 'confirm') return state
       return {
         ...state,
         selectedIds: state.selectedIds.includes(action.id)
