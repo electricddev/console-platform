@@ -1,13 +1,15 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useMemo, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ConnectedTab } from './connected/connected-tab'
 import { CatalogueTab } from './catalogue/catalogue-tab'
 import { AddSourceModal } from './add-source-modal/add-source-modal'
+import { ManageDrawer } from './manage-drawer/manage-drawer'
 import { useAddSourceModal } from './hooks/use-add-source-modal'
+import { useManageDrawer } from './hooks/use-manage-drawer'
 import type { ConnectorConnection, ConnectionDataset } from '@/lib/api/schemas'
 
 type Props = {
@@ -23,6 +25,16 @@ export function SourcesShell({ connections, datasets }: Props) {
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const modal = useAddSourceModal()
+  const drawer = useManageDrawer()
+
+  const selectedConn = useMemo(
+    () => connections.find((c) => c.id === drawer.connectionId) ?? null,
+    [connections, drawer.connectionId],
+  )
+  const datasetsForSelected = useMemo(
+    () => datasets.filter((d) => d.connectionId === drawer.connectionId),
+    [datasets, drawer.connectionId],
+  )
 
   const tab: TabValue =
     searchParams.get('tab') === 'catalogue' ? 'catalogue' : 'connected'
@@ -51,7 +63,7 @@ export function SourcesShell({ connections, datasets }: Props) {
         <button
           type="button"
           className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-2 text-sm font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]"
-          onClick={() => modal.openPicker()}
+          onClick={() => { drawer.close(); modal.openPicker() }}
         >
           + Connect a source
         </button>
@@ -75,7 +87,9 @@ export function SourcesShell({ connections, datasets }: Props) {
                 modal.openWithConnector(idOrSentinel.replace('__add:', ''))
                 return
               }
-              // TODO(task-19): open ManageDrawer for connection id
+              // Real connection row — mutual exclusivity with modal
+              modal.close()
+              drawer.open(idOrSentinel)
             }}
           />
         </TabsContent>
@@ -97,7 +111,14 @@ export function SourcesShell({ connections, datasets }: Props) {
         </TabsContent>
       </Tabs>
 
-      <AddSourceModal modal={modal} onConnected={() => { /* drawer wiring — Task 19 */ }} />
+      <AddSourceModal modal={modal} onConnected={() => { /* connection created — refresh handled by revalidatePath */ }} />
+
+      <ManageDrawer
+        connection={selectedConn}
+        datasets={datasetsForSelected}
+        onClose={drawer.close}
+        onReconnect={(connectorId) => { drawer.close(); modal.openWithConnector(connectorId) }}
+      />
     </div>
   )
 }

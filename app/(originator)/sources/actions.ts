@@ -31,6 +31,15 @@ export async function removeConnection(id: string, confirmName: string): Promise
   return { ok: true }
 }
 
+export async function reconnectConnection(
+  id: string,
+  newAuthPayload: Record<string, unknown>,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Fixture-mode stub — real backend integration is out of scope for this PR.
+  void id; void newAuthPayload
+  return { ok: true }
+}
+
 const CreateInput = z.object({
   connectorId: z.string().min(1),
   name: z.string().min(2).max(80),
