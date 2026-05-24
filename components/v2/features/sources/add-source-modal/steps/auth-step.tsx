@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { authSchemaFor } from '../field-schemas'
 import { connectorById, WORDMARK_TONES } from '../../catalog-data'
 import { ModalActionBar } from '../modal-action-bar'
@@ -242,18 +243,16 @@ function FormShape({ connectorId, values, onUpdate, onSubmit, onCancel }: Props)
                   {f.label}
                 </span>
                 {f.type === 'select' ? (
-                  <select
-                    value={val}
-                    onChange={(e) => onUpdate({ [f.key]: e.target.value })}
-                    className="rounded-md border border-v2-border bg-v2-surface px-2 py-1.5 text-[12.5px] text-v2-foreground focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
-                  >
-                    <option value="">Choose…</option>
-                    {f.options?.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={val} onValueChange={(v) => onUpdate({ [f.key]: v })}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {f.options?.map((o) => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <input
                     type={f.type === 'password' ? 'password' : 'text'}

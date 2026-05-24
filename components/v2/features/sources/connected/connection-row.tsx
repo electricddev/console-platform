@@ -15,14 +15,14 @@ const STATUS_LABEL: Record<ConnectionStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ConnectionStatus, string> = {
   ok: 'bg-v2-green-soft text-v2-green border-v2-green/20',
-  attention: 'bg-amber-500/15 text-amber-500 border-amber-500/20',
+  attention: 'bg-v2-warning/15 text-v2-warning border-v2-warning/20',
   error: '',
   paused: '',
 }
 
 const STATUS_DOT: Record<ConnectionStatus, string> = {
   ok: 'bg-v2-green',
-  attention: 'bg-amber-500',
+  attention: 'bg-v2-warning',
   error: 'bg-destructive',
   paused: 'bg-muted-foreground/60',
 }

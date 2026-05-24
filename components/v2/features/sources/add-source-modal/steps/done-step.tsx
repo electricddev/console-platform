@@ -48,17 +48,12 @@ export function DoneStep({
     <>
       {/* Stage */}
       <div className="flex flex-col items-center px-8 pt-8 pb-6 text-center">
-        {/* Eyebrow */}
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-v2-muted/60 mb-5">
-          Connection complete
-        </div>
-
         {/* Check mark with glow */}
         <div className="relative flex items-center justify-center">
           {/* Radial glow behind the circle */}
           <div
             aria-hidden="true"
-            className="absolute size-24 rounded-full bg-v2-green/15 blur-2xl"
+            className="absolute size-24 rounded-full bg-v2-green/30 blur-xl"
           />
           <motion.div
             initial={shouldReduceMotion ? false : { scale: 0.6, opacity: 0 }}

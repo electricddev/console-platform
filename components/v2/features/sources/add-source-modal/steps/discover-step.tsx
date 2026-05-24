@@ -270,8 +270,8 @@ export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
   return (
     <>
       {/* Stage */}
-      <div className="px-6 py-6" aria-live="polite" aria-atomic="false">
-        <ul className="grid gap-0">
+      <div className="px-6 pt-8 pb-6" aria-live="polite" aria-atomic="false">
+        <ul className="grid gap-0 min-h-[200px]">
           {profile.steps.map((s, i) => {
             const isDone = i < activeIndex || allDone
             const isActive = i === activeIndex && !allDone

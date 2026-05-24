@@ -83,7 +83,7 @@ export function ConfirmStep({
                 className={cn(
                   'rounded-md border transition-colors overflow-hidden',
                   checked
-                    ? 'border-v2-green/40 bg-v2-green-soft/50 ring-1 ring-inset ring-v2-green/20'
+                    ? 'border-v2-green/50 bg-v2-green-soft/50 ring-1 ring-inset ring-v2-green/40'
                     : 'border-v2-border bg-transparent hover:border-v2-border/80 hover:bg-v2-foreground/[0.02]',
                 )}
               >

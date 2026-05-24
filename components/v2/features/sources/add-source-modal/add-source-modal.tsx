@@ -24,6 +24,7 @@ import { ConfirmStep } from './steps/confirm-step'
 import { DoneStep } from './steps/done-step'
 import { ModalProgressBar } from './modal-progress-bar'
 import { ModalEyebrow } from './modal-eyebrow'
+import { ModalActionBar } from './modal-action-bar'
 import { connectorById } from '../catalog-data'
 import { type useAddSourceModal } from '../hooks/use-add-source-modal'
 import { createConnection } from '@/app/(originator)/sources/actions'
@@ -124,7 +125,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
         }}
       >
         <DialogContent
-          className="w-[580px] max-w-[92vw] gap-0 sm:max-w-[580px] overflow-hidden p-0"
+          className="w-[580px] max-w-[92vw] max-h-[calc(100dvh-2rem)] gap-0 sm:max-w-[580px] overflow-hidden p-0 flex flex-col"
           onEscapeKeyDown={(e) => {
             e.preventDefault()
             if (bridgeOpen) {
@@ -177,6 +178,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
 
           {/* ── ANIMATED STEP CONTENT ───────────────────────────────────── */}
           {state.setup.step !== 'idle' && (
+            <div className="flex-1 overflow-y-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={animKey}
@@ -290,34 +292,18 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                 {/* Error state */}
                 {state.setup.step === 'error' && (
                   <>
-                    <div className="px-6 pt-5 pb-2">
-                      <p className="text-[12.5px] text-destructive">
-                        {state.setup.error}
-                      </p>
+                    <div className="px-6 pt-7 pb-6">
+                      <p className="text-[13px] text-destructive">{state.setup.error}</p>
                     </div>
-                    <div className="flex items-center justify-between gap-3 border-t border-v2-border/40 px-6 py-3.5">
-                      <div />
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleClose}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="brand"
-                          onClick={() => dispatchSetup({ type: 'retry' })}
-                        >
-                          Try again
-                        </Button>
-                      </div>
-                    </div>
+                    <ModalActionBar
+                      left={<Button variant="link" size="sm" onClick={handleClose}>Cancel</Button>}
+                      right={<Button variant="brand" size="sm" onClick={() => dispatchSetup({ type: 'retry' })}>Try again</Button>}
+                    />
                   </>
                 )}
               </motion.div>
             </AnimatePresence>
+            </div>
           )}
         </DialogContent>
       </Dialog>

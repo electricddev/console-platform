@@ -143,14 +143,14 @@ function ScopeColumn({
                 'mt-[5px] size-1 rounded-full shrink-0',
                 variant === 'reads'
                   ? 'bg-v2-foreground/50'
-                  : 'bg-v2-foreground/25',
+                  : 'bg-v2-muted/40',
               )}
             />
             <span
               className={
                 variant === 'reads'
                   ? 'text-v2-foreground'
-                  : 'text-v2-foreground/75'
+                  : 'line-through decoration-v2-muted/40 text-v2-foreground/55'
               }
             >
               {r}

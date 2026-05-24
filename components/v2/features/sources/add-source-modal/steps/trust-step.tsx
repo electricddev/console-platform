@@ -96,7 +96,7 @@ export function TrustStep({ connectorId, accountId, onContinue, onCancel }: Prop
               {items.map((item) => (
                 <span
                   key={item}
-                  className="rounded-[3px] bg-v2-foreground/[0.05] font-mono text-[11.5px] px-1.5 py-0.5 text-v2-foreground/90"
+                  className="rounded-[3px] bg-v2-foreground/[0.10] font-mono text-[11.5px] px-1.5 py-0.5 text-v2-foreground/90"
                 >
                   {item}
                 </span>

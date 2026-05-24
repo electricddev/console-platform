@@ -36,7 +36,8 @@ test.describe('/sources — add-source modal', () => {
 
     // Fill S3 form — bucket (text input), region (select), accessKeyId (text), secretAccessKey (password)
     await page.getByLabel(/Bucket/i).fill('hyve-test')
-    await page.getByLabel(/Region/i).selectOption('us-east-1')
+    await page.getByLabel(/Region/i).click()
+    await page.getByRole('option', { name: 'us-east-1' }).click()
     await page.getByLabel(/Access key ID/i).fill('AKIATESTKEY001')
     await page.getByLabel(/Secret access key/i).fill('SecretKey1234567890')
 
