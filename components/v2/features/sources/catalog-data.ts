@@ -15,6 +15,12 @@ export type ConnectorDefinition = {
   logo:
     | { kind: 'wordmark'; label: string; tone: WordmarkTone }
     | { kind: 'icon'; Icon: React.ComponentType<LucideProps> }
+  trust?: {
+    reads: string
+    storage: string
+    audit: string
+    revoke: string
+  }
 }
 
 export type WordmarkTone = 'ink' | 'navy' | 'teal' | 'red' | 'blue' | 'amber' | 'orange' | 'violet'
@@ -59,13 +65,25 @@ export const CATALOG: ConnectorDefinition[] = [
 
   // Regulator
   { id: 'sec-edgar', category: 'regulator', name: 'SEC EDGAR', tagline: 'Regulator',
-    wired: 'wired', logo: { kind: 'wordmark', label: 'SEC', tone: 'navy' } },
+    wired: 'wired', logo: { kind: 'wordmark', label: 'SEC', tone: 'navy' },
+    trust: {
+      reads: 'Public filings: Form N-PORT, N-CSR, N-CEN, N-2, XBRL financials · read-only',
+      storage: 'Cached in confidential enclave. Hyve operators cannot read raw filings.',
+      audit: 'Every fetch hashed and written to ledger.',
+      revoke: 'Disconnect from Sources. Cached data purged within 24h.',
+    } },
   { id: 'cftc', category: 'regulator', name: 'CFTC filings', tagline: 'Derivatives regulator',
     wired: 'soon', logo: { kind: 'wordmark', label: 'CFTC', tone: 'navy' } },
 
   // Storage
   { id: 's3', category: 'storage', name: 'Amazon S3', tagline: 'Object storage',
-    wired: 'wired', logo: { kind: 'wordmark', label: 'S3', tone: 'orange' } },
+    wired: 'wired', logo: { kind: 'wordmark', label: 'S3', tone: 'orange' },
+    trust: {
+      reads: 'Objects under the prefix you grant · read-only · ListObjects + GetObject',
+      storage: 'Streamed into a confidential enclave. Hyve operators cannot read raw bytes.',
+      audit: 'SHA-256 of every object read written to ledger. Counterparty access logged.',
+      revoke: 'Disconnect or rotate the IAM credentials. Effective immediately.',
+    } },
   { id: 'gcs', category: 'storage', name: 'Google Cloud Storage', tagline: 'Object storage',
     wired: 'soon', logo: { kind: 'wordmark', label: 'GCS', tone: 'blue' } },
   { id: 'azure-blob', category: 'storage', name: 'Azure Blob', tagline: 'Object storage',
@@ -73,7 +91,13 @@ export const CATALOG: ConnectorDefinition[] = [
   { id: 'sftp', category: 'storage', name: 'SFTP', tagline: 'Secure file transfer',
     wired: 'soon', logo: { kind: 'wordmark', label: 'FTP', tone: 'ink' } },
   { id: 'file-upload', category: 'storage', name: 'File upload', tagline: 'CSV · Parquet · JSON',
-    wired: 'wired', logo: { kind: 'icon', Icon: FileUp } },
+    wired: 'wired', logo: { kind: 'icon', Icon: FileUp },
+    trust: {
+      reads: 'Only the files you upload. No background polling.',
+      storage: 'Stored in confidential enclave. Hyve operators cannot read raw rows.',
+      audit: 'File hash and column count written to ledger at upload time.',
+      revoke: 'Delete the source from Sources. Files purged within 24h.',
+    } },
 
   // Warehouse
   { id: 'snowflake', category: 'warehouse', name: 'Snowflake', tagline: 'Cloud warehouse',
