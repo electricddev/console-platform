@@ -7,7 +7,7 @@ export type SetupState =
   | { step: 'discover'; connectorId: string; authPayload: Record<string, unknown>; discovered: DiscoveredDataset[]; selectedIds: string[] }
   | { step: 'confirm'; connectorId: string; authPayload: Record<string, unknown>; discovered: DiscoveredDataset[]; selectedIds: string[] }
   | { step: 'submitting'; connectorId: string; authPayload: Record<string, unknown>; discovered: DiscoveredDataset[]; selectedIds: string[] }
-  | { step: 'done'; connectorId: string; connectionId: string }
+  | { step: 'done'; connectorId: string; connectionId: string; datasetCount: number }
   | { step: 'error'; connectorId: string; authPayload: Record<string, unknown>; discovered: DiscoveredDataset[]; selectedIds: string[]; error: string }
 
 export type SetupAction =
@@ -56,7 +56,12 @@ export function setupReducer(state: SetupState, action: SetupAction): SetupState
       return { step: 'submitting', connectorId: state.connectorId, authPayload: state.authPayload, discovered: state.discovered, selectedIds: state.selectedIds }
     case 'saveSuccess':
       if (state.step !== 'submitting') return state
-      return { step: 'done', connectorId: state.connectorId, connectionId: action.connectionId }
+      return {
+        step: 'done',
+        connectorId: state.connectorId,
+        connectionId: action.connectionId,
+        datasetCount: state.selectedIds.length,
+      }
     case 'saveFailure':
       if (state.step !== 'submitting') return state
       return { step: 'error', connectorId: state.connectorId, authPayload: state.authPayload, discovered: state.discovered, selectedIds: state.selectedIds, error: action.error }

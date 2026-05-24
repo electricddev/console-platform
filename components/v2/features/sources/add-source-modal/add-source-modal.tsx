@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -25,8 +25,6 @@ type Props = {
 export function AddSourceModal({ modal, onConnected }: Props) {
   const { state, openPicker, openWithConnector, close, dispatchSetup } = modal
   const [bridgeOpen, setBridgeOpen] = useState(false)
-  const [connectedDatasetCount, setConnectedDatasetCount] = useState(0)
-  const [, startTransition] = useTransition()
 
   const def =
     state.setup.step !== 'idle' ? connectorById(state.setup.connectorId) : null
@@ -43,28 +41,23 @@ export function AddSourceModal({ modal, onConnected }: Props) {
     close()
   }
 
-  function submitSelect() {
+  async function submitSelect() {
     if (state.setup.step !== 'confirm') return
-    const selectedCount = state.setup.selectedIds.length
+    const { connectorId, authPayload, selectedIds } = state.setup
     dispatchSetup({ type: 'submitSelect' })
-    startTransition(async () => {
-      const result = await createConnection({
-        connectorId: (state.setup as { connectorId: string }).connectorId,
-        name: def?.name ?? (state.setup as { connectorId: string }).connectorId,
-        authPayload:
-          'authPayload' in state.setup ? state.setup.authPayload : {},
-        datasetIds:
-          'selectedIds' in state.setup ? state.setup.selectedIds : [],
-      })
-      if (result.ok && result.data) {
-        setConnectedDatasetCount(selectedCount)
-        dispatchSetup({ type: 'saveSuccess', connectionId: result.data.id })
-        toast.success('Connected')
-      } else if (!result.ok) {
-        dispatchSetup({ type: 'saveFailure', error: result.error })
-        toast.error(result.error)
-      }
+    const result = await createConnection({
+      connectorId,
+      name: def?.name ?? connectorId,
+      authPayload,
+      datasetIds: selectedIds,
     })
+    if (result.ok && result.data) {
+      dispatchSetup({ type: 'saveSuccess', connectionId: result.data.id })
+      toast.success('Connected')
+    } else if (!result.ok) {
+      dispatchSetup({ type: 'saveFailure', error: result.error })
+      toast.error(result.error)
+    }
   }
 
   const visibleStep =
@@ -225,27 +218,26 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                 />
               )}
 
-              {state.setup.step === 'done' && (() => {
-                const { connectorId, connectionId } = state.setup
-                return (
-                  <DoneStep
-                    connectorId={connectorId}
-                    datasetCount={connectedDatasetCount}
-                    onGoToConnection={() => {
-                      onConnected(connectionId)
-                      close()
-                    }}
-                    onAddAnother={() => {
-                      setBridgeOpen(false)
-                      openPicker()
-                    }}
-                    onDismiss={() => {
-                      onConnected(connectionId)
-                      close()
-                    }}
-                  />
-                )
-              })()}
+              {state.setup.step === 'done' && (
+                <DoneStep
+                  connectorId={state.setup.connectorId}
+                  datasetCount={state.setup.datasetCount}
+                  onGoToConnection={() => {
+                    if (state.setup.step !== 'done') return
+                    onConnected(state.setup.connectionId)
+                    close()
+                  }}
+                  onAddAnother={() => {
+                    setBridgeOpen(false)
+                    openPicker()
+                  }}
+                  onDismiss={() => {
+                    if (state.setup.step !== 'done') return
+                    onConnected(state.setup.connectionId)
+                    close()
+                  }}
+                />
+              )}
 
               {state.setup.step === 'error' && (
                 <div className="flex flex-col gap-3">

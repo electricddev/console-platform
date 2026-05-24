@@ -92,4 +92,18 @@ describe('setupReducer', () => {
     if (b.step !== 'auth') throw new Error('unreachable')
     expect(b.authPayload).toEqual({ bucket: 'acme' })
   })
+
+  it("'saveSuccess' carries datasetCount onto done from submitting", () => {
+    const a: SetupState = {
+      step: 'submitting',
+      connectorId: 's3',
+      authPayload: { bucket: 'acme' },
+      discovered: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+      selectedIds: ['a', 'b'],
+    }
+    const b = setupReducer(a, { type: 'saveSuccess', connectionId: 'conn_42' })
+    expect(b.step).toBe('done')
+    if (b.step !== 'done') throw new Error('unreachable')
+    expect(b.datasetCount).toBe(2)
+  })
 })

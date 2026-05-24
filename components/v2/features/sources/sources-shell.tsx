@@ -75,8 +75,7 @@ export function SourcesShell({ connections, datasets }: Props) {
                 modal.openWithConnector(idOrSentinel.replace('__add:', ''))
                 return
               }
-              // Real row click → drawer wiring deferred to Task 19
-              console.log('[sources] row click deferred to Task 19:', idOrSentinel)
+              // TODO(task-19): open ManageDrawer for connection id
             }}
           />
         </TabsContent>
