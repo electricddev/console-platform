@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { setupReducer, initialSetup, type SetupState } from '@/components/v2/features/sources/setup/setup-reducer'
+import { setupReducer, initialSetup, type SetupState } from '@/components/v2/features/sources/add-source-modal/setup-reducer'
 
 describe('setupReducer', () => {
   it('starts at idle', () => {
@@ -22,29 +22,52 @@ describe('setupReducer', () => {
     expect(c.authPayload).toEqual({ bucket: 'acme', region: 'us-east-1' })
   })
 
-  it("'submitAuth' moves to discovering", () => {
+  it("'submitAuth' moves to trust (not discover)", () => {
     const a = setupReducer(initialSetup, { type: 'start', connectorId: 's3' })
     const b = setupReducer(a, { type: 'updateAuth', patch: { bucket: 'acme' } })
     const c = setupReducer(b, { type: 'submitAuth' })
-    expect(c.step).toBe('discovering')
+    expect(c.step).toBe('trust')
   })
 
-  it("'discoveryComplete' moves to select with discovered datasets all selected", () => {
-    const a: SetupState = { step: 'discovering', connectorId: 's3', authPayload: { bucket: 'acme' }, discovered: [], selectedIds: [] }
+  it("'submitTrust' moves from trust to discover", () => {
+    const a = setupReducer(initialSetup, { type: 'start', connectorId: 's3' })
+    const b = setupReducer(a, { type: 'updateAuth', patch: { bucket: 'acme' } })
+    const c = setupReducer(b, { type: 'submitAuth' })            // → trust
+    const d = setupReducer(c, { type: 'submitTrust' })
+    expect(d.step).toBe('discover')
+  })
+
+  it("'discoveryComplete' from discover moves to confirm", () => {
+    const a: SetupState = {
+      step: 'discover',
+      connectorId: 's3',
+      authPayload: { bucket: 'acme' },
+      discovered: [],
+      selectedIds: [],
+    }
+    const b = setupReducer(a, {
+      type: 'discoveryComplete',
+      discovered: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+    })
+    expect(b.step).toBe('confirm')
+  })
+
+  it("'discoveryComplete' moves to confirm with discovered datasets all selected", () => {
+    const a: SetupState = { step: 'discover', connectorId: 's3', authPayload: { bucket: 'acme' }, discovered: [], selectedIds: [] }
     const b = setupReducer(a, { type: 'discoveryComplete', discovered: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] })
-    expect(b.step).toBe('select')
-    if (b.step !== 'select') throw new Error('unreachable')
+    expect(b.step).toBe('confirm')
+    if (b.step !== 'confirm') throw new Error('unreachable')
     expect(b.discovered).toHaveLength(2)
     expect(b.selectedIds).toEqual(['a', 'b'])
   })
 
   it("'toggleDataset' adds or removes a discovered id", () => {
-    const a: SetupState = { step: 'select', connectorId: 's3', authPayload: {}, discovered: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], selectedIds: ['a', 'b'] }
+    const a: SetupState = { step: 'confirm', connectorId: 's3', authPayload: {}, discovered: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], selectedIds: ['a', 'b'] }
     const b = setupReducer(a, { type: 'toggleDataset', id: 'a' })
-    if (b.step !== 'select') throw new Error('unreachable')
+    if (b.step !== 'confirm') throw new Error('unreachable')
     expect(b.selectedIds).toEqual(['b'])
     const c = setupReducer(b, { type: 'toggleDataset', id: 'a' })
-    if (c.step !== 'select') throw new Error('unreachable')
+    if (c.step !== 'confirm') throw new Error('unreachable')
     expect(c.selectedIds).toEqual(['b', 'a'])
   })
 
