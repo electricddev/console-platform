@@ -10,7 +10,12 @@ describe('<TrustStep>', () => {
     expect(screen.getByText(/Storage/i)).toBeInTheDocument()
     expect(screen.getByText(/Audit/i)).toBeInTheDocument()
     expect(screen.getByText(/Revoke/i)).toBeInTheDocument()
-    expect(screen.getByText(/charges, invoices, customers, refunds, subscriptions/i)).toBeInTheDocument()
+    // Identifiers are rendered as individual pill spans — check each one is present.
+    expect(screen.getByText('charges')).toBeInTheDocument()
+    expect(screen.getByText('invoices')).toBeInTheDocument()
+    expect(screen.getByText('customers')).toBeInTheDocument()
+    expect(screen.getByText('refunds')).toBeInTheDocument()
+    expect(screen.getByText('subscriptions')).toBeInTheDocument()
   })
 
   it('renders a fallback for an unknown connector', () => {

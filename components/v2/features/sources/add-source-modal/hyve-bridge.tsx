@@ -2,6 +2,7 @@
 
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import { Button } from '@/components/ui/button'
+import { ModalActionBar } from './modal-action-bar'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -18,7 +19,7 @@ const ACCOUNT_IDS: Record<string, string> = {
   xero: 'tenant_8f3a7b21',
 }
 
-// "Reads" / "Cannot" lists per provider — copied/derived from catalog-data.ts trust.reads.
+// "Reads" / "Cannot" lists per provider
 const SCOPES: Record<string, { reads: string[]; cannot: string[] }> = {
   stripe: {
     reads: ['Charges', 'Invoices', 'Customers', 'Refunds', 'Subscriptions'],
@@ -44,61 +45,119 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
   const accountId = ACCOUNT_IDS[connectorId] ?? '—'
 
   return (
-    <div className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20">
-      <Button variant="link" size="sm" onClick={onDeny} className="mb-3 px-0">← Back to setup</Button>
+    <>
+      {/* Stage — the authorisation surface */}
+      <div className="px-6 pt-5 pb-2">
+        <div className="rounded-lg border border-v2-border/60 bg-v2-surface-2/40 p-5">
+          {/* Provider chip */}
+          <div className="flex items-center gap-3 mb-5">
+            {def?.logo.kind === 'wordmark' ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'flex size-9 items-center justify-center rounded-md font-mono text-[12px] font-semibold shrink-0',
+                  WORDMARK_TONES[def.logo.tone],
+                )}
+              >
+                {def.logo.label}
+              </span>
+            ) : null}
+            <div>
+              <div className="text-[13px] font-semibold text-v2-foreground">
+                {def?.name}
+              </div>
+              <div className="mt-0.5 font-mono text-[11px] text-v2-muted">
+                {accountId}
+              </div>
+            </div>
+          </div>
 
-      <div className="flex items-center gap-3">
-        {def?.logo.kind === 'wordmark' ? (
-          <span aria-hidden="true" className={cn('flex size-9 items-center justify-center rounded-md font-mono text-[12px] font-semibold', WORDMARK_TONES[def.logo.tone])}>
-            {def.logo.label}
-          </span>
-        ) : null}
-        <div>
-          <div className="text-[13px] font-semibold text-v2-foreground">{def?.name}</div>
-          <div className="mt-0.5 font-mono text-[11px] text-v2-muted">{accountId}</div>
+          {/* Heading */}
+          <h2 className="font-serif text-[20px] font-normal leading-tight tracking-tight text-v2-foreground">
+            Authorize Hyve to read this {def?.name} account.
+          </h2>
+
+          {/* Two-column scope layout */}
+          <div className="mt-5 grid grid-cols-2 gap-6">
+            <ScopeColumn
+              kicker="Hyve will read"
+              items={scopes.reads}
+              variant="reads"
+            />
+            <ScopeColumn
+              kicker="Hyve will not"
+              items={scopes.cannot}
+              variant="cannot"
+            />
+          </div>
         </div>
       </div>
 
-      <h2 className="font-serif text-[19px] font-normal leading-tight tracking-tight text-v2-foreground mt-5">
-        Authorize Hyve to read this {def?.name} account.
-      </h2>
+      {/* Action bar: Back link | Deny + Approve */}
+      <ModalActionBar
+        left={
+          <Button variant="link" size="sm" onClick={onDeny} className="px-0">
+            ← Back to setup
+          </Button>
+        }
+        right={
+          <>
+            <Button variant="outline" size="sm" onClick={onDeny}>
+              Deny
+            </Button>
+            <Button
+              autoFocus
+              size="sm"
+              onClick={() => onApprove(accountId)}
+              variant="brand"
+            >
+              Approve →
+            </Button>
+          </>
+        }
+      />
+    </>
+  )
+}
 
-      <div className="mt-4 flex flex-col gap-3">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted mb-1.5">Hyve will be able to read</div>
-          <ul className="space-y-1">
-            {scopes.reads.map((r) => (
-              <li key={r} className="flex items-center gap-2 text-[12.5px] text-v2-foreground">
-                <span aria-hidden="true" className="size-1 rounded-full bg-v2-foreground/40 shrink-0" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted mb-1.5">Hyve will not be able to</div>
-          <ul className="space-y-1">
-            {scopes.cannot.map((r) => (
-              <li key={r} className="flex items-center gap-2 text-[12.5px] text-v2-foreground/85">
-                <span aria-hidden="true" className="size-1 rounded-full bg-v2-foreground/30 shrink-0" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
+function ScopeColumn({
+  kicker,
+  items,
+  variant,
+}: {
+  kicker: string
+  items: string[]
+  variant: 'reads' | 'cannot'
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-v2-muted mb-2">
+        {kicker}
       </div>
-
-      <div className="mt-5 flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onDeny}>Deny</Button>
-        <Button
-          autoFocus
-          size="sm"
-          onClick={() => onApprove(accountId)}
-          variant="brand"
-        >
-          Approve →
-        </Button>
-      </div>
+      <ul className="space-y-1.5">
+        {items.map((r) => (
+          <li key={r} className="flex items-start gap-2 text-[12.5px]">
+            <span
+              aria-hidden="true"
+              className={cn(
+                'mt-[5px] size-1 rounded-full shrink-0',
+                variant === 'reads'
+                  ? 'bg-v2-foreground/50'
+                  : 'bg-v2-foreground/25',
+              )}
+            />
+            <span
+              className={
+                variant === 'reads'
+                  ? 'text-v2-foreground'
+                  : 'text-v2-foreground/75'
+              }
+            >
+              {r}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

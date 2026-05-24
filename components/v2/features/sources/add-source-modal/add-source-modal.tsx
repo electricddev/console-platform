@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +15,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { connectorById, WORDMARK_TONES } from '../catalog-data'
-import { Stepbar } from './stepbar'
 import { PickerView } from './picker-view'
 import { HyveBridge } from './hyve-bridge'
 import { AuthStep } from './steps/auth-step'
@@ -25,6 +22,9 @@ import { TrustStep } from './steps/trust-step'
 import { DiscoverStep } from './steps/discover-step'
 import { ConfirmStep } from './steps/confirm-step'
 import { DoneStep } from './steps/done-step'
+import { ModalProgressBar } from './modal-progress-bar'
+import { ModalEyebrow } from './modal-eyebrow'
+import { connectorById } from '../catalog-data'
 import { type useAddSourceModal } from '../hooks/use-add-source-modal'
 import { createConnection } from '@/app/(originator)/sources/actions'
 
@@ -33,13 +33,31 @@ type Props = {
   onConnected: (connectionId: string) => void
 }
 
+// Progress percent + eyebrow per step
+type StepMeta = { percent: number; step?: string; label?: string }
+
+function stepMeta(
+  step: string,
+  bridgeOpen: boolean,
+): StepMeta {
+  if (step === 'idle') return { percent: 0 }
+  if (step === 'auth' && bridgeOpen)
+    return { percent: 25, step: '01', label: 'CONNECT' }
+  if (step === 'auth') return { percent: 25, step: '01', label: 'CONNECT' }
+  if (step === 'trust') return { percent: 50, step: '02', label: 'REVIEW' }
+  if (step === 'discover') return { percent: 75, step: '03', label: 'DISCOVER' }
+  if (step === 'confirm' || step === 'submitting')
+    return { percent: 90, step: '04', label: 'CONFIRM' }
+  if (step === 'done') return { percent: 100, label: 'DONE' }
+  if (step === 'error') return { percent: 90, label: 'ERROR' }
+  return { percent: 0 }
+}
+
 export function AddSourceModal({ modal, onConnected }: Props) {
   const { state, openPicker, openWithConnector, close, dispatchSetup } = modal
   const [bridgeOpen, setBridgeOpen] = useState(false)
   const [abandonOpen, setAbandonOpen] = useState(false)
-
-  const def =
-    state.setup.step !== 'idle' ? connectorById(state.setup.connectorId) : null
+  const shouldReduceMotion = useReducedMotion()
 
   function handleClose() {
     if (
@@ -59,13 +77,13 @@ export function AddSourceModal({ modal, onConnected }: Props) {
     dispatchSetup({ type: 'submitSelect' })
     const result = await createConnection({
       connectorId,
-      name: def?.name ?? connectorId,
+      name: connectorId,
       authPayload,
       datasetIds: selectedIds,
     })
     if (result.ok && result.data) {
       dispatchSetup({ type: 'saveSuccess', connectionId: result.data.id })
-      toast.success('Connected')
+      // Toast suppressed — Done step IS the celebration.
     } else if (!result.ok) {
       dispatchSetup({ type: 'saveFailure', error: result.error })
       toast.error(result.error)
@@ -74,84 +92,72 @@ export function AddSourceModal({ modal, onConnected }: Props) {
 
   const visibleStep =
     state.setup.step === 'idle'
-      ? 'picker'
+      ? 'idle'
       : state.setup.step === 'submitting'
         ? 'confirm'
         : state.setup.step === 'error'
           ? 'confirm'
           : state.setup.step
 
+  // Key for the animated step — bridge gets its own key so it transitions
+  const animKey = bridgeOpen ? `bridge-${state.setup.step}` : visibleStep
+
   const blockBackdropDismiss = ['auth', 'discover', 'confirm', 'submitting'].includes(
     state.setup.step,
   )
 
+  const meta = stepMeta(state.setup.step, bridgeOpen)
+
+  // Account id — populated after bridge approval
+  const accountId =
+    state.setup.step !== 'idle' &&
+    state.setup.step !== 'done'
+      ? (state.setup.authPayload?.accountId as string | undefined)
+      : undefined
+
   return (
     <>
-    <Dialog
-      open={state.open}
-      onOpenChange={(o) => {
-        if (!o) handleClose()
-      }}
-    >
-      <DialogContent
-        className="w-[540px] max-w-[92vw] gap-0 sm:max-w-[540px]"
-        onEscapeKeyDown={(e) => {
-          e.preventDefault()
-          if (bridgeOpen) { setBridgeOpen(false); return }
-          handleClose()
-        }}
-        onPointerDownOutside={(e) => {
-          if (blockBackdropDismiss) e.preventDefault()
+      <Dialog
+        open={state.open}
+        onOpenChange={(o) => {
+          if (!o) handleClose()
         }}
       >
-        <DialogTitle className="sr-only">{def?.name ?? 'Connect a source'}</DialogTitle>
-        <>
+        <DialogContent
+          className="w-[580px] max-w-[92vw] gap-0 sm:max-w-[580px] overflow-hidden p-0"
+          onEscapeKeyDown={(e) => {
+            e.preventDefault()
+            if (bridgeOpen) {
+              setBridgeOpen(false)
+              return
+            }
+            handleClose()
+          }}
+          onPointerDownOutside={(e) => {
+            if (blockBackdropDismiss) e.preventDefault()
+          }}
+        >
+          <DialogTitle className="sr-only">
+            {state.setup.step !== 'idle' && 'connectorId' in state.setup
+              ? (connectorById(state.setup.connectorId)?.name ?? state.setup.connectorId)
+              : 'Connect a source'}
+          </DialogTitle>
+
+          {/* ── HEADER BAND ─────────────────────────────────────────────── */}
           {state.setup.step !== 'idle' && (
             <>
-              <Stepbar
-                current={
-                  visibleStep as
-                    | 'auth'
-                    | 'trust'
-                    | 'discover'
-                    | 'confirm'
-                    | 'done'
-                    | 'picker'
-                }
-              />
-              <div className="flex items-center gap-3 pt-7 px-6 pb-4">
-                <div className="flex flex-1 items-center gap-3">
-                  {def?.logo.kind === 'wordmark' ? (
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'flex size-10 items-center justify-center rounded-md font-mono text-[13px] font-semibold',
-                        WORDMARK_TONES[def.logo.tone],
-                      )}
-                    >
-                      {def.logo.label}
-                    </span>
-                  ) : def?.logo.kind === 'icon' ? (
-                    <span className="flex size-10 items-center justify-center rounded-md bg-v2-surface-2">
-                      <def.logo.Icon
-                        className="size-5 text-v2-muted"
-                        strokeWidth={1.75}
-                      />
-                    </span>
-                  ) : null}
-                  <div>
-                    <h2 className="text-[15px] font-semibold tracking-tight text-v2-foreground">
-                      {def?.name ?? 'Add a source'}
-                    </h2>
-                    <p className="mt-0.5 text-[12px] text-v2-muted">
-                      {def?.tagline ?? 'Pick a provider below'}
-                    </p>
-                  </div>
-                </div>
+              {/* 2px progress bar at very top edge */}
+              <ModalProgressBar percent={meta.percent} />
+
+              {/* Eyebrow row — step label only (no provider chip here) */}
+              <div className="flex items-center justify-between px-6 pt-3 pb-0">
+                <ModalEyebrow step={meta.step} label={meta.label} />
+                {/* Close X is auto-rendered by DialogContent at top-right */}
               </div>
             </>
           )}
 
+          {/* ── PICKER ──────────────────────────────────────────────────── */}
           {state.setup.step === 'idle' && (
             <>
               <div className="px-6 pt-7 pb-4">
@@ -162,138 +168,183 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                   Choose a provider to get started.
                 </p>
               </div>
-              <Separator />
+              <div className="mx-6 h-px bg-v2-border/60" />
+              <div className="px-6 pt-4 pb-5">
+                <PickerView onPick={openWithConnector} />
+              </div>
             </>
           )}
 
-          <div className={cn('px-6', state.setup.step === 'idle' ? 'pt-4 pb-5' : 'py-5')}>
-            {state.setup.step === 'idle' && (
-              <PickerView onPick={openWithConnector} />
-            )}
-
-            {bridgeOpen && state.setup.step === 'auth' && (
-              <HyveBridge
-                connectorId={state.setup.connectorId}
-                onDeny={() => setBridgeOpen(false)}
-                onApprove={(accountId) => {
-                  setBridgeOpen(false)
-                  dispatchSetup({ type: 'updateAuth', patch: { accountId } })
-                  dispatchSetup({ type: 'submitAuth' })
-                }}
-              />
-            )}
-
-            {!bridgeOpen && state.setup.step === 'auth' && (
-              <AuthStep
-                connectorId={state.setup.connectorId}
-                values={state.setup.authPayload}
-                onUpdate={(patch) =>
-                  dispatchSetup({ type: 'updateAuth', patch })
+          {/* ── ANIMATED STEP CONTENT ───────────────────────────────────── */}
+          {state.setup.step !== 'idle' && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={animKey}
+                initial={
+                  shouldReduceMotion ? false : { opacity: 0, y: 6 }
                 }
-                onSubmit={() => dispatchSetup({ type: 'submitAuth' })}
-                onCancel={handleClose}
-                onOAuthRequest={() => setBridgeOpen(true)}
-              />
-            )}
-
-            {state.setup.step === 'trust' && (
-              <TrustStep
-                connectorId={state.setup.connectorId}
-                onCancel={handleClose}
-                onContinue={() => dispatchSetup({ type: 'submitTrust' })}
-              />
-            )}
-
-            {state.setup.step === 'discover' && (
-              <DiscoverStep
-                connectorId={state.setup.connectorId}
-                onComplete={(discovered) =>
-                  dispatchSetup({ type: 'discoveryComplete', discovered })
+                animate={{ opacity: 1, y: 0 }}
+                exit={
+                  shouldReduceMotion ? {} : { opacity: 0, y: -6 }
                 }
-                onCancel={handleClose}
-              />
-            )}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {/* Bridge (inside auth step slot) */}
+                {bridgeOpen && state.setup.step === 'auth' && (
+                  <HyveBridge
+                    connectorId={state.setup.connectorId}
+                    onDeny={() => setBridgeOpen(false)}
+                    onApprove={(acctId) => {
+                      setBridgeOpen(false)
+                      dispatchSetup({ type: 'updateAuth', patch: { accountId: acctId } })
+                      dispatchSetup({ type: 'submitAuth' })
+                    }}
+                  />
+                )}
 
-            {(state.setup.step === 'confirm' ||
-              state.setup.step === 'submitting') && (
-              <ConfirmStep
-                connectorId={state.setup.connectorId}
-                discovered={state.setup.discovered}
-                selectedIds={state.setup.selectedIds}
-                onToggle={(id) =>
-                  dispatchSetup({ type: 'toggleDataset', id })
-                }
-                onToggleAll={() => {
-                  if (state.setup.step !== 'confirm') return
-                  const allSelected =
-                    state.setup.selectedIds.length ===
-                    state.setup.discovered.length
-                  for (const d of state.setup.discovered) {
-                    const present = state.setup.selectedIds.includes(d.id)
-                    if (allSelected === present) {
-                      dispatchSetup({ type: 'toggleDataset', id: d.id })
+                {/* Auth step */}
+                {!bridgeOpen && state.setup.step === 'auth' && (
+                  <AuthStep
+                    connectorId={state.setup.connectorId}
+                    values={state.setup.authPayload}
+                    onUpdate={(patch) =>
+                      dispatchSetup({ type: 'updateAuth', patch })
                     }
-                  }
-                }}
-                onConfirm={submitSelect}
-                onCancel={handleClose}
-                submitting={state.setup.step === 'submitting'}
-              />
-            )}
+                    onSubmit={() => dispatchSetup({ type: 'submitAuth' })}
+                    onCancel={handleClose}
+                    onOAuthRequest={() => setBridgeOpen(true)}
+                  />
+                )}
 
-            {state.setup.step === 'done' && (
-              <DoneStep
-                connectorId={state.setup.connectorId}
-                datasetCount={state.setup.datasetCount}
-                onGoToConnection={() => {
-                  if (state.setup.step !== 'done') return
-                  onConnected(state.setup.connectionId)
-                  close()
-                }}
-                onAddAnother={() => {
-                  setBridgeOpen(false)
-                  openPicker()
-                }}
-                onDismiss={() => {
-                  if (state.setup.step !== 'done') return
-                  onConnected(state.setup.connectionId)
-                  close()
-                }}
-              />
-            )}
+                {/* Trust step */}
+                {state.setup.step === 'trust' && (
+                  <TrustStep
+                    connectorId={state.setup.connectorId}
+                    accountId={accountId}
+                    onCancel={handleClose}
+                    onContinue={() => dispatchSetup({ type: 'submitTrust' })}
+                  />
+                )}
 
-            {state.setup.step === 'error' && (
-              <div className="flex flex-col gap-3">
-                <p className="text-[12.5px] text-destructive">
-                  {state.setup.error}
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleClose}>Cancel</Button>
-                  <Button size="sm" variant="brand" onClick={() => dispatchSetup({ type: 'retry' })}>Try again</Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      </DialogContent>
-    </Dialog>
+                {/* Discover step */}
+                {state.setup.step === 'discover' && (
+                  <DiscoverStep
+                    connectorId={state.setup.connectorId}
+                    onComplete={(discovered) =>
+                      dispatchSetup({ type: 'discoveryComplete', discovered })
+                    }
+                    onCancel={handleClose}
+                  />
+                )}
 
-    <AlertDialog open={abandonOpen} onOpenChange={setAbandonOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Abandon setup?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your unsaved credentials will be discarded.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep editing</AlertDialogCancel>
-          <AlertDialogAction onClick={() => { setAbandonOpen(false); setBridgeOpen(false); close() }}>
-            Abandon
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+                {/* Confirm step */}
+                {(state.setup.step === 'confirm' ||
+                  state.setup.step === 'submitting') && (
+                  <ConfirmStep
+                    connectorId={state.setup.connectorId}
+                    discovered={state.setup.discovered}
+                    selectedIds={state.setup.selectedIds}
+                    onToggle={(id) =>
+                      dispatchSetup({ type: 'toggleDataset', id })
+                    }
+                    onToggleAll={() => {
+                      if (state.setup.step !== 'confirm') return
+                      const allSelected =
+                        state.setup.selectedIds.length ===
+                        state.setup.discovered.length
+                      for (const d of state.setup.discovered) {
+                        const present = state.setup.selectedIds.includes(d.id)
+                        if (allSelected === present) {
+                          dispatchSetup({ type: 'toggleDataset', id: d.id })
+                        }
+                      }
+                    }}
+                    onConfirm={submitSelect}
+                    onCancel={handleClose}
+                    submitting={state.setup.step === 'submitting'}
+                  />
+                )}
+
+                {/* Done step */}
+                {state.setup.step === 'done' && (
+                  <DoneStep
+                    connectorId={state.setup.connectorId}
+                    datasetCount={state.setup.datasetCount}
+                    onGoToConnection={() => {
+                      if (state.setup.step !== 'done') return
+                      onConnected(state.setup.connectionId)
+                      close()
+                    }}
+                    onAddAnother={() => {
+                      setBridgeOpen(false)
+                      openPicker()
+                    }}
+                    onDismiss={() => {
+                      if (state.setup.step !== 'done') return
+                      onConnected(state.setup.connectionId)
+                      close()
+                    }}
+                  />
+                )}
+
+                {/* Error state */}
+                {state.setup.step === 'error' && (
+                  <>
+                    <div className="px-6 pt-5 pb-2">
+                      <p className="text-[12.5px] text-destructive">
+                        {state.setup.error}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t border-v2-border/40 px-6 py-3.5">
+                      <div />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClose}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="brand"
+                          onClick={() => dispatchSetup({ type: 'retry' })}
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Abandon confirmation */}
+      <AlertDialog open={abandonOpen} onOpenChange={setAbandonOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abandon setup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your unsaved credentials will be discarded.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAbandonOpen(false)
+                setBridgeOpen(false)
+                close()
+              }}
+            >
+              Abandon
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
