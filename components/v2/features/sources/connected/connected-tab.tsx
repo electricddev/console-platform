@@ -50,7 +50,7 @@ export function ConnectedTab({ connections, datasets, onRowClick }: Props) {
           <button
             type="button"
             onClick={() => onRowClick?.('__browse')}
-            className="rounded-md px-3 py-1.5 text-[12px] text-v2-muted underline-offset-2 hover:underline"
+            className="rounded-md px-3 py-1.5 text-[12px] text-v2-muted underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
           >
             Browse catalogue →
           </button>

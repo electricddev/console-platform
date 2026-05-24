@@ -17,8 +17,8 @@ export function TrustStep({ connectorId, onContinue, onCancel }: Props) {
       <div className="flex flex-col gap-3 px-1 pt-2">
         <p className="text-[12.5px] text-v2-muted">No trust copy available for this connector yet.</p>
         <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Cancel</button>
-          <button type="button" onClick={onContinue} className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white">Continue →</button>
+          <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Cancel</button>
+          <button type="button" onClick={onContinue} className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Continue →</button>
         </div>
       </div>
     )
@@ -47,11 +47,11 @@ export function TrustStep({ connectorId, onContinue, onCancel }: Props) {
           Full data handling policy
         </a>
         <div className="flex gap-2">
-          <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Cancel</button>
+          <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Cancel</button>
           <button
             type="button"
             onClick={onContinue}
-            className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.40_0.10_160)]"
+            className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
           >
             Continue →
           </button>

@@ -44,9 +44,6 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="hyve-bridge-title"
       className="rounded-lg border border-v2-foreground/30 bg-v2-surface p-5 shadow-2xl shadow-black/20"
     >
       <div className="flex items-center justify-between border-b border-v2-border/60 pb-3">
@@ -65,7 +62,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
         </div>
       </div>
 
-      <h2 id="hyve-bridge-title" className="mt-4 font-serif text-[18px] font-normal leading-tight text-v2-foreground">
+      <h2 className="mt-4 font-serif text-[18px] font-normal leading-tight text-v2-foreground">
         Authorize Hyve to read this {def?.name} account.
       </h2>
 
@@ -85,12 +82,12 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
       </div>
 
       <div className="mt-5 flex justify-end gap-2">
-        <button type="button" onClick={onDeny} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground">Deny</button>
+        <button type="button" onClick={onDeny} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Deny</button>
         <button
           type="button"
           onClick={() => onApprove(accountId)}
           autoFocus
-          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)]"
+          className="rounded-md bg-[oklch(0.40_0.10_160)] px-4 py-1.5 text-[12.5px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
         >
           Approve →
         </button>

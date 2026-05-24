@@ -34,10 +34,10 @@ export function DoneStep({ connectorId, datasetCount, onGoToConnection, onAddAno
         </p>
       </div>
       <div className="mt-2 flex gap-2">
-        <button type="button" onClick={onGoToConnection} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04]">
+        <button type="button" onClick={onGoToConnection} className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">
           Go to connection
         </button>
-        <button type="button" onClick={onAddAnother} className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)]">
+        <button type="button" onClick={onAddAnother} className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">
           Add another
         </button>
       </div>

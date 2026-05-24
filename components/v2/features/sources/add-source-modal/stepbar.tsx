@@ -20,9 +20,8 @@ export function Stepbar({ current }: Props) {
       className="flex items-center gap-2 px-5 py-3.5 text-[10px] uppercase tracking-[0.12em] text-v2-muted/65"
     >
       {VISIBLE_STEPS.map((s, i) => (
-        <li key={s} className="flex items-center gap-2">
+        <li key={s} aria-current={i === currentIndex ? 'step' : undefined} className="flex items-center gap-2">
           <span
-            aria-current={i === currentIndex ? 'step' : undefined}
             className={cn(
               'font-medium',
               i === currentIndex && 'text-v2-foreground',

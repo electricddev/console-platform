@@ -105,21 +105,21 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
                         if (res.ok) toast.success(connection.status === 'paused' ? 'Resumed' : 'Paused')
                         else toast.error(res.error)
                       }}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04]"
+                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       {connection.status === 'paused' ? 'Resume' : 'Pause'}
                     </button>
                     <button
                       type="button"
                       onClick={() => onReconnect(connection.connectorId)}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04]"
+                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       Reconnect
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingRemove(true)}
-                      className="rounded-md border border-[oklch(0.55_0.18_25)]/40 px-3 py-1.5 text-[12px] text-[oklch(0.55_0.18_25)] hover:bg-[oklch(0.55_0.18_25)]/10"
+                      className="rounded-md border border-[oklch(0.55_0.18_25)]/40 px-3 py-1.5 text-[12px] text-[oklch(0.55_0.18_25)] hover:bg-[oklch(0.55_0.18_25)]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]"
                     >
                       Remove…
                     </button>
@@ -159,7 +159,7 @@ function RemoveConfirm({ connection, onCancel, onRemoved }: { connection: Connec
         className="mt-2 w-full rounded-md border border-v2-border bg-v2-surface px-2 py-1.5 text-[12px] focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-v2-foreground"
       />
       <div className="mt-2 flex gap-2">
-        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-2.5 py-1 text-[11.5px] text-v2-foreground hover:bg-v2-foreground/[0.04]">Cancel</button>
+        <button type="button" onClick={onCancel} className="rounded-md border border-v2-border px-2.5 py-1 text-[11.5px] text-v2-foreground hover:bg-v2-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground">Cancel</button>
         <button
           type="button"
           disabled={!match}
@@ -168,7 +168,7 @@ function RemoveConfirm({ connection, onCancel, onRemoved }: { connection: Connec
             if (result.ok) { toast.success('Removed'); onRemoved() }
             else toast.error(result.error)
           }}
-          className={cn('rounded-md border px-2.5 py-1 text-[11.5px]', match ? 'border-[oklch(0.55_0.18_25)] bg-[oklch(0.55_0.18_25)] text-v2-background' : 'cursor-not-allowed border-v2-border text-v2-muted')}
+          className={cn('rounded-md border px-2.5 py-1 text-[11.5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.55_0.18_25)]', match ? 'border-[oklch(0.55_0.18_25)] bg-[oklch(0.55_0.18_25)] text-v2-background' : 'cursor-not-allowed border-v2-border text-v2-muted')}
         >
           Remove
         </button>

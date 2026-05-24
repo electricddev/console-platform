@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
 import { Stepbar } from './stepbar'
@@ -85,12 +85,14 @@ export function AddSourceModal({ modal, onConnected }: Props) {
         className="w-[560px] max-w-[92vw] p-0 sm:max-w-[560px]"
         onEscapeKeyDown={(e) => {
           e.preventDefault()
+          if (bridgeOpen) { setBridgeOpen(false); return }
           handleClose()
         }}
         onPointerDownOutside={(e) => {
           if (blockBackdropDismiss) e.preventDefault()
         }}
       >
+        <DialogTitle className="sr-only">{def?.name ?? 'Add a source'}</DialogTitle>
         {bridgeOpen && state.setup.step !== 'idle' ? (
           <div className="p-4">
             <HyveBridge
@@ -248,14 +250,14 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground"
+                      className="rounded-md border border-v2-border px-3 py-1.5 text-[12px] text-v2-muted hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={() => dispatchSetup({ type: 'retry' })}
-                      className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)]"
+                      className="rounded-md bg-[oklch(0.40_0.10_160)] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[oklch(0.36_0.10_160)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
                     >
                       Try again
                     </button>

@@ -31,8 +31,8 @@ test.describe('/sources — add-source modal', () => {
     // Button accessible name is "<wordmark> <provider name>" e.g. "S3 Amazon S3"
     await dialog.getByRole('button', { name: /Amazon S3/i }).click()
 
-    // Auth step — modal header h2 shows connector name
-    await expect(page.getByRole('heading', { name: /Amazon S3/i })).toBeVisible()
+    // Auth step — modal header h2 shows connector name (sr-only DialogTitle + visible header both match)
+    await expect(page.getByRole('heading', { name: /Amazon S3/i }).nth(1)).toBeVisible()
 
     // Fill S3 form — bucket (text input), region (select), accessKeyId (text), secretAccessKey (password)
     await page.getByLabel(/Bucket/i).fill('hyve-test')
@@ -137,8 +137,8 @@ test.describe('/sources — manage drawer', () => {
     // Click Reconnect — drawer closes, modal opens at Auth step for Stripe
     await page.getByRole('button', { name: /Reconnect/i }).click()
 
-    // Modal header shows connector name
-    await expect(page.getByRole('heading', { name: /^Stripe/i })).toBeVisible()
+    // Modal header shows connector name (sr-only DialogTitle + visible header both match)
+    await expect(page.getByRole('heading', { name: /^Stripe/i }).nth(1)).toBeVisible()
 
     // OAuth auth shape shows the "Sign in with Stripe →" button
     await expect(page.getByRole('button', { name: /Sign in with Stripe/i })).toBeVisible()
