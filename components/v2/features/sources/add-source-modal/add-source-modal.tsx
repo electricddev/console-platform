@@ -3,6 +3,16 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { connectorById, WORDMARK_TONES } from '../catalog-data'
@@ -25,17 +35,18 @@ type Props = {
 export function AddSourceModal({ modal, onConnected }: Props) {
   const { state, openPicker, openWithConnector, close, dispatchSetup } = modal
   const [bridgeOpen, setBridgeOpen] = useState(false)
+  const [abandonOpen, setAbandonOpen] = useState(false)
 
   const def =
     state.setup.step !== 'idle' ? connectorById(state.setup.connectorId) : null
 
   function handleClose() {
-    // Confirm only if dirty Auth state
     if (
       state.setup.step === 'auth' &&
       Object.keys(state.setup.authPayload).length > 0
     ) {
-      if (!confirm('Abandon setup?')) return
+      setAbandonOpen(true)
+      return
     }
     setBridgeOpen(false)
     close()
@@ -74,6 +85,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
   )
 
   return (
+    <>
     <Dialog
       open={state.open}
       onOpenChange={(o) => {
@@ -248,7 +260,7 @@ export function AddSourceModal({ modal, onConnected }: Props) {
                 </p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleClose}>Cancel</Button>
-                  <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={() => dispatchSetup({ type: 'retry' })}>Try again</Button>
+                  <Button size="sm" variant="brand" onClick={() => dispatchSetup({ type: 'retry' })}>Try again</Button>
                 </div>
               </div>
             )}
@@ -256,5 +268,23 @@ export function AddSourceModal({ modal, onConnected }: Props) {
         </>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={abandonOpen} onOpenChange={setAbandonOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Abandon setup?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your unsaved credentials will be discarded.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep editing</AlertDialogCancel>
+          <AlertDialogAction onClick={() => { setAbandonOpen(false); setBridgeOpen(false); close() }}>
+            Abandon
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

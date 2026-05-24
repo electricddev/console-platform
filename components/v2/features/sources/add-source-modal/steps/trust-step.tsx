@@ -20,7 +20,7 @@ export function TrustStep({ connectorId, onContinue, onCancel }: Props) {
         <p className="text-[12.5px] text-muted-foreground">No trust copy available for this connector yet.</p>
         <div className="mt-2 flex justify-end gap-2">
           <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={onContinue}>Continue →</Button>
+          <Button size="sm" variant="brand" onClick={onContinue}>Continue →</Button>
         </div>
       </div>
     )
@@ -52,7 +52,7 @@ export function TrustStep({ connectorId, onContinue, onCancel }: Props) {
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={onContinue}>Continue →</Button>
+          <Button size="sm" variant="brand" onClick={onContinue}>Continue →</Button>
         </div>
       </div>
     </div>

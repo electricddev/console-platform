@@ -110,7 +110,7 @@ export function ConfirmStep({
           size="sm"
           onClick={onConfirm}
           disabled={noneSelected || submitting}
-          className="bg-v2-green text-white hover:bg-v2-green-hover"
+          variant="brand"
         >
           {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}
         </Button>

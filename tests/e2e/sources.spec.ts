@@ -90,19 +90,13 @@ test.describe('/sources — add-source modal', () => {
   test('Escape with dirty Auth confirms before closing', async ({ page }) => {
     await page.goto('/sources')
     await page.getByRole('button', { name: /Connect a source/i }).click()
-
-    // Pick S3
-    const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: /Amazon S3/i }).click()
-
-    // Make the form dirty
+    await page.getByRole('dialog').getByRole('button', { name: /Amazon S3/i }).click()
     await page.getByLabel(/Bucket/i).fill('hyve-test')
-
-    // Dismiss the native confirm dialog — modal should remain open
-    page.on('dialog', (dialog) => dialog.dismiss())
     await page.keyboard.press('Escape')
-
-    // Modal still open because dialog was dismissed
+    // AlertDialog appears
+    await expect(page.getByRole('alertdialog')).toBeVisible()
+    await page.getByRole('button', { name: /Keep editing/i }).click()
+    // Modal should still be present
     await expect(page.getByLabel(/Bucket/i)).toBeVisible()
   })
 })

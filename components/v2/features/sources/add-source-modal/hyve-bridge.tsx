@@ -94,7 +94,7 @@ export function HyveBridge({ connectorId, onApprove, onDeny }: Props) {
           autoFocus
           size="sm"
           onClick={() => onApprove(accountId)}
-          className="bg-v2-green text-white hover:bg-v2-green-hover"
+          variant="brand"
         >
           Approve →
         </Button>

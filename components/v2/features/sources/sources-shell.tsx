@@ -63,7 +63,7 @@ export function SourcesShell({ connections, datasets }: Props) {
           </p>
         </div>
         <Button
-          className="bg-v2-green text-white hover:bg-v2-green-hover"
+          variant="brand"
           onClick={() => { drawer.close(); modal.openPicker() }}
         >
           + Connect a source

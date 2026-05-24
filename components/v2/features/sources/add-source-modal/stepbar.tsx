@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const VISIBLE_STEPS = ['auth', 'trust', 'discover', 'confirm'] as const
@@ -33,7 +34,7 @@ export function Stepbar({ current }: Props) {
                 !active && !complete && 'border border-v2-border text-v2-muted/60',
               )}
             >
-              {complete ? '✓' : i + 1}
+              {complete ? <Check className="size-3" strokeWidth={2.5} /> : i + 1}
             </span>
             <span
               className={cn(

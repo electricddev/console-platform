@@ -64,7 +64,7 @@ export function DoneStep({ connectorId, datasetCount, onGoToConnection, onAddAno
 
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="outline" size="sm" onClick={onAddAnother}>Add another</Button>
-        <Button size="sm" onClick={onGoToConnection} className="bg-v2-green text-white hover:bg-v2-green-hover">
+        <Button size="sm" variant="brand" onClick={onGoToConnection}>
           Go to connection →
         </Button>
       </div>

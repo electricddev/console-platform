@@ -11,9 +11,9 @@ import { pauseConnection, resumeConnection, removeConnection } from '@/app/(orig
 import type { ConnectorConnection, ConnectionDataset, ConnectionStatus } from '@/lib/api/schemas'
 
 const STATUS_DOT: Record<ConnectionStatus, string> = {
-  ok: 'bg-[oklch(0.55_0.10_150)]',
-  attention: 'bg-[oklch(0.70_0.14_70)]',
-  error: 'bg-[oklch(0.55_0.18_25)]',
+  ok: 'bg-v2-green',
+  attention: 'bg-amber-500',
+  error: 'bg-destructive',
   paused: 'bg-v2-muted/60',
 }
 
@@ -74,7 +74,7 @@ export function ManageDrawer({ connection, datasets, onClose, onReconnect }: Pro
                         href={`/datasets/${d.id}`}
                         className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-[12.5px] text-v2-foreground hover:bg-v2-foreground/[0.04]"
                       >
-                        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="size-1.5 rounded-full bg-[oklch(0.55_0.10_150)]" />{d.name}</span>
+                        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="size-1.5 rounded-full bg-v2-green" />{d.name}</span>
                         <span className="font-mono text-[11px] text-v2-muted">{d.rowCount.toLocaleString()} {d.rowUnit}</span>
                       </Link>
                     </li>

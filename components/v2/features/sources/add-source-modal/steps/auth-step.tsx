@@ -35,7 +35,8 @@ function OAuthShape({ connectorId, onOAuthRequest, onCancel }: Props) {
       </p>
       <Button
         onClick={onOAuthRequest}
-        className="self-start bg-v2-green text-white hover:bg-v2-green-hover"
+        variant="brand"
+        className="self-start"
       >
         Sign in with {name} →
       </Button>
@@ -84,7 +85,7 @@ function FormShape({ connectorId, values, onUpdate, onSubmit, onCancel }: Props)
         </p>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" size="sm" type="button" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" className="bg-v2-green text-white hover:bg-v2-green-hover" onClick={onSubmit}>Continue</Button>
+          <Button size="sm" variant="brand" onClick={onSubmit}>Continue</Button>
         </div>
       </div>
     )
@@ -134,7 +135,7 @@ function FormShape({ connectorId, values, onUpdate, onSubmit, onCancel }: Props)
           type="submit"
           size="sm"
           disabled={!valid}
-          className="bg-v2-green text-white hover:bg-v2-green-hover"
+          variant="brand"
           onClick={onSubmit}
         >
           Continue
