@@ -118,6 +118,9 @@ PROJECT CONSTRAINTS (non-negotiable):
 7. App Router only — no Pages Router patterns.
 8. This Next.js may differ from training data — check node_modules/next/dist/docs/
    before applying conventions.
+9. Visual language rules are non-negotiable. See `.claude/rules/visual-language.md`.
+   Any UI implementer must check banned patterns + required primitives before
+   declaring done.
 
 After implementing, report status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
 Do not commit unless the user already authorized commits for this task.
