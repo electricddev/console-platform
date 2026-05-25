@@ -74,7 +74,7 @@ These live in `.claude/skills/` and override generic LLM behavior:
 - **`frontend-design`** — distinctive, production-grade interfaces; anti-AI-slop.
 - **`web-design-guidelines`** — 100+ a11y/UX rules.
 - **`design-taste-frontend`** — strict component architecture, hardware-accel CSS, metric-based rules.
-- **`minimalist-ui`** — editorial style, warm monochrome, no gradients/heavy shadows.
+- **`ui-ux-pro-max`** — 161-palette color catalog, 57 font pairings, density and interaction-state guidance. Required for every UI change.
 - **`redesign-existing-projects`** — when upgrading existing screens to premium quality.
 
 ### Framework
