@@ -22,12 +22,18 @@ A Next.js operator console for verified private data infrastructure on tokenized
 
 ## Product context — what you are building
 
-This is operator tooling. The end users on the counterparty side (Gauntlet, Morpho, NAV lenders) never read this UI — their automated systems consume Hyve's outputs. The UI is what a fund originator uses to configure the pipeline once and govern it as it runs.
+Hyve is a unified platform with three actors who share one sidebar shell:
+
+- **Data owner / originator** — uploads private datasets, defines schemas and per-column privacy posture, approves curator Analyses, controls publication.
+- **Curator** — browses vaults, authors SQL Analyses against schemas, proposes them to owners, receives attested results, configures downstream delivery (oracle / webhook / API / visualization).
+- **Public verifier** — anyone, no account. Browses the public attestation feed, opens attestation detail pages, verifies cryptographic proofs independently. The Dune-like public surface.
+
+A single account can hold multiple roles (owner + curator). The shell adapts via additive nav items, never via mode toggle. Anonymous visitors see the same sidebar shell with auth-gated items shown disabled, not hidden.
 
 **This is NOT:**
 
 - Not an intelligence platform (no 9fin, AlphaSense, Hebbia, Rogo patterns — no news, commentary, AI insights, analyst notes)
-- Not an oracle (oracles deliver signed payloads on-chain; Hyve produces what they deliver — the on-chain publication is one output channel, not the product)
+- Not an oracle itself, though oracle-adjacent — Hyve hosts signed attestations as a public good, and the curator's Oracle output tab pushes attestations onchain. The platform doesn't sign values onchain itself; it produces what gets signed.
 - Not an analytics dashboard (no historical NAV charts, IRR trend lines, performance graphs, scenario analysis, risk analytics)
 - Not a fund admin tool (Allvue, SS&C Advent are internal ops; Hyve is the cross-org data programming layer)
 - Not a tokenization platform (Securitize tokenizes; Hyve makes the data behind tokenized assets programmable)
@@ -65,6 +71,16 @@ For the full product spec including navigation structure, the Overview page DAG,
 - No hardcoded colors — always use design tokens
 - App Router only (no Pages Router)
 - Conventional Commits
+
+## Visual Language
+
+The codebase enforces a strict typographic visual language. Information is conveyed through type weight + a constrained color palette, never through chrome (no pills, no dots, no chips, no eyebrow labels).
+
+Single source of truth: `.claude/rules/visual-language.md`.
+
+Any UI change is reviewed by `ui-design-reviewer` against the visual language checklist. Build fails on banned imports (`status-pill`, `privacy-chip`) and flags banned inline patterns (eyebrow text, decorative dots) via ESLint.
+
+Skill: `.claude/skills/hyve-visual-language/SKILL.md` — invoke when adding a new primitive, refactoring banned chrome, or resolving spec-vs-rules conflicts.
 
 ## Common Commands
 
@@ -141,6 +157,12 @@ The Superpowers plugin handles orchestration: planning, parallel dispatching, co
 **Project skills:**
 
 - `visual-fix` — the screenshot-fix-screenshot loop for UI bugs
+- `hyve-visual-language` — decision framework for new primitives, refactoring banned chrome, and spec-vs-rules conflicts
+- `hyve-driven-development` — orchestrator that dispatches the right specialist + reviewers per file type
+
+**Frontend craft additions:**
+
+- `ui-ux-pro-max` — replaces the prior `ui-minimalist`. Color-palette catalog, font-pairing rules, density and interaction-state guidance. Required for every UI change.
 
 ## Non-Negotiable Rules
 
@@ -151,6 +173,7 @@ The Superpowers plugin handles orchestration: planning, parallel dispatching, co
 5. **Accessibility required** — WCAG 2.2 AA minimum
 6. **Performance budget** — LCP <2.5s, INP <200ms, CLS <0.1
 7. **No `any` types** — use `unknown` and narrow
+8. **Strict typographic rule.** See `.claude/rules/visual-language.md`. Banned: decorative dots, eyebrow labels, status pills, privacy chips, code-comment style labels, glows, slide-in animations on lists, color as sole signal. Required: typographic primitives (`<Status>`, `<Timestamp>`, `<PrivacyLevel>`, `<Section>`, `<Disabled>`, `<ResourceCard>`). Every UI change must pass `ui-design-reviewer`.
 
 ## Architecture Principles
 
@@ -159,3 +182,4 @@ The Superpowers plugin handles orchestration: planning, parallel dispatching, co
 3. Dependency direction flows down — app → components → lib → types
 4. Server Components by default — client only when interactive
 5. Composition over configuration — compound components, not boolean props
+6. Composition lives on top of typographic primitives, not on top of chrome primitives. Information through type weight + constrained color, never through fills, borders, or decorative shapes.
