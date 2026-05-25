@@ -241,7 +241,7 @@ type Props = {
   stepIndicator?: string
 }
 
-export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator }: Props) {
+export function DiscoverStep({ connectorId, onComplete, onCancel }: Props) {
   const profile = PROFILES[connectorId]
   const def = connectorById(connectorId)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -268,23 +268,18 @@ export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator 
   }
 
   const allDone = activeIndex >= profile.steps.length
-  const progress = Math.min(activeIndex / profile.steps.length, 1)
   const providerName = def?.name ?? connectorId
 
   return (
     <>
-      {/* Stage — left-aligned */}
-      <div className="flex-1 px-7 pt-9 pb-6" aria-live="polite" aria-atomic="false">
-        {/* Left-aligned headline */}
-        <h2 className="font-serif text-[24px] font-normal leading-[1.1] tracking-[-0.01em] text-v2-foreground">
-          Scanning {providerName}
-        </h2>
-        <p className="mt-1 text-[13px] text-v2-muted">
-          Reading endpoints, sampling schemas…
+      {/* Stage — checklist is the hero */}
+      <div className="flex-1 px-7 pt-7 pb-6" aria-live="polite" aria-atomic="false">
+        <p className="text-[13px] text-v2-muted">
+          Reading {providerName} endpoints, sampling schemas…
         </p>
 
         {/* Step list */}
-        <ul className="mt-7 grid gap-0 min-h-[160px]">
+        <ul className="mt-6 flex flex-col gap-0">
           {profile.steps.map((s, i) => {
             const isDone = i < activeIndex || allDone
             const isActive = i === activeIndex && !allDone
@@ -295,18 +290,19 @@ export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator 
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.22, delay: i * 0.04 }}
                 className={cn(
-                  'flex items-center gap-3 py-2 text-[14px] transition-colors',
+                  'flex items-center gap-3 py-[7px] text-[13.5px] transition-colors',
                   isDone
                     ? 'text-v2-muted'
                     : isActive
                       ? 'text-v2-foreground'
-                      : 'text-v2-muted/45',
+                      : 'text-v2-muted/40',
                 )}
               >
+                {/* State icon — 20px container */}
                 <span className="flex size-5 shrink-0 items-center justify-center">
                   {isDone ? (
-                    <span className="flex size-5 items-center justify-center rounded-full bg-v2-foreground/10">
-                      <Check className="size-3 text-v2-foreground/70" strokeWidth={2.5} />
+                    <span className="flex size-5 items-center justify-center rounded-full bg-v2-green/15 text-v2-green">
+                      <Check className="size-3" strokeWidth={2.5} />
                     </span>
                   ) : isActive ? (
                     <Loader2
@@ -314,7 +310,7 @@ export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator 
                       strokeWidth={2}
                     />
                   ) : (
-                    <span className="size-2 rounded-full border border-v2-muted/30" />
+                    <span className="size-2 rounded-full border border-v2-muted/25" />
                   )}
                 </span>
                 <span>{s.label}</span>
@@ -322,30 +318,15 @@ export function DiscoverStep({ connectorId, onComplete, onCancel, stepIndicator 
             )
           })}
         </ul>
-
-        {/* Progress bar — thicker, more present */}
-        <div
-          className="mt-7 h-1.5 w-full overflow-hidden rounded-full bg-v2-border/40"
-          role="progressbar"
-          aria-valuenow={Math.round(progress * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className="h-full bg-v2-green transition-[width] duration-500 ease-out"
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
       </div>
 
       {/* Action bar — single Cancel on left */}
       <ModalActionBar
         left={
-          <Button variant="link" size="sm" onClick={onCancel}>
+          <Button variant="link" size="sm" onClick={onCancel} className="text-v2-muted hover:text-v2-foreground">
             Cancel
           </Button>
         }
-        stepIndicator={stepIndicator}
       />
     </>
   )

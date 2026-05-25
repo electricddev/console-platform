@@ -32,7 +32,6 @@ export function ConfirmStep({
   onConfirm,
   onCancel,
   submitting,
-  stepIndicator,
 }: Props) {
   const def = connectorById(connectorId)
   const allSelected = selectedIds.length === discovered.length
@@ -48,30 +47,28 @@ export function ConfirmStep({
   return (
     <>
       {/* Stage */}
-      <div className="flex-1 px-7 pt-9 pb-3 overflow-y-auto">
-        {/* Left-aligned headline */}
-        <h2 className="font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.012em] text-v2-foreground">
-          Choose what to ingest
-        </h2>
-
-        {/* Metrics line */}
-        <div className="mt-2 flex items-center gap-4">
-          <span className="font-mono text-[12px] text-v2-muted">
+      <div className="flex-1 px-7 pt-5 pb-3 overflow-y-auto">
+        {/* Status strip — metrics + toggle */}
+        <div className="flex items-center gap-3 pb-3.5 border-b border-v2-border/40">
+          <span className="font-mono text-[11.5px] text-v2-muted">
             <span className="text-v2-foreground">{selectedIds.length}</span>{' '}
             of {discovered.length} selected
           </span>
           {estimate > 0 ? (
-            <span className="font-mono text-[12px] text-v2-muted">
-              ~{formatRows(estimate)} rows / month
-            </span>
+            <>
+              <span className="text-v2-border font-mono text-[9px]">·</span>
+              <span className="font-mono text-[11.5px] text-v2-muted">
+                ~{formatRows(estimate)} rows / month
+              </span>
+            </>
           ) : null}
-          <Button variant="link" size="sm" onClick={onToggleAll} className="h-auto p-0 text-[11.5px] ml-auto">
+          <Button variant="link" size="sm" onClick={onToggleAll} className="h-auto p-0 text-[11px] ml-auto text-v2-muted hover:text-v2-foreground">
             {allSelected ? 'Clear all' : 'Select all'}
           </Button>
         </div>
 
         {/* Dataset list */}
-        <ul className="mt-4 flex flex-col">
+        <ul className="flex flex-col mt-1">
           {discovered.map((d) => {
             const checked = selectedIds.includes(d.id)
             const expanded = expandedId === d.id
@@ -79,18 +76,21 @@ export function ConfirmStep({
             return (
               <li
                 key={d.id}
-                className="relative border-b border-v2-border/30 last:border-b-0 overflow-hidden"
+                className={cn(
+                  'relative border-b border-v2-border/30 last:border-b-0 overflow-hidden transition-colors duration-100',
+                  'hover:bg-v2-foreground/[0.025]',
+                )}
               >
                 {/* Left-edge selection accent bar */}
                 <div
                   aria-hidden="true"
                   className={cn(
-                    'absolute left-0 top-0 bottom-0 w-[3px] transition-colors duration-150',
+                    'absolute left-0 top-0 bottom-0 w-[2.5px] transition-colors duration-150',
                     checked ? 'bg-v2-green' : 'bg-transparent',
                   )}
                 />
 
-                <div className="flex items-center gap-3 pl-5 pr-3 py-3.5">
+                <div className="flex items-center gap-3 pl-5 pr-3 py-3">
                   {/* Clickable row region for toggle */}
                   <div
                     role="button"
@@ -117,7 +117,7 @@ export function ConfirmStep({
                       </span>
                     </span>
                     {d.rowCount ? (
-                      <span className="font-mono text-[11.5px] text-v2-muted shrink-0">
+                      <span className="font-mono text-[11px] text-v2-muted shrink-0">
                         {d.subtitle}
                       </span>
                     ) : null}
@@ -129,7 +129,7 @@ export function ConfirmStep({
                     aria-expanded={expanded}
                     aria-label={`${expanded ? 'Hide' : 'Show'} sample for ${d.name}`}
                     onClick={() => setExpandedId(expanded ? null : d.id)}
-                    className="rounded-md p-1 text-v2-muted hover:bg-v2-foreground/[0.04] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground"
+                    className="rounded-md p-1 text-v2-muted hover:bg-v2-foreground/[0.05] hover:text-v2-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-foreground transition-colors"
                     disabled={!preview}
                   >
                     <ChevronDown
@@ -172,7 +172,7 @@ export function ConfirmStep({
       {/* Action bar */}
       <ModalActionBar
         left={
-          <Button variant="link" size="sm" onClick={onCancel}>
+          <Button variant="link" size="sm" onClick={onCancel} className="text-v2-muted hover:text-v2-foreground">
             Cancel
           </Button>
         }
@@ -186,7 +186,6 @@ export function ConfirmStep({
             {submitting ? 'Connecting…' : `Connect ${def?.name ?? 'source'} →`}
           </Button>
         }
-        stepIndicator={stepIndicator}
       />
     </>
   )
@@ -221,7 +220,7 @@ function SamplePreviewView({ preview }: { preview: SamplePreview }) {
                 scope="col"
                 className={cn(
                   'py-1.5 pr-3 text-left font-medium uppercase tracking-[0.08em] text-v2-muted/70',
-                  ci < preview.columns.length - 1 && 'border-r border-v2-border/30',
+                  ci < preview.columns.length - 1 && 'border-r border-v2-border/20',
                 )}
               >
                 <span className="pl-1 pr-2">{col}</span>
@@ -239,8 +238,8 @@ function SamplePreviewView({ preview }: { preview: SamplePreview }) {
                 <td
                   key={col}
                   className={cn(
-                    'py-1.5 pr-3 text-v2-foreground/90',
-                    ci < preview.columns.length - 1 && 'border-r border-v2-border/30',
+                    'py-1.5 pr-3 text-v2-foreground/85',
+                    ci < preview.columns.length - 1 && 'border-r border-v2-border/20',
                   )}
                 >
                   <span className="pl-1 pr-2">{r[col] ?? ''}</span>
