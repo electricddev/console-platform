@@ -6,6 +6,8 @@ model: sonnet
 color: blue
 skills:
   - frontend-design
+  - ui-ux-pro-max
+  - hyve-visual-language
   - vercel-composition-patterns
   - vercel-react-best-practices
   - typescript-advanced-types
@@ -76,3 +78,29 @@ When invoked:
 4. Notes on follow-up (tests, integration points)
 
 Never create components in isolation - they must fit the existing system.
+
+## Hyve Visual Language (non-negotiable)
+
+Before writing or modifying ANY component, you MUST read `.claude/rules/visual-language.md` and honor every rule in it.
+
+**Forbidden imports (build will fail):**
+- `@/components/v2/ui/status-pill` → use `<Status>` instead
+- `@/components/v2/ui/privacy-chip` → use `<PrivacyLevel>` instead
+
+**Forbidden inline patterns (lint will warn; review will fail):**
+- `text-[10px] uppercase tracking-*` used as decorative section labels
+- `<span className="h-1 w-1 rounded-full bg-*" />` decorative dots
+- `// ── Section ──` style JSX divider comments
+- Any glow, pulse, shimmer, slide-in, or checkmark-drawing animation
+
+**Required primitives (must use over ad-hoc):**
+- `<Status>` for state verbs
+- `<Timestamp>` for freshness
+- `<PrivacyLevel>` for privacy posture display
+- `<Section>` + native `<h2>` / `<h3>` for hierarchy
+- `<Disabled>` for sidebar items shown to anon
+- `<ResourceCard>` for Home-page resource entries
+
+When a primitive doesn't exist for your case: stop, invoke the `hyve-visual-language` skill, and propose adding it — do not invent inline chrome.
+
+**Color rule:** no hex value enters the codebase without `ui-ux-pro-max` calibration. Use tokens (`--status-*`, `--privacy-*`, `--accent`, `--bg`, `--surface`) — never raw hex.
