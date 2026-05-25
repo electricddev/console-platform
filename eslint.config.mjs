@@ -34,6 +34,19 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      "no-restricted-syntax": [
+        "warn",
+        {
+          // Eyebrow uppercase tracked labels — visual chrome banned by §1.
+          selector: "Literal[value=/text-\\[10px\\][^\"]*uppercase[^\"]*tracking-/]",
+          message: "Eyebrow pattern (text-[10px] uppercase tracking-*) is banned. Use semantic heading hierarchy. See .claude/rules/visual-language.md.",
+        },
+        {
+          // Decorative status dots — visual chrome banned by §1.
+          selector: "Literal[value=/h-1[^\"]*w-1[^\"]*rounded-full[^\"]*bg-/]",
+          message: "Decorative dot pattern (h-1 w-1 rounded-full bg-*) is banned. Tint adjacent text instead. See .claude/rules/visual-language.md.",
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.
